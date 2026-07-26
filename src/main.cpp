@@ -1,18 +1,33 @@
-#include <Arduino.h>
+#include "wifi_manager.h"
+#include "mqtt_manager.h"
+#include "dfplayer.h"
+#include "display.h"
+#include "prayer.h"
 
-// put function declarations here:
-int myFunction(int, int);
 
-void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+void setup()
+{
+    Serial.begin(115200);
+
+    wifi_init();
+
+    mqtt_init();
+
+    dfplayer_init();
+
+    display_init();
+
+    prayer_init();
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-}
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+void loop()
+{
+
+    mqtt_loop();
+
+    prayer_loop();
+
+    display_loop();
+
 }
