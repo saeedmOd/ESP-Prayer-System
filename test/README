@@ -1,11 +1,50 @@
+# 🕌 ESP Prayer System
 
-This directory is intended for PlatformIO Test Runner and project tests.
+An advanced ESP-based Islamic prayer system using ESP8266/ESP32 with DFPlayer audio playback, MQTT control, OTA updates, and prayer time management.
 
-Unit Testing is a software testing method by which individual units of
-source code, sets of one or more MCU program modules together with associated
-control data, usage procedures, and operating procedures, are tested to
-determine whether they are fit for use. Unit testing finds problems early
-in the development cycle.
+---
 
-More information about PlatformIO Unit Testing:
-- https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
+# 📌 Project Overview
+
+ESP Prayer System is a smart IoT prayer device designed to provide automatic Azan playback and prayer information display.
+
+The system provides:
+
+- Automatic prayer time management.
+- Azan playback using DFPlayer Mini.
+- LCD/OLED prayer information display.
+- WiFi connectivity.
+- MQTT remote control.
+- OTA firmware updates.
+- Local settings storage.
+
+The firmware is developed using **PlatformIO** with a modular architecture for easy maintenance and future expansion.
+
+---
+
+# ⚙️ Features
+
+## 🕌 Prayer Management
+
+- Automatic prayer time calculation.
+- Current prayer detection.
+- Next prayer countdown.
+- Daily prayer schedule.
+- Prayer notifications.
+- Configurable calculation settings.
+
+---
+
+# 🔊 Audio System
+
+Hardware:
+
+- DFPlayer Mini MP3 Module.
+- Micro SD Card.
+- Speaker / Amplifier.
+
+The DFPlayer is controlled through UART communication.
+
+## SD Card Structure
+
+The audio files are organized as:
