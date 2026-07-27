@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>
+إعدادات الصلاة
+</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+
+<div class="app">
+
+
+<header class="header">
+
+<h1>
+🕌 إعدادات الصلاة
+</h1>
+
+</header>
+
+
+
+<section class="card">
+
+
+<h2>
+الموقع
+</h2>
+
+
+<label>
+المدينة
+</label>
+
+<input 
+type="text"
+id="city"
+value="Al Ain"
+>
+
+
+
+<label>
+الدولة
+</label>
+
+<input
+type="text"
+id="country"
+value="UAE"
+>
+
+
+
+<label>
+خط العرض
+</label>
+
+<input
+type="number"
+id="latitude"
+value="24.2075"
+step="0.0001"
+>
+
+
+
+<label>
+خط الطول
+</label>
+
+<input
+type="number"
+id="longitude"
+value="55.7447"
+step="0.0001"
+>
+
+
+</section>
+
+
+
+
+
+<section class="card">
+
+
+<h2>
+طريقة الحساب
+</h2>
+
+
+<select id="method">
+
+
+<option value="0">
+جامعة أم القرى
+</option>
+
+
+<option value="1">
+رابطة العالم الإسلامي
+</option>
+
+
+<option value="2">
+الهيئة المصرية
+</option>
+
+
+<option value="3">
+كراتشي
+</option>
+
+
+</select>
+
+
+</section>
+
+
+
+
+
+<section class="card">
+
+
+<h2>
+تعديل أوقات الصلاة
+</h2>
+
+
+<label>
+الفجر
+</label>
+
+<input 
+type="number"
+id="fajrOffset"
+value="0"
+>
+
+
+
+<label>
+الظهر
+</label>
+
+<input 
+type="number"
+id="dhuhrOffset"
+value="0"
+>
+
+
+
+<label>
+العصر
+</label>
+
+<input 
+type="number"
+id="asrOffset"
+value="0"
+>
+
+
+
+<label>
+المغرب
+</label>
+
+<input 
+type="number"
+id="maghribOffset"
+value="0"
+>
+
+
+
+<label>
+العشاء
+</label>
+
+<input 
+type="number"
+id="ishaOffset"
+value="0"
+>
+
+
+</section>
+
+
+
+
+
+<section class="card">
+
+
+<button onclick="savePrayerSettings()">
+
+💾 حفظ الإعدادات
+
+</button>
+
+
+<button onclick="location.href='index.html'">
+
+⬅ العودة
+
+</button>
+
+
+</section>
+
+
+
+</div>
+
+
+
+<script src="script.js"></script>
+
+
+<script>
+
+
+function savePrayerSettings()
+{
+
+
+let data =
+{
+
+city:
+document.getElementById("city").value,
+
+
+country:
+document.getElementById("country").value,
+
+
+latitude:
+document.getElementById("latitude").value,
+
+
+longitude:
+document.getElementById("longitude").value,
+
+
+method:
+document.getElementById("method").value
+
+
+};
+
+
+
+fetch("/api/settings/prayer",
+{
+
+method:"POST",
+
+headers:
+{
+"Content-Type":"application/json"
+},
+
+body:
+JSON.stringify(data)
+
+});
+
+
+alert("تم حفظ إعدادات الصلاة");
+
+
+}
+
+
+
+</script>
+
+
+</body>
+
+</html>

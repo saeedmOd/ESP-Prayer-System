@@ -1,0 +1,277 @@
+* {
+    box-sizing: border-box;
+}
+
+
+body {
+
+    margin: 0;
+
+    padding: 0;
+
+    font-family: "Tahoma", "Arial", sans-serif;
+
+    background: #f1f5f9;
+
+    color: #1e293b;
+
+}
+
+
+
+.app {
+
+    max-width: 500px;
+
+    margin: auto;
+
+    padding: 15px;
+
+}
+
+
+
+/* Header */
+
+.header {
+
+    background: #0f766e;
+
+    color: white;
+
+    padding: 20px;
+
+    border-radius: 18px;
+
+    text-align: center;
+
+    margin-bottom: 15px;
+
+}
+
+
+.header h1 {
+
+    margin: 0;
+
+    font-size: 24px;
+
+}
+
+
+#deviceStatus {
+
+    display: inline-block;
+
+    margin-top: 10px;
+
+    background: rgba(255,255,255,0.2);
+
+    padding: 5px 15px;
+
+    border-radius: 20px;
+
+}
+
+
+
+/* Clock */
+
+.clock-card {
+
+    background: white;
+
+    border-radius: 20px;
+
+    padding: 25px;
+
+    text-align: center;
+
+    margin-bottom: 15px;
+
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+
+}
+
+
+
+#time {
+
+    font-size: 48px;
+
+    font-weight: bold;
+
+    color: #0f766e;
+
+}
+
+
+
+#date {
+
+    margin-top: 10px;
+
+    font-size: 18px;
+
+}
+
+
+
+/* Cards */
+
+.card {
+
+    background: white;
+
+    border-radius: 18px;
+
+    padding: 20px;
+
+    margin-bottom: 15px;
+
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+
+}
+
+
+
+.card h2 {
+
+    margin-top: 0;
+
+    text-align: center;
+
+    color: #0f766e;
+
+    font-size: 20px;
+
+}
+
+
+
+/* Next Prayer */
+
+.next-prayer {
+
+    text-align: center;
+
+}
+
+
+
+.prayer-name {
+
+    font-size: 36px;
+
+    font-weight: bold;
+
+    margin: 15px;
+
+}
+
+
+
+.countdown {
+
+    font-size: 22px;
+
+    color: #dc2626;
+
+}
+
+
+
+/* Prayer List */
+
+.prayer-list div {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    padding: 12px;
+
+    border-bottom: 1px solid #e2e8f0;
+
+    font-size: 18px;
+
+}
+
+
+.prayer-list div:last-child {
+
+    border-bottom: none;
+
+}
+
+
+
+/* Status */
+
+.status div {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    padding: 12px;
+
+    font-size: 18px;
+
+}
+
+
+
+/* Buttons */
+
+button {
+
+    width: 100%;
+
+    padding: 14px;
+
+    margin-top: 10px;
+
+    border: none;
+
+    border-radius: 12px;
+
+    background: #0f766e;
+
+    color: white;
+
+    font-size: 17px;
+
+    cursor: pointer;
+
+}
+
+
+
+button:hover {
+
+    opacity: 0.85;
+
+}
+
+
+
+/* Mobile */
+
+@media(max-width:400px) {
+
+
+    #time {
+
+        font-size: 38px;
+
+    }
+
+
+    .prayer-name {
+
+        font-size: 30px;
+
+    }
+
+}

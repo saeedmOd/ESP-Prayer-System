@@ -1,6 +1,8 @@
 #include "display.h"
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include <time.h>       // لعرض الوقت والتاريخ
+#include "prayer.h"     // لجلب اسم الصلاة القادمة
 
 // 0x27 هو عنوان I2C الشائع، 20 هي الأعمدة، 4 هي الأسطر
 LiquidCrystal_I2C lcd(0x27, 20, 4); 
@@ -17,7 +19,29 @@ void display_init() {
 }
 
 void display_loop() {
-    // هنا تحديث الوقت أوماتيكياً على الشاشة
+    static unsigned long lastDisplayUpdate = 0;
+    // تحديث الشاشة كل ثانية
+    if (millis() - lastDisplayUpdate < 1000) {
+        return;
+    }
+    lastDisplayUpdate = millis();
+
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo)) {
+        lcd.setCursor(0, 1);
+        lcd.print("Syncing Time...");
+        return;
+    }
+
+    char timeStr[9];
+    char dateStr[11];
+    strftime(timeStr, sizeof(timeStr), "%H:%M:%S", &timeinfo);
+    strftime(dateStr, sizeof(dateStr), "%d-%m-%Y", &timeinfo);
+
+    lcd.setCursor(0, 1);
+    lcd.print(dateStr);
+    lcd.setCursor(12, 1);
+    lcd.print(timeStr);
 }
 
 // دالة كمثال لتحديث اسم الصلاة والوقت المتبقي

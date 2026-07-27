@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>
+إعدادات الصوت
+</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+
+<div class="app">
+
+
+<header class="header">
+
+<h1>
+🔊 إعدادات الصوت
+</h1>
+
+</header>
+
+
+
+
+<section class="card">
+
+
+<h2>
+DFPlayer
+</h2>
+
+
+
+<label>
+مستوى الصوت
+</label>
+
+
+<input 
+type="range"
+id="volume"
+min="0"
+max="30"
+value="25"
+oninput="showVolume(this.value)"
+>
+
+
+<p>
+
+الصوت:
+<span id="volumeValue">
+25
+</span>
+
+</p>
+
+
+
+</section>
+
+
+
+
+
+<section class="card">
+
+
+<h2>
+ملفات الصوت
+</h2>
+
+
+
+<label>
+مجلد الأذان
+</label>
+
+
+<input
+
+type="number"
+
+id="azanFolder"
+
+value="1"
+
+min="1"
+
+max="99"
+
+>
+
+
+
+
+<label>
+رقم ملف الأذان
+</label>
+
+
+<input
+
+type="number"
+
+id="azanFile"
+
+value="1"
+
+min="1"
+
+max="999"
+
+>
+
+
+
+</section>
+
+
+
+
+
+<section class="card">
+
+
+<h2>
+اختبار الصوت
+</h2>
+
+
+
+<button onclick="testAzan()">
+
+▶ تشغيل أذان تجريبي
+
+</button>
+
+
+
+<button onclick="testSound()">
+
+🎵 تشغيل ملف اختبار
+
+</button>
+
+
+
+</section>
+
+
+
+
+
+
+<section class="card">
+
+
+<button onclick="saveAudioSettings()">
+
+💾 حفظ الإعدادات
+
+</button>
+
+
+
+<button onclick="location.href='index.html'">
+
+⬅ العودة
+
+</button>
+
+
+</section>
+
+
+
+</div>
+
+
+
+<script src="script.js"></script>
+
+
+
+<script>
+
+
+function showVolume(value)
+{
+
+document.getElementById("volumeValue").innerHTML=value;
+
+}
+
+
+
+
+function testSound()
+{
+
+
+fetch("/api/test/audio",
+{
+
+method:"POST"
+
+});
+
+
+}
+
+
+
+
+
+function saveAudioSettings()
+{
+
+
+let data =
+{
+
+volume:
+document.getElementById("volume").value,
+
+
+azanFolder:
+document.getElementById("azanFolder").value,
+
+
+azanFile:
+document.getElementById("azanFile").value
+
+
+};
+
+
+
+fetch("/api/settings/audio",
+{
+
+method:"POST",
+
+headers:
+{
+"Content-Type":"application/json"
+},
+
+body:
+JSON.stringify(data)
+
+});
+
+
+
+alert("تم حفظ إعدادات الصوت");
+
+
+}
+
+
+
+</script>
+
+
+
+</body>
+
+</html>

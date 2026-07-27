@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>
+النظام
+</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+
+<div class="app">
+
+
+<header class="header">
+
+<h1>
+⚙️ إعدادات النظام
+</h1>
+
+</header>
+
+
+
+
+<section class="card">
+
+
+<h2>
+معلومات الجهاز
+</h2>
+
+
+
+<div class="status">
+
+<p>
+
+🕌 الجهاز:
+
+<span id="deviceName">
+ESP Prayer System
+</span>
+
+</p>
+
+
+
+<p>
+
+📦 Firmware:
+
+<span id="firmware">
+1.0.0
+</span>
+
+</p>
+
+
+
+<p>
+
+🔧 Hardware:
+
+<span id="hardware">
+ESP8266 / ESP32
+</span>
+
+</p>
+
+
+
+<p>
+
+⏱️ Uptime:
+
+<span id="uptime">
+0
+</span>
+
+</p>
+
+
+
+</div>
+
+
+</section>
+
+
+
+
+
+
+
+
+<section class="card">
+
+
+<h2>
+OTA Update
+</h2>
+
+
+
+<p>
+
+حالة التحديث:
+
+<span id="otaStatus">
+Ready
+</span>
+
+</p>
+
+
+
+<button onclick="startOTA()">
+
+🔄 البحث عن تحديث
+
+</button>
+
+
+
+</section>
+
+
+
+
+
+
+
+
+<section class="card">
+
+
+<h2>
+التحكم بالجهاز
+</h2>
+
+
+
+<button onclick="restartDevice()">
+
+🔄 إعادة تشغيل
+
+</button>
+
+
+
+<button onclick="resetSettings()">
+
+⚠️ مسح الإعدادات
+
+</button>
+
+
+
+</section>
+
+
+
+
+
+
+
+
+<section class="card">
+
+
+<button onclick="location.href='index.html'">
+
+⬅ العودة للرئيسية
+
+</button>
+
+
+</section>
+
+
+
+
+
+
+</div>
+
+
+
+<script src="script.js"></script>
+
+
+
+<script>
+
+
+function restartDevice()
+{
+
+
+if(confirm("هل تريد إعادة تشغيل الجهاز؟"))
+{
+
+
+fetch("/api/system/restart",
+{
+
+method:"POST"
+
+});
+
+
+}
+
+
+}
+
+
+
+
+
+
+function resetSettings()
+{
+
+
+if(confirm("سيتم حذف جميع الإعدادات، هل أنت متأكد؟"))
+{
+
+
+fetch("/api/system/reset",
+{
+
+method:"POST"
+
+});
+
+
+}
+
+
+}
+
+
+
+
+
+
+function startOTA()
+{
+
+
+alert(
+"OTA جاهز - سيتم ربطه لاحقاً"
+);
+
+
+}
+
+
+
+</script>
+
+
+
+</body>
+
+</html>

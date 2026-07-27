@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>
+        ESP Prayer System
+    </title>
+
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+
+<div class="app">
+
+
+    <!-- Header -->
+
+    <header class="header">
+
+        <h1>
+            🕌 ESP Prayer System
+        </h1>
+
+        <span id="deviceStatus">
+            متصل
+        </span>
+
+    </header>
+
+
+
+    <!-- Clock -->
+
+    <section class="clock-card">
+
+
+        <div id="time">
+            12:35:20
+        </div>
+
+
+        <div id="date">
+            الثلاثاء 28 يوليو 2026
+        </div>
+
+
+    </section>
+
+
+
+
+    <!-- Next Prayer -->
+
+    <section class="card next-prayer">
+
+
+        <h2>
+            الصلاة القادمة
+        </h2>
+
+
+        <div class="prayer-name" id="nextPrayer">
+
+            العصر
+
+        </div>
+
+
+        <div class="countdown" id="countdown">
+
+            بعد 02:15:30
+
+        </div>
+
+
+    </section>
+
+
+
+
+
+    <!-- Prayer Times -->
+
+    <section class="card">
+
+
+        <h2>
+            مواقيت الصلاة
+        </h2>
+
+
+
+        <div class="prayer-list">
+
+
+            <div>
+                <span>
+                    الفجر
+                </span>
+
+                <b id="fajr">
+                    04:20
+                </b>
+            </div>
+
+
+
+            <div>
+                <span>
+                    الظهر
+                </span>
+
+                <b id="dhuhr">
+                    12:25
+                </b>
+            </div>
+
+
+
+
+            <div>
+                <span>
+                    العصر
+                </span>
+
+                <b id="asr">
+                    15:50
+                </b>
+            </div>
+
+
+
+
+            <div>
+                <span>
+                    المغرب
+                </span>
+
+                <b id="maghrib">
+                    19:05
+                </b>
+            </div>
+
+
+
+
+            <div>
+                <span>
+                    العشاء
+                </span>
+
+                <b id="isha">
+                    20:35
+                </b>
+            </div>
+
+
+        </div>
+
+
+    </section>
+
+
+
+
+
+    <!-- System Status -->
+
+    <section class="card status">
+
+
+        <h2>
+            حالة النظام
+        </h2>
+
+
+        <div>
+
+            📶 WiFi
+
+            <span id="wifi">
+                متصل
+            </span>
+
+        </div>
+
+
+
+        <div>
+
+            📡 MQTT
+
+            <span id="mqtt">
+                متصل
+            </span>
+
+        </div>
+
+
+
+        <div>
+
+            🔊 الصوت
+
+            <span id="volume">
+                25
+            </span>
+
+        </div>
+
+
+    </section>
+
+
+
+
+
+    <!-- Controls -->
+
+    <section class="card">
+
+
+        <h2>
+            التحكم
+        </h2>
+
+
+
+        <button onclick="testAzan()">
+
+            ▶ تشغيل أذان تجريبي
+
+        </button>
+
+
+
+        <button onclick="location.href='audio.html'">
+
+            🔊 إعدادات الصوت
+
+        </button>
+
+
+
+        <button onclick="location.href='prayer.html'">
+
+            🕌 إعدادات الصلاة
+
+        </button>
+
+
+
+        <button onclick="location.href='network.html'">
+
+            📡 الشبكة
+
+        </button>
+
+
+
+        <button onclick="location.href='system.html'">
+
+            ⚙ النظام
+
+        </button>
+
+
+
+    </section>
+
+
+
+</div>
+
+
+
+<script src="script.js"></script>
+
+
+</body>
+
+</html>

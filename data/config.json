@@ -1,0 +1,7 @@
+{
+  "device_name": "ESP-Prayer-System",
+  "volume": 25,
+  "brightness": 80,
+  "time_format": 24,
+  "azan_enable": true
+}

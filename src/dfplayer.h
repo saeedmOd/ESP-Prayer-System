@@ -2,10 +2,11 @@
 #define DFPLAYER_H
 
 #include <Arduino.h>
-#include <DFRobotDFPlayerMini.h>
 
 void dfplayer_init();
-void play_athan();
-void play_iqama();
+void setVolume(uint8_t volume); // 0 ~ 30
+void playAzan(uint8_t folder, uint8_t file);
+void playDua(uint8_t folder, uint8_t file);
+void stopAudio();
 
-#endif
+#endif // DFPLAYER_H

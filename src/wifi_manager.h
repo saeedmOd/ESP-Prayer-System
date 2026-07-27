@@ -1,9 +1,12 @@
 #ifndef WIFI_MANAGER_H
 #define WIFI_MANAGER_H
 
-#include <WiFi.h>
-#include <WiFiManager.h>
 
 void wifi_init();
+
+void wifi_loop();
+
+bool wifi_connected();
+
 
 #endif
