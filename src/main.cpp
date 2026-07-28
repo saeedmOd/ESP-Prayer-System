@@ -27,9 +27,9 @@
 void setup()
 {
 
-    Serial.begin(115200);
+    Serial.begin(74880);
 
-    delay(500);
+    delay(1000);
 
 
 
@@ -78,8 +78,8 @@ void setup()
     // OTA Update
     // ==============================
 
-    ota_init();
-
+    // Initialize OTA update service
+    OTA.begin();
 
 
     // ==============================
@@ -136,7 +136,7 @@ void loop()
 
     // OTA Service
 
-    ota_loop();
+    OTA.handle();
 
 
 

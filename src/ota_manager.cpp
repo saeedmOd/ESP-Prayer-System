@@ -7,6 +7,14 @@
 
 
 // ======================================================
+// Global OTA Object
+// ======================================================
+
+OTAManager OTA;
+
+
+
+// ======================================================
 // OTA Initialization
 // ======================================================
 
@@ -17,6 +25,7 @@ void OTAManager::begin()
     ArduinoOTA.setHostname(OTA_HOSTNAME);
 
 
+
 #ifdef OTA_PASSWORD
 
     ArduinoOTA.setPassword(OTA_PASSWORD);
@@ -24,23 +33,36 @@ void OTAManager::begin()
 #endif
 
 
+
     // OTA Start
     ArduinoOTA.onStart([]()
     {
+
         String type;
 
+
 #ifdef ESP8266
+
         type = "ESP8266";
+
 #else
+
         type = "ESP32";
+
 #endif
+
 
         Serial.println();
         Serial.println("OTA Update Started");
+
         Serial.print("Type: ");
+
         Serial.println(type);
 
+
     });
+
+
 
 
 
@@ -48,12 +70,17 @@ void OTAManager::begin()
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
     {
 
+
         Serial.printf(
             "OTA Progress: %u%%\r",
             (progress / (total / 100))
         );
 
+
     });
+
+
+
 
 
 
@@ -62,9 +89,14 @@ void OTAManager::begin()
     {
 
         Serial.println();
+
         Serial.println("OTA Update Finished");
 
+
     });
+
+
+
 
 
 
@@ -72,51 +104,84 @@ void OTAManager::begin()
     ArduinoOTA.onError([](ota_error_t error)
     {
 
+
         Serial.printf(
             "OTA Error[%u]: ",
             error
         );
 
 
+
         if(error == OTA_AUTH_ERROR)
         {
+
             Serial.println("Authentication Failed");
+
         }
+
 
         else if(error == OTA_BEGIN_ERROR)
         {
+
             Serial.println("Begin Failed");
+
         }
+
 
         else if(error == OTA_CONNECT_ERROR)
         {
+
             Serial.println("Connection Failed");
+
         }
+
 
         else if(error == OTA_RECEIVE_ERROR)
         {
+
             Serial.println("Receive Failed");
+
         }
+
 
         else if(error == OTA_END_ERROR)
         {
+
             Serial.println("End Failed");
+
         }
+
 
     });
 
 
 
+
+
+
+    // Start OTA service
     ArduinoOTA.begin();
 
 
-    Serial.println("--------------------------------");
-    Serial.println("OTA Ready");
-    Serial.print("Hostname: ");
-    Serial.println(OTA_HOSTNAME);
+
+
     Serial.println("--------------------------------");
 
+    Serial.println("OTA Ready");
+
+
+    Serial.print("Hostname: ");
+
+    Serial.println(OTA_HOSTNAME);
+
+
+    Serial.println("--------------------------------");
+
+
 }
+
+
+
 
 
 

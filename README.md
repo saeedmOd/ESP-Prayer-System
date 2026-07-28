@@ -3,7 +3,7 @@
 An advanced ESP-based Islamic prayer system using ESP8266/ESP32 with DFPlayer audio playback, MQTT control, OTA updates, and prayer time management.
 
 ---
-
+![alt text](<Screenshot 2026-07-28 173544.png>)
 # 📌 Project Overview
 
 ESP Prayer System is a smart electronic device designed to:

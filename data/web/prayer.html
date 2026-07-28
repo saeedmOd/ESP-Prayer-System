@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
@@ -32,12 +33,15 @@
 
 
 
+
+
 <section class="card">
 
 
 <h2>
-الموقع
+📍 الموقع
 </h2>
+
 
 
 <label>
@@ -47,44 +51,37 @@
 <input 
 type="text"
 id="city"
-value="Al Ain"
 >
-
 
 
 <label>
 الدولة
 </label>
 
-<input
+<input 
 type="text"
 id="country"
-value="UAE"
 >
-
 
 
 <label>
 خط العرض
 </label>
 
-<input
+<input 
 type="number"
 id="latitude"
-value="24.2075"
 step="0.0001"
 >
-
 
 
 <label>
 خط الطول
 </label>
 
-<input
+<input 
 type="number"
 id="longitude"
-value="55.7447"
 step="0.0001"
 >
 
@@ -95,33 +92,34 @@ step="0.0001"
 
 
 
+
 <section class="card">
 
 
 <h2>
-طريقة الحساب
+🧮 طريقة الحساب
 </h2>
 
 
 <select id="method">
 
 
-<option value="0">
+<option value="UmmAlQura">
 جامعة أم القرى
 </option>
 
 
-<option value="1">
+<option value="MWL">
 رابطة العالم الإسلامي
 </option>
 
 
-<option value="2">
+<option value="Egyptian">
 الهيئة المصرية
 </option>
 
 
-<option value="3">
+<option value="Karachi">
 كراتشي
 </option>
 
@@ -135,12 +133,53 @@ step="0.0001"
 
 
 
+
+
 <section class="card">
 
 
 <h2>
-تعديل أوقات الصلاة
+🕒 نظام الوقت
 </h2>
+
+
+<label>
+صيغة الساعة
+</label>
+
+
+<select id="time_format">
+
+
+<option value="24H">
+24 ساعة
+</option>
+
+
+<option value="12H">
+12 ساعة
+</option>
+
+
+</select>
+
+
+</section>
+
+
+
+
+
+
+
+
+<section class="card">
+
+
+<h2>
+⏱ تعديل مواقيت الصلاة
+</h2>
+
 
 
 <label>
@@ -149,9 +188,10 @@ step="0.0001"
 
 <input 
 type="number"
-id="fajrOffset"
+id="fajr_offset"
 value="0"
 >
+
 
 
 
@@ -161,9 +201,10 @@ value="0"
 
 <input 
 type="number"
-id="dhuhrOffset"
+id="dhuhr_offset"
 value="0"
 >
+
 
 
 
@@ -173,9 +214,10 @@ value="0"
 
 <input 
 type="number"
-id="asrOffset"
+id="asr_offset"
 value="0"
 >
+
 
 
 
@@ -185,9 +227,10 @@ value="0"
 
 <input 
 type="number"
-id="maghribOffset"
+id="maghrib_offset"
 value="0"
 >
+
 
 
 
@@ -197,12 +240,15 @@ value="0"
 
 <input 
 type="number"
-id="ishaOffset"
+id="isha_offset"
 value="0"
 >
 
 
+
 </section>
+
+
 
 
 
@@ -218,7 +264,8 @@ value="0"
 </button>
 
 
-<button onclick="location.href='index.html'">
+
+<button onclick="location.href='/'">
 
 ⬅ العودة
 
@@ -233,10 +280,116 @@ value="0"
 
 
 
-<script src="script.js"></script>
+
 
 
 <script>
+
+
+// ================================
+// Load Settings
+// ================================
+
+
+function loadPrayerSettings()
+{
+
+
+fetch("/api/settings/prayer")
+
+
+.then(response => response.json())
+
+
+.then(data =>
+{
+
+
+console.log(data);
+
+
+
+if(data.city)
+city.value=data.city;
+
+
+
+if(data.country)
+country.value=data.country;
+
+
+
+if(data.latitude)
+latitude.value=data.latitude;
+
+
+
+if(data.longitude)
+longitude.value=data.longitude;
+
+
+
+if(data.method)
+method.value=data.method;
+
+
+
+if(data.time_format)
+time_format.value=data.time_format;
+
+
+
+if(data.fajr_offset)
+fajr_offset.value=data.fajr_offset;
+
+
+
+if(data.dhuhr_offset)
+dhuhr_offset.value=data.dhuhr_offset;
+
+
+
+if(data.asr_offset)
+asr_offset.value=data.asr_offset;
+
+
+
+if(data.maghrib_offset)
+maghrib_offset.value=data.maghrib_offset;
+
+
+
+if(data.isha_offset)
+isha_offset.value=data.isha_offset;
+
+
+
+})
+
+.catch(error =>
+{
+
+console.log(
+"Load Error",
+error
+);
+
+});
+
+
+}
+
+
+
+
+
+
+
+
+
+// ================================
+// Save Settings
+// ================================
 
 
 function savePrayerSettings()
@@ -246,51 +399,130 @@ function savePrayerSettings()
 let data =
 {
 
+
 city:
-document.getElementById("city").value,
+city.value,
 
 
 country:
-document.getElementById("country").value,
+country.value,
 
 
 latitude:
-document.getElementById("latitude").value,
+parseFloat(latitude.value),
 
 
 longitude:
-document.getElementById("longitude").value,
+parseFloat(longitude.value),
 
 
 method:
-document.getElementById("method").value
+method.value,
+
+
+time_format:
+time_format.value,
+
+
+fajr_offset:
+parseInt(fajr_offset.value),
+
+
+dhuhr_offset:
+parseInt(dhuhr_offset.value),
+
+
+asr_offset:
+parseInt(asr_offset.value),
+
+
+maghrib_offset:
+parseInt(maghrib_offset.value),
+
+
+isha_offset:
+parseInt(isha_offset.value)
 
 
 };
 
 
 
+
 fetch("/api/settings/prayer",
 {
 
+
 method:"POST",
+
 
 headers:
 {
-"Content-Type":"application/json"
+
+"Content-Type":
+"application/json"
+
 },
+
 
 body:
 JSON.stringify(data)
 
-});
+
+})
 
 
-alert("تم حفظ إعدادات الصلاة");
+.then(response =>
+{
+
+
+if(response.ok)
+{
+
+alert(
+"✅ تم حفظ إعدادات الصلاة"
+);
 
 
 }
 
+else
+{
+
+alert(
+"❌ فشل الحفظ"
+);
+
+
+}
+
+
+})
+
+.catch(error =>
+{
+
+
+alert(
+"خطأ في الاتصال"
+);
+
+
+console.log(error);
+
+
+});
+
+
+}
+
+
+
+
+
+
+window.onload =
+loadPrayerSettings;
 
 
 </script>
@@ -299,3 +531,4 @@ alert("تم حفظ إعدادات الصلاة");
 </body>
 
 </html>
+```

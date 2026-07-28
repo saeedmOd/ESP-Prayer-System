@@ -22,13 +22,19 @@
 <div class="app">
 
 
+
 <header class="header">
 
 <h1>
 🔊 إعدادات الصوت
 </h1>
 
+<span id="status">
+جاري التحميل...
+</span>
+
 </header>
+
 
 
 
@@ -47,7 +53,8 @@ DFPlayer
 </label>
 
 
-<input 
+
+<input
 type="range"
 id="volume"
 min="0"
@@ -57,18 +64,19 @@ oninput="showVolume(this.value)"
 >
 
 
-<p>
 
+<p>
 الصوت:
 <span id="volumeValue">
 25
 </span>
-
 </p>
 
 
 
 </section>
+
+
 
 
 
@@ -83,6 +91,7 @@ oninput="showVolume(this.value)"
 
 
 
+
 <label>
 مجلد الأذان
 </label>
@@ -93,8 +102,6 @@ oninput="showVolume(this.value)"
 type="number"
 
 id="azanFolder"
-
-value="1"
 
 min="1"
 
@@ -116,8 +123,6 @@ type="number"
 
 id="azanFile"
 
-value="1"
-
 min="1"
 
 max="999"
@@ -127,6 +132,10 @@ max="999"
 
 
 </section>
+
+
+
+
 
 
 
@@ -164,6 +173,9 @@ max="999"
 
 
 
+
+
+
 <section class="card">
 
 
@@ -175,18 +187,26 @@ max="999"
 
 
 
-<button onclick="location.href='index.html'">
+
+<button onclick="location.href='/'">
 
 ⬅ العودة
 
 </button>
 
 
+
 </section>
 
 
 
+
+
 </div>
+
+
+
+
 
 
 
@@ -197,14 +217,146 @@ max="999"
 <script>
 
 
+
+/*
+==============================
+تحميل الإعدادات من ESP
+==============================
+*/
+
+
+window.onload = function()
+{
+
+
+fetch("/api/settings/audio")
+
+
+.then(response => response.json())
+
+
+.then(data =>
+{
+
+
+document.getElementById("volume")
+.value = data.volume;
+
+
+
+document.getElementById("volumeValue")
+.innerHTML = data.volume;
+
+
+
+document.getElementById("azanFolder")
+.value = data.azanFolder;
+
+
+
+document.getElementById("azanFile")
+.value = data.azanFile;
+
+
+
+document.getElementById("status")
+.innerHTML =
+"متصل";
+
+
+
+})
+
+
+
+.catch(error =>
+{
+
+
+document.getElementById("status")
+.innerHTML =
+"خطأ اتصال";
+
+
+});
+
+
+
+};
+
+
+
+
+
+
+
+/*
+==============================
+عرض مستوى الصوت
+==============================
+*/
+
+
 function showVolume(value)
 {
 
-document.getElementById("volumeValue").innerHTML=value;
+
+document.getElementById("volumeValue")
+.innerHTML=value;
+
 
 }
 
 
+
+
+
+
+
+
+
+/*
+==============================
+اختبار الأذان
+==============================
+*/
+
+
+function testAzan()
+{
+
+
+fetch("/api/test/azan",
+{
+
+method:"POST"
+
+})
+
+
+.then(() =>
+{
+
+alert("تم تشغيل الأذان");
+
+});
+
+
+}
+
+
+
+
+
+
+
+
+
+/*
+==============================
+اختبار ملف صوت
+==============================
+*/
 
 
 function testSound()
@@ -216,6 +368,14 @@ fetch("/api/test/audio",
 
 method:"POST"
 
+})
+
+
+.then(() =>
+{
+
+alert("تم تشغيل الملف");
+
 });
 
 
@@ -223,6 +383,17 @@ method:"POST"
 
 
 
+
+
+
+
+
+
+/*
+==============================
+حفظ الإعدادات
+==============================
+*/
 
 
 function saveAudioSettings()
@@ -232,40 +403,72 @@ function saveAudioSettings()
 let data =
 {
 
+
 volume:
-document.getElementById("volume").value,
+Number(
+document.getElementById("volume").value
+),
+
 
 
 azanFolder:
-document.getElementById("azanFolder").value,
+Number(
+document.getElementById("azanFolder").value
+),
+
 
 
 azanFile:
+Number(
 document.getElementById("azanFile").value
+)
 
 
 };
 
 
 
+
 fetch("/api/settings/audio",
 {
 
+
 method:"POST",
+
 
 headers:
 {
+
 "Content-Type":"application/json"
+
 },
+
+
 
 body:
 JSON.stringify(data)
 
+
+
+})
+
+
+
+.then(response => response.text())
+
+
+.then(() =>
+{
+
+
+alert(
+"تم حفظ إعدادات الصوت"
+);
+
+
+
 });
 
-
-
-alert("تم حفظ إعدادات الصوت");
 
 
 }
@@ -273,6 +476,7 @@ alert("تم حفظ إعدادات الصوت");
 
 
 </script>
+
 
 
 

@@ -10,23 +10,26 @@
 
 #include "time_manager.h"
 
+#include "storage.h"
 
-
+void calculate_prayer_times();
+void load_prayer_settings();
 
 // ================================
-// Location
-// لاحقاً من storage
+// Variables
 // ================================
 
-double latitude  = 24.2075;
-double longitude = 55.7447;
+
+float latitude  = 24.2075;
+float longitude = 55.7447;
 
 
 
+float prayerTimes[6];
 
-double prayerTimes[6];
 
 int prayerTimeMinutes[6];
+
 
 
 const char* prayerNames[] =
@@ -44,6 +47,7 @@ const char* prayerNames[] =
 int nextPrayerIndex = -1;
 
 
+
 bool azanPlayed[6] =
 {
     false,
@@ -58,6 +62,46 @@ bool azanPlayed[6] =
 
 
 // ================================
+// Load Prayer Settings
+// ================================
+
+void load_prayer_settings()
+{
+
+
+    latitude =
+        storage_get_float(
+            "location.latitude",
+            24.2075
+        );
+
+
+
+    longitude =
+        storage_get_float(
+            "location.longitude",
+            55.7447
+        );
+
+
+
+    Serial.println("Prayer Location:");
+
+    Serial.print("Latitude: ");
+    Serial.println(latitude);
+
+
+    Serial.print("Longitude: ");
+    Serial.println(longitude);
+
+}
+
+
+
+
+
+
+// ================================
 // Init
 // ================================
 
@@ -67,17 +111,36 @@ void prayer_init()
     Serial.println("Prayer System Init");
 
 
-    setCalcMethod(MWL);
 
-    setAsrMethod(Shafii);
+    load_prayer_settings();
 
-    setHighLatsMethod(AngleBased);
+
+
+
+    // Default Calculation
+
+    setCalcMethod(
+        MWL
+    );
+
+
+    setAsrMethod(
+        Shafii
+    );
+
+
+    setHighLatsMethod(
+        AngleBased
+    );
+
 
 
     calculate_prayer_times();
 
 
 }
+
+
 
 
 
@@ -95,14 +158,18 @@ void calculate_prayer_times()
     struct tm timeinfo;
 
 
+
     if(!getLocalTime(&timeinfo))
     {
 
-        Serial.println("Time not ready");
+        Serial.println(
+            "Time not ready"
+        );
 
         return;
 
     }
+
 
 
 
@@ -127,10 +194,15 @@ void calculate_prayer_times()
 
 
 
-    for(int i=0;i<6;i++)
+
+    for(int i = 0; i < 6; i++)
     {
 
-        int h,m;
+
+        int h;
+
+        int m;
+
 
 
         getHourMinute(
@@ -144,14 +216,25 @@ void calculate_prayer_times()
         );
 
 
+
         prayerTimeMinutes[i] =
-            h*60+m;
+            h * 60 + m;
+
+
 
     }
 
 
 
+
+
+    Serial.println(
+        "Prayer Times Updated"
+    );
+
 }
+
+
 
 
 
@@ -166,15 +249,21 @@ void calculate_prayer_times()
 void prayer_loop()
 {
 
-    static unsigned long lastUpdate=0;
+
+    static unsigned long lastUpdate = 0;
 
 
-    if(millis()-lastUpdate < 10000)
+
+    if(
+        millis() - lastUpdate < 10000
+    )
+
         return;
 
 
 
-    lastUpdate=millis();
+    lastUpdate = millis();
+
 
 
 
@@ -182,8 +271,10 @@ void prayer_loop()
         get_current_hour();
 
 
+
     int minute =
         get_current_minute();
+
 
 
 
@@ -193,23 +284,82 @@ void prayer_loop()
 
 
 
+
     int current =
-        hour*60+minute;
+        hour * 60 + minute;
 
 
 
 
 
-    // Next Prayer
 
-    nextPrayerIndex=-1;
+
+    // ================================
+    // Recalculate Daily
+    // ================================
+
+
+    static int lastDay = -1;
+
+
+
+String currentDate =
+    get_current_date();
+
+
+
+static String lastDate = "";
+
+
+
+if(
+    lastDate != currentDate
+)
+{
+
+    calculate_prayer_times();
 
 
     for(int i=0;i<6;i++)
     {
+        azanPlayed[i]=false;
+    }
 
 
-        if(prayerTimeMinutes[i] > current)
+
+    lastDate = currentDate;
+
+}
+
+
+
+
+
+
+
+
+
+    // ================================
+    // Next Prayer
+    // ================================
+
+
+    nextPrayerIndex = -1;
+
+
+
+
+    for(
+        int i=0;
+        i<6;
+        i++
+    )
+    {
+
+
+        if(
+            prayerTimeMinutes[i] > current
+        )
         {
 
             nextPrayerIndex=i;
@@ -218,20 +368,35 @@ void prayer_loop()
 
         }
 
+
     }
 
 
 
+
+
     if(nextPrayerIndex==-1)
+
         nextPrayerIndex=0;
 
 
 
 
 
-    // Azan Check
 
-    for(int i=0;i<6;i++)
+
+
+
+    // ================================
+    // Azan Check
+    // ================================
+
+
+    for(
+        int i=0;
+        i<6;
+        i++
+    )
     {
 
 
@@ -239,6 +404,8 @@ void prayer_loop()
 
         if(i==1)
             continue;
+
+
 
 
 
@@ -250,11 +417,16 @@ void prayer_loop()
         {
 
 
-            Serial.print("Playing Azan: ");
+            Serial.print(
+                "Playing Azan: "
+            );
+
+
 
             Serial.println(
                 prayerNames[i]
             );
+
 
 
 
@@ -268,10 +440,13 @@ void prayer_loop()
             azanPlayed[i]=true;
 
 
+
         }
 
 
+
     }
+
 
 
 }
@@ -281,12 +456,22 @@ void prayer_loop()
 
 
 
+
+
+
+// ================================
+// Next Prayer Name
+// ================================
+
 String get_next_prayer_name()
 {
 
-    if(nextPrayerIndex>=0)
+    if(
+        nextPrayerIndex >=0
+    )
 
         return prayerNames[nextPrayerIndex];
+
 
 
     return "---";

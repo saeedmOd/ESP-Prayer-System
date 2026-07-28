@@ -4,6 +4,7 @@
 #include <time.h>
 
 #include "settings.h"
+#include "storage.h"
 
 
 // =================================
@@ -14,8 +15,7 @@ const char* ntpServer1 = "pool.ntp.org";
 const char* ntpServer2 = "time.nist.gov";
 
 
-// UAE Timezone
-// UTC +4
+// UAE UTC +4
 const long gmtOffset_sec = 4 * 3600;
 
 const int daylightOffset_sec = 0;
@@ -91,8 +91,10 @@ void time_init()
 
 
 
+
+
 // =================================
-// Time Update
+// Update
 // =================================
 
 void time_update()
@@ -110,8 +112,37 @@ void time_update()
 
 
 
+
+
 // =================================
-// Get Current Time
+// Get Time Format
+// =================================
+
+bool is_12_hour_format()
+{
+
+    String format =
+        storage_get_string(
+            "prayer.time_format",
+            "24H"
+        );
+
+
+    if(format == "12H")
+        return true;
+
+
+    return false;
+
+}
+
+
+
+
+
+
+// =================================
+// Current Time
 // =================================
 
 String get_current_time()
@@ -126,26 +157,60 @@ String get_current_time()
     }
 
 
-    char buffer[10];
+
+    int hour =
+        timeinfo.tm_hour;
+
+
+
+    String suffix = "";
+
+
+
+    if(is_12_hour_format())
+    {
+
+        if(hour >= 12)
+            suffix = " PM";
+        else
+            suffix = " AM";
+
+
+        hour = hour % 12;
+
+
+        if(hour == 0)
+            hour = 12;
+
+    }
+
+
+
+    char buffer[20];
 
 
     sprintf(
         buffer,
         "%02d:%02d:%02d",
-        timeinfo.tm_hour,
+        hour,
         timeinfo.tm_min,
         timeinfo.tm_sec
     );
 
 
-    return String(buffer);
+
+    return String(buffer) + suffix;
 
 }
 
 
 
+
+
+
+
 // =================================
-// Get Current Date
+// Date
 // =================================
 
 String get_current_date()
@@ -158,6 +223,7 @@ String get_current_date()
     {
         return "--/--/----";
     }
+
 
 
     char buffer[20];
@@ -175,6 +241,10 @@ String get_current_date()
     return String(buffer);
 
 }
+
+
+
+
 
 
 
@@ -198,6 +268,8 @@ int get_current_hour()
 
 
 
+
+
 // =================================
 // Minute
 // =================================
@@ -215,6 +287,8 @@ int get_current_minute()
     return timeinfo.tm_min;
 
 }
+
+
 
 
 
@@ -238,6 +312,8 @@ int get_current_second()
 
 
 
+
+
 // =================================
 // Week Day
 // =================================
@@ -255,6 +331,8 @@ int get_week_day()
     return timeinfo.tm_wday;
 
 }
+
+
 
 
 
@@ -287,6 +365,8 @@ String get_day_name()
     return days[day];
 
 }
+
+
 
 
 

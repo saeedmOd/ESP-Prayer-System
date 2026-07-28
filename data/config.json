@@ -1,7 +1,65 @@
 {
-  "device_name": "ESP-Prayer-System",
-  "volume": 25,
-  "brightness": 80,
-  "time_format": 24,
-  "azan_enable": true
+  "device": {
+    "name": "ESP-Prayer-System",
+    "location_name": "Home"
+  },
+
+  "wifi": {
+    "enable": true,
+    "ssid": "",
+    "password": "",
+    "auto_reconnect": true
+  },
+
+  "mqtt": {
+    "enable": false,
+    "server": "",
+    "port": 1883,
+    "user": "",
+    "password": "",
+    "topic_prefix": "esp/prayer",
+    "reconnect_interval": 30
+  },
+
+  "location": {
+    "city": "Al Ain",
+    "country": "UAE",
+    "latitude": 24.2075,
+    "longitude": 55.7447,
+    "timezone": 3
+  },
+
+  "prayer": {
+    "calculation_method": "UmmAlQura",
+    "asr_method": "Standard",
+    "high_latitude_rule": "None",
+    "time_format": "24H"
+  },
+
+  "audio": {
+    "enable": true,
+    "volume": 25,
+    "athan_folder": 1,
+    "surah_folder": 2,
+    "short_surah_folder": 3,
+    "dua_folder": 4
+  },
+
+  "display": {
+    "enable": true,
+    "brightness": 100,
+    "show_date": true,
+    "show_temperature": false
+  },
+
+  "ota": {
+    "enable": true,
+    "hostname": "ESP-Prayer-System",
+    "password": ""
+  },
+
+  "system": {
+    "first_boot": true,
+    "reset_settings": false
+  }
 }

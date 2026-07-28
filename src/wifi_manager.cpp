@@ -1,7 +1,7 @@
 #include "wifi_manager.h"
 
 #include <Arduino.h>
-#include <WiFi.h>
+#include <ESP8266WiFi.h>
 
 #include "settings.h"
 

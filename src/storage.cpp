@@ -1,17 +1,10 @@
 #include "storage.h"
 
 #include <ArduinoJson.h>
-
-#ifdef ESP8266
 #include <LittleFS.h>
-#else
-#include <LittleFS.h>
-#endif
-
 
 
 #define CONFIG_FILE "/config.json"
-
 
 
 bool storage_ready = false;
@@ -19,7 +12,7 @@ bool storage_ready = false;
 
 
 // =================================
-// Initialize Storage
+// Init
 // =================================
 
 void storage_init()
@@ -30,12 +23,8 @@ void storage_init()
 
     if(!LittleFS.begin())
     {
-
         Serial.println("LittleFS Mount Failed");
-
-
         return;
-
     }
 
 
@@ -44,72 +33,80 @@ void storage_init()
 
     Serial.println("Storage Ready");
 
-
 }
 
 
 
+
+
 // =================================
-// Check File Exists
+// Status
 // =================================
 
-bool storage_exists()
+bool storage_ready_status()
+{
+    return storage_ready;
+}
+
+
+
+
+
+
+// =================================
+// Load JSON
+// =================================
+
+bool load_config(JsonDocument &doc)
 {
 
     if(!storage_ready)
         return false;
 
 
-    return LittleFS.exists(CONFIG_FILE);
-
-}
-
-
-
-// =================================
-// Load Configuration
-// =================================
-
-bool storage_load()
-{
-
-    if(!storage_exists())
-    {
-        Serial.println("No Config File Found");
-
+    if(!LittleFS.exists(CONFIG_FILE))
         return false;
-    }
 
 
 
-    File file = LittleFS.open(
-        CONFIG_FILE,
-        "r"
-    );
+    File file =
+        LittleFS.open(
+            CONFIG_FILE,
+            "r"
+        );
 
 
     if(!file)
         return false;
 
+
+
+    DeserializationError error =
+        deserializeJson(
+            doc,
+            file
+        );
 
 
     file.close();
 
 
-    Serial.println("Configuration Loaded");
 
-
-    return true;
+    return !error;
 
 }
 
 
 
+
+
+
+
 // =================================
-// Save Configuration
+// Save JSON
 // =================================
 
-bool storage_save()
+bool save_config(JsonDocument &doc)
 {
 
     if(!storage_ready)
@@ -117,30 +114,19 @@ bool storage_save()
 
 
 
-    File file = LittleFS.open(
-        CONFIG_FILE,
-        "w"
-    );
+    File file =
+        LittleFS.open(
+            CONFIG_FILE,
+            "w"
+        );
 
 
     if(!file)
-    {
-        Serial.println("Config Write Failed");
-
         return false;
-    }
 
 
 
-    StaticJsonDocument<512> doc;
-
-
-    doc["device"] = "ESP-Prayer-System";
-
-    doc["version"] = "1.0.0";
-
-
-    serializeJson(
+    serializeJsonPretty(
         doc,
         file
     );
@@ -150,7 +136,9 @@ bool storage_save()
 
 
 
-    Serial.println("Configuration Saved");
+    Serial.println(
+        "Configuration Saved"
+    );
 
 
     return true;
@@ -159,8 +147,456 @@ bool storage_save()
 
 
 
+
+
+
+
+
 // =================================
-// Reset Storage
+// Get Path
+// =================================
+
+JsonVariant get_path(
+    JsonDocument &doc,
+    String path
+)
+{
+
+    JsonVariant current =
+        doc.as<JsonVariant>();
+
+
+    int start = 0;
+
+
+
+    while(true)
+    {
+
+        int dot =
+            path.indexOf(
+                '.',
+                start
+            );
+
+
+        String key;
+
+
+
+        if(dot == -1)
+        {
+            key =
+            path.substring(start);
+        }
+        else
+        {
+            key =
+            path.substring(
+                start,
+                dot
+            );
+        }
+
+
+
+        current =
+            current[key];
+
+
+
+        if(dot == -1)
+            break;
+
+
+
+        start =
+            dot + 1;
+
+    }
+
+
+
+    return current;
+
+}
+
+
+
+
+
+
+
+
+// =================================
+// Set Path
+// =================================
+
+bool set_path(
+    JsonDocument &doc,
+    String path,
+    String value
+)
+{
+
+    int dot =
+        path.indexOf('.');
+
+
+
+    if(dot == -1)
+    {
+
+        doc[path]=value;
+
+        return true;
+
+    }
+
+
+
+
+    String section =
+        path.substring(
+            0,
+            dot
+        );
+
+
+
+    String remain =
+        path.substring(
+            dot+1
+        );
+
+
+
+    JsonObject obj =
+        doc[section].to<JsonObject>();
+
+
+
+    obj[remain]=value;
+
+
+
+    return true;
+
+}
+
+
+
+
+
+
+
+
+
+// =================================
+// String
+// =================================
+
+bool storage_set_string(
+    String path,
+    String value
+)
+{
+
+    JsonDocument doc;
+
+
+
+    if(!load_config(doc))
+        return false;
+
+
+
+    set_path(
+        doc,
+        path,
+        value
+    );
+
+
+
+    return save_config(doc);
+
+}
+
+
+
+
+
+
+String storage_get_string(
+    String path,
+    String defaultValue
+)
+{
+
+    JsonDocument doc;
+
+
+
+    if(!load_config(doc))
+        return defaultValue;
+
+
+
+    JsonVariant value =
+        get_path(
+            doc,
+            path
+        );
+
+
+
+    if(value.isNull())
+        return defaultValue;
+
+
+
+    return value.as<String>();
+
+}
+
+
+
+
+
+
+
+
+
+
+// =================================
+// Integer
+// =================================
+
+bool storage_set_int(
+    String path,
+    int value
+)
+{
+
+    JsonDocument doc;
+
+
+
+    if(!load_config(doc))
+        return false;
+
+
+
+    int dot =
+        path.indexOf('.');
+
+
+
+    if(dot == -1)
+        doc[path]=value;
+
+    else
+    {
+        String section =
+        path.substring(0,dot);
+
+
+        String item =
+        path.substring(dot+1);
+
+
+        doc[section][item]=value;
+
+    }
+
+
+
+    return save_config(doc);
+
+}
+
+
+
+
+
+
+
+int storage_get_int(
+    String path,
+    int defaultValue
+)
+{
+
+    JsonDocument doc;
+
+
+
+    if(!load_config(doc))
+        return defaultValue;
+
+
+
+    JsonVariant value =
+        get_path(
+            doc,
+            path
+        );
+
+
+
+    return value |
+        defaultValue;
+
+}
+
+
+
+
+
+
+
+
+
+// =================================
+// Float
+// =================================
+
+bool storage_set_float(
+    String path,
+    float value
+)
+{
+
+    JsonDocument doc;
+
+
+
+    if(!load_config(doc))
+        return false;
+
+
+
+    doc[path]=value;
+
+
+
+    return save_config(doc);
+
+}
+
+
+
+
+
+
+float storage_get_float(
+    String path,
+    float defaultValue
+)
+{
+
+    JsonDocument doc;
+
+
+
+    if(!load_config(doc))
+        return defaultValue;
+
+
+
+    JsonVariant value =
+        get_path(
+            doc,
+            path
+        );
+
+
+
+    return value |
+        defaultValue;
+
+}
+
+
+
+
+
+
+
+
+
+// =================================
+// Boolean
+// =================================
+
+bool storage_set_bool(
+    String path,
+    bool value
+)
+{
+
+    JsonDocument doc;
+
+
+
+    if(!load_config(doc))
+        return false;
+
+
+
+    doc[path]=value;
+
+
+
+    return save_config(doc);
+
+}
+
+
+
+
+
+
+
+bool storage_get_bool(
+    String path,
+    bool defaultValue
+)
+{
+
+    JsonDocument doc;
+
+
+
+    if(!load_config(doc))
+        return defaultValue;
+
+
+
+    JsonVariant value =
+        get_path(
+            doc,
+            path
+        );
+
+
+
+    return value |
+        defaultValue;
+
+}
+
+
+
+
+
+
+
+
+
+// =================================
+// Reset
 // =================================
 
 void storage_reset()
@@ -175,192 +611,8 @@ void storage_reset()
     );
 
 
-    Serial.println("Storage Reset");
-
-}
-
-
-
-// =================================
-// String
-// =================================
-
-bool storage_set_string(
-    String key,
-    String value
-)
-{
-
-    File file = LittleFS.open(
-        CONFIG_FILE,
-        "w"
+    Serial.println(
+        "Storage Reset"
     );
-
-
-    if(!file)
-        return false;
-
-
-
-    StaticJsonDocument<512> doc;
-
-
-    doc[key] = value;
-
-
-    serializeJson(
-        doc,
-        file
-    );
-
-
-    file.close();
-
-
-    return true;
-
-}
-
-
-
-
-String storage_get_string(
-    String key,
-    String defaultValue
-)
-{
-
-    File file = LittleFS.open(
-        CONFIG_FILE,
-        "r"
-    );
-
-
-    if(!file)
-        return defaultValue;
-
-
-
-    StaticJsonDocument<512> doc;
-
-
-    deserializeJson(
-        doc,
-        file
-    );
-
-
-    file.close();
-
-
-
-    return doc[key] |
-           defaultValue;
-
-}
-
-
-
-// =================================
-// Integer
-// =================================
-
-bool storage_set_int(
-    String key,
-    int value
-)
-{
-
-    return storage_set_string(
-        key,
-        String(value)
-    );
-
-}
-
-
-
-int storage_get_int(
-    String key,
-    int defaultValue
-)
-{
-
-    return storage_get_string(
-        key,
-        String(defaultValue)
-    ).toInt();
-
-}
-
-
-
-// =================================
-// Float
-// =================================
-
-bool storage_set_float(
-    String key,
-    float value
-)
-{
-
-    return storage_set_string(
-        key,
-        String(value)
-    );
-
-}
-
-
-
-float storage_get_float(
-    String key,
-    float defaultValue
-)
-{
-
-    return storage_get_string(
-        key,
-        String(defaultValue)
-    ).toFloat();
-
-}
-
-
-
-// =================================
-// Boolean
-// =================================
-
-bool storage_set_bool(
-    String key,
-    bool value
-)
-{
-
-    return storage_set_string(
-        key,
-        value ? "true" : "false"
-    );
-
-}
-
-
-
-bool storage_get_bool(
-    String key,
-    bool defaultValue
-)
-{
-
-    String value =
-        storage_get_string(
-            key,
-            defaultValue ? "true" : "false"
-        );
-
-
-    return value == "true";
 
 }
