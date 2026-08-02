@@ -22,6 +22,7 @@
 <div class="app">
 
 
+
 <header class="header">
 
 <h1>
@@ -29,6 +30,7 @@
 </h1>
 
 </header>
+
 
 
 
@@ -76,6 +78,7 @@ placeholder="Password"
 
 
 
+
 <section class="card">
 
 
@@ -96,6 +99,7 @@ type="text"
 id="mqttServer"
 placeholder="192.168.1.10"
 >
+
 
 
 
@@ -125,6 +129,7 @@ id="mqttUser"
 
 
 
+
 <label>
 Password
 </label>
@@ -138,6 +143,8 @@ id="mqttPassword"
 
 
 </section>
+
+
 
 
 
@@ -159,12 +166,11 @@ id="mqttPassword"
 📶 WiFi:
 
 <span id="wifiStatus">
-
 غير معروف
-
 </span>
 
 </p>
+
 
 
 
@@ -173,9 +179,7 @@ id="mqttPassword"
 📡 MQTT:
 
 <span id="mqttStatus">
-
 غير معروف
-
 </span>
 
 </p>
@@ -183,6 +187,8 @@ id="mqttPassword"
 
 
 </section>
+
+
 
 
 
@@ -201,11 +207,13 @@ id="mqttPassword"
 
 
 
+
 <button onclick="location.href='index.html'">
 
 ⬅ العودة
 
 </button>
+
 
 
 </section>
@@ -220,12 +228,80 @@ id="mqttPassword"
 
 
 
+
+
+
 <script src="script.js"></script>
+
+
 
 
 
 <script>
 
+
+// =====================================
+// Load Network Settings
+// =====================================
+
+function loadNetworkSettings()
+{
+
+
+fetch("/api/settings/network")
+
+
+.then(response => response.json())
+
+
+.then(data =>
+{
+
+
+document.getElementById("wifiSSID").value =
+data.wifiSSID || "";
+
+
+
+document.getElementById("mqttServer").value =
+data.mqttServer || "";
+
+
+
+document.getElementById("mqttPort").value =
+data.mqttPort || 1883;
+
+
+
+document.getElementById("mqttUser").value =
+data.mqttUser || "";
+
+
+
+})
+
+.catch(error =>
+{
+
+console.log(
+"Load Network Error",
+error
+);
+
+});
+
+
+}
+
+
+
+
+
+
+
+// =====================================
+// Save Network Settings
+// =====================================
 
 function saveNetworkSettings()
 {
@@ -234,28 +310,37 @@ function saveNetworkSettings()
 let data =
 {
 
+
 wifiSSID:
 document.getElementById("wifiSSID").value,
+
 
 
 wifiPassword:
 document.getElementById("wifiPassword").value,
 
 
+
 mqttServer:
 document.getElementById("mqttServer").value,
 
 
+
 mqttPort:
-document.getElementById("mqttPort").value,
+Number(
+document.getElementById("mqttPort").value
+),
+
 
 
 mqttUser:
 document.getElementById("mqttUser").value,
 
 
+
 mqttPassword:
 document.getElementById("mqttPassword").value
+
 
 
 };
@@ -263,7 +348,26 @@ document.getElementById("mqttPassword").value
 
 
 
-fetch("/api/settings/network",
+
+if(data.wifiSSID === "")
+{
+
+alert(
+"أدخل اسم الشبكة"
+);
+
+return;
+
+}
+
+
+
+
+
+
+
+fetch(
+"/api/settings/network",
 {
 
 method:"POST",
@@ -271,26 +375,84 @@ method:"POST",
 
 headers:
 {
-"Content-Type":"application/json"
+
+"Content-Type":
+"application/json"
+
 },
+
 
 
 body:
 JSON.stringify(data)
 
 
+
+})
+
+
+
+.then(response => response.json())
+
+
+
+.then(result =>
+{
+
+
+console.log(
+"Saved:",
+result
+);
+
+
+
+alert(
+"تم حفظ إعدادات الشبكة، سيتم إعادة تشغيل الجهاز"
+);
+
+
+
+})
+
+
+
+.catch(error =>
+{
+
+
+console.log(
+"Save Error:",
+error
+);
+
+
+
+alert(
+"فشل حفظ الإعدادات"
+);
+
+
+
 });
 
-
-
-alert("تم حفظ إعدادات الشبكة");
 
 
 }
 
 
 
+
+
+
+// تشغيل عند فتح الصفحة
+
+loadNetworkSettings();
+
+
+
 </script>
+
 
 
 </body>

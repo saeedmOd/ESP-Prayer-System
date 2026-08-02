@@ -5,14 +5,11 @@
 #include "storage.h"
 
 
-
 // =================================
 // Global Settings Object
 // =================================
 
 SystemSettings settings;
-
-
 
 
 
@@ -27,17 +24,20 @@ void settings_load()
 
 
 
+    // =============================
     // Device
+    // =============================
 
     settings.deviceName =
-        storage_get_string(
-            "device.name",
+        storage_get_device_name(
             DEVICE_NAME_DEFAULT
         );
 
 
 
+    // =============================
     // WiFi
+    // =============================
 
     settings.wifiEnable =
         storage_get_bool(
@@ -46,18 +46,10 @@ void settings_load()
         );
 
 
-    settings.wifiSSID =
-        storage_get_string(
-            "wifi.ssid",
-            ""
-        );
+    settings.wifiSSID = storage_get_wifi_ssid("");
 
 
-    settings.wifiPassword =
-        storage_get_string(
-            "wifi.password",
-            ""
-        );
+    settings.wifiPassword = storage_get_wifi_password("");
 
 
     settings.wifiAutoReconnect =
@@ -69,8 +61,9 @@ void settings_load()
 
 
 
-
+    // =============================
     // MQTT
+    // =============================
 
     settings.mqttEnable =
         storage_get_bool(
@@ -116,9 +109,9 @@ void settings_load()
 
 
 
-
-
+    // =============================
     // OTA
+    // =============================
 
     settings.otaEnable =
         storage_get_bool(
@@ -130,7 +123,7 @@ void settings_load()
     settings.otaHostname =
         storage_get_string(
             "ota.hostname",
-            "ESP-Prayer-System"
+            DEVICE_NAME_DEFAULT
         );
 
 
@@ -143,54 +136,50 @@ void settings_load()
 
 
 
-
-
+    // =============================
     // Location
+    // =============================
 
     settings.city =
-        storage_get_string(
-            "location.city",
-            "Al Ain"
+        storage_get_city(
+            DEFAULT_CITY
         );
 
 
     settings.country =
-        storage_get_string(
-            "location.country",
-            "UAE"
+        storage_get_country(
+            DEFAULT_COUNTRY
         );
 
 
     settings.latitude =
-        storage_get_float(
-            "location.latitude",
-            24.2075
+        storage_get_latitude(
+            DEFAULT_LATITUDE
         );
 
 
     settings.longitude =
-        storage_get_float(
-            "location.longitude",
-            55.7447
+        storage_get_longitude(
+            DEFAULT_LONGITUDE
         );
 
 
     settings.timezone =
         storage_get_int(
             "location.timezone",
-            3
+            DEFAULT_TIMEZONE
         );
 
 
 
 
 
-
+    // =============================
     // Prayer
+    // =============================
 
     settings.calculationMethod =
-        storage_get_string(
-            "prayer.calculation_method",
+        storage_get_calculation_method(
             "UmmAlQura"
         );
 
@@ -209,18 +198,38 @@ void settings_load()
         );
 
 
+
     settings.timeFormat =
-        storage_get_string(
-            "prayer.time_format",
-            "24H"
+        storage_get_time_format(
+            DEFAULT_TIME_FORMAT
         );
 
 
+    settings.fajrOffset =
+        storage_get_fajr_offset(0);
+
+
+    settings.dhuhrOffset =
+        storage_get_dhuhr_offset(0);
+
+
+    settings.asrOffset =
+        storage_get_asr_offset(0);
+
+
+    settings.maghribOffset =
+        storage_get_maghrib_offset(0);
+
+
+    settings.ishaOffset =
+        storage_get_isha_offset(0);
 
 
 
 
+    // =============================
     // Audio
+    // =============================
 
     settings.audioEnable =
         storage_get_bool(
@@ -230,24 +239,25 @@ void settings_load()
 
 
     settings.volume =
-        storage_get_int(
-            "audio.volume",
-            25
+        storage_get_volume(
+            DEFAULT_VOLUME
         );
 
 
     settings.athanFolder =
-        storage_get_int(
-            "audio.athan_folder",
-            1
-        );
+        storage_get_athan_folder(1);
+
+
+    settings.athanFile =
+        storage_get_athan_file(1);
 
 
     settings.surahFolder =
-        storage_get_int(
-            "audio.surah_folder",
-            2
-        );
+        storage_get_surah_folder(2);
+
+
+    settings.surahFile =
+        storage_get_surah_file(1);
 
 
     settings.shortSurahFolder =
@@ -267,8 +277,9 @@ void settings_load()
 
 
 
-
+    // =============================
     // Display
+    // =============================
 
     settings.displayEnable =
         storage_get_bool(
@@ -299,13 +310,67 @@ void settings_load()
 
 
 
+    settings_apply();
+
+
+
     Serial.println("Settings Loaded");
 
 }
 
 
 
+// =================================
+// Validate Settings
+// =================================
 
+void settings_apply()
+{
+
+    // Volume
+
+    if(settings.volume < 0)
+        settings.volume = 0;
+
+
+    if(settings.volume > 30)
+        settings.volume = 30;
+
+
+
+    // Time format
+
+    settings.timeFormat.toUpperCase();
+
+
+    if(
+        settings.timeFormat != "12H" &&
+        settings.timeFormat != "24H"
+    )
+    {
+        settings.timeFormat = "24H";
+    }
+
+
+
+    // MQTT Port
+
+    if(settings.mqttPort <=0)
+        settings.mqttPort = 1883;
+
+
+
+    // Brightness
+
+    if(settings.brightness < 0)
+        settings.brightness = 0;
+
+
+    if(settings.brightness >100)
+        settings.brightness =100;
+
+
+}
 
 
 
@@ -334,26 +399,129 @@ void settings_init()
 
 
 
-
-
-
-
 // =================================
-// Save
+// Save All Settings
 // =================================
 
 void settings_save()
 {
 
+    Serial.println(
+        "Saving Settings..."
+    );
+
+
+    settings_apply();
+
+
+
+    storage_set_device_name(
+        settings.deviceName
+    );
+
+    storage_set_bool(
+        "wifi.enable",
+        settings.wifiEnable
+    );
+    storage_set_wifi(settings.wifiSSID, settings.wifiPassword);
+
+    storage_set_bool(
+        "mqtt.enable",
+        settings.mqttEnable
+    );
+
+
     storage_set_string(
-        "prayer.time_format",
-        settings.timeFormat
+        "mqtt.server",
+        settings.mqttServer
     );
 
 
     storage_set_int(
-        "audio.volume",
+        "mqtt.port",
+        settings.mqttPort
+    );
+
+
+
+    storage_set_location(
+        settings.latitude,
+        settings.longitude
+    );
+
+
+
+    storage_set_city(
+        settings.city
+    );
+
+
+    storage_set_country(
+        settings.country
+    );
+
+
+
+    storage_set_time_format(
+        settings.timeFormat
+    );
+
+
+
+    storage_set_calculation_method(
+        settings.calculationMethod
+    );
+
+
+
+    storage_set_volume(
         settings.volume
+    );
+
+
+    storage_set_athan_folder(
+        settings.athanFolder
+    );
+
+
+    storage_set_athan_file(
+        settings.athanFile
+    );
+
+
+    storage_set_surah_folder(
+        settings.surahFolder
+    );
+
+
+    storage_set_surah_file(
+        settings.surahFile
+    );
+
+
+
+    storage_set_fajr_offset(
+        settings.fajrOffset
+    );
+
+
+    storage_set_dhuhr_offset(
+        settings.dhuhrOffset
+    );
+
+
+    storage_set_asr_offset(
+        settings.asrOffset
+    );
+
+
+    storage_set_maghrib_offset(
+        settings.maghribOffset
+    );
+
+
+    storage_set_isha_offset(
+        settings.ishaOffset
     );
 
 
@@ -368,9 +536,6 @@ void settings_save()
 
 
 
-
-
-
 // =================================
 // Reset
 // =================================
@@ -380,60 +545,100 @@ void settings_reset()
 
     storage_reset();
 
-
-    Serial.println(
-        "Settings Reset"
-    );
-
 }
 
 
 
 
-
-
-
-
 // =================================
-// Helpers
+// Getters
 // =================================
+
+String get_device_name()
+{
+    return settings.deviceName;
+}
+
+
 
 String get_time_format()
 {
-
     return settings.timeFormat;
-
 }
-
-
 
 
 
 int get_volume()
 {
-
     return settings.volume;
-
 }
-
-
-
-
-
-bool mqtt_is_enabled()
-{
-
-    return settings.mqttEnable;
-
-}
-
-
 
 
 
 bool wifi_is_enabled()
 {
-
     return settings.wifiEnable;
+}
 
+
+
+bool mqtt_is_enabled()
+{
+    return settings.mqttEnable;
+}
+
+
+
+bool audio_is_enabled()
+{
+    return settings.audioEnable;
+}
+
+
+
+String get_city()
+{
+    return settings.city;
+}
+
+
+
+String get_country()
+{
+    return settings.country;
+}
+
+
+
+float get_latitude()
+{
+    return settings.latitude;
+}
+
+
+
+float get_longitude()
+{
+    return settings.longitude;
+}
+
+
+
+int get_timezone()
+{
+    return settings.timezone;
+}
+
+
+
+String get_calculation_method()
+{
+    return settings.calculationMethod;
+}
+
+
+
+String get_asr_method()
+{
+    return settings.asrMethod;
 }

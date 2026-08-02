@@ -1,6 +1,6 @@
 #include "mqtt_manager.h"
 
-const char* mqtt_server = "192.168.0.182"; // IP خادم MQTT لديك
+const char* mqtt_server = "192.168.0.100"; // IP خادم MQTT لديك
 const int mqtt_port = 1883;
 
 WiFiClient espClient;

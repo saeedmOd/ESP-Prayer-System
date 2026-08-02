@@ -3,43 +3,55 @@
 // =====================================
 
 
-// تحديث الساعة محلياً (مؤقت)
-// لاحقاً سيتم استبداله بوقت ESP الحقيقي
+// =====================================
+// Clock
+// =====================================
+
 function updateClock()
 {
 
     let now = new Date();
 
 
-    let hours = String(now.getHours()).padStart(2,'0');
-
-    let minutes = String(now.getMinutes()).padStart(2,'0');
-
-    let seconds = String(now.getSeconds()).padStart(2,'0');
+    let hours =
+        String(now.getHours()).padStart(2,'0');
 
 
-
-    document.getElementById("time").innerHTML =
-        `${hours}:${minutes}:${seconds}`;
-
+    let minutes =
+        String(now.getMinutes()).padStart(2,'0');
 
 
-    let date = now.toLocaleDateString(
-        "ar-EG",
-        {
-            weekday:"long",
-            year:"numeric",
-            month:"long",
-            day:"numeric"
-        }
+    let seconds =
+        String(now.getSeconds()).padStart(2,'0');
+
+
+
+    setText(
+        "time",
+        `${hours}:${minutes}:${seconds}`
     );
 
 
-    document.getElementById("date").innerHTML =
-        date;
+
+    let date =
+        now.toLocaleDateString(
+            "ar-EG",
+            {
+                weekday:"long",
+                year:"numeric",
+                month:"long",
+                day:"numeric"
+            }
+        );
+
+
+
+    setText(
+        "date",
+        date
+    );
 
 }
-
 
 
 
@@ -48,7 +60,20 @@ setInterval(
     1000
 );
 
+
 updateClock();
+
+
+
+
+
+// =====================================
+// Countdown Global Timer
+// =====================================
+
+let countdownTimer = null;
+
+let countdownSeconds = 0;
 
 
 
@@ -71,32 +96,114 @@ function loadStatus()
     {
 
 
-        if(data.wifi)
+        // =========================
+        // Prayer Times
+        // =========================
+
+        setText("fajr", data.fajr);
+
+        setText("dhuhr", data.dhuhr);
+
+        setText("asr", data.asr);
+
+        setText("maghrib", data.maghrib);
+
+        setText("isha", data.isha);
+
+
+
+        // =========================
+        // Next Prayer
+        // =========================
+
+        setText(
+            "nextPrayer",
+            data.nextPrayer
+        );
+
+
+        setText(
+            "nextPrayerTime",
+            data.nextPrayerTime
+        );
+
+
+
+// =========================
+// Countdown
+// =========================
+
+if (data.countdown !== undefined)
+{
+
+    console.log(
+        "Countdown from ESP:",
+        data.countdown
+    );
+
+
+    let newSeconds =
+        Number(data.countdown);
+
+
+
+    // أول مرة أو عند تغير القيمة من ESP
+    if (
+        countdownTimer === null ||
+        Math.abs(newSeconds - countdownSeconds) > 10
+    )
+    {
+
+        countdownSeconds =
+            newSeconds;
+
+
+
+        if(countdownTimer)
         {
-            document.getElementById("wifi").innerHTML =
-                data.wifi;
+            clearInterval(
+                countdownTimer
+            );
         }
 
 
-        if(data.mqtt)
-        {
-            document.getElementById("mqtt").innerHTML =
-                data.mqtt;
-        }
+
+        updateCountdown();
 
 
-        if(data.volume)
-        {
-            document.getElementById("volume").innerHTML =
-                data.volume;
-        }
+
+        countdownTimer =
+            setInterval(
+                updateCountdown,
+                1000
+            );
+
+    }
+
+}
 
 
-        if(data.nextPrayer)
-        {
-            document.getElementById("nextPrayer").innerHTML =
-                data.nextPrayer;
-        }
+
+        // =========================
+        // System Status
+        // =========================
+
+        setText(
+            "wifi",
+            data.wifi ? "متصل" : "غير متصل"
+        );
+
+
+        setText(
+            "mqtt",
+            data.mqtt ? "متصل" : "غير متصل"
+        );
+
+
+        setText(
+            "volume",
+            data.volume
+        );
 
 
     })
@@ -119,6 +226,102 @@ function loadStatus()
 
 
 
+
+
+// =====================================
+// Countdown Update
+// =====================================
+
+function updateCountdown()
+{
+
+    if(countdownSeconds <= 0)
+    {
+
+        setText(
+            "countdown",
+            "حان الآن وقت الصلاة"
+        );
+
+        return;
+
+    }
+
+
+
+    let hours =
+        Math.floor(
+            countdownSeconds / 3600
+        );
+
+
+
+    let minutes =
+        Math.floor(
+            (countdownSeconds % 3600) / 60
+        );
+
+
+
+    let seconds =
+        countdownSeconds % 60;
+
+
+
+    setText(
+        "countdown",
+        "بعد " +
+        String(hours).padStart(2,'0')
+        +
+        ":" +
+        String(minutes).padStart(2,'0')
+        +
+        ":" +
+        String(seconds).padStart(2,'0')
+    );
+
+
+
+    countdownSeconds--;
+
+}
+
+
+// =====================================
+// Safe Text Update
+// =====================================
+
+function setText(
+    id,
+    value
+)
+{
+
+    let element =
+        document.getElementById(id);
+
+
+
+    if(
+        element &&
+        value !== undefined &&
+        value !== null
+    )
+    {
+
+        element.innerHTML =
+            value;
+
+    }
+
+}
+
+
+
+
+
+
+
 // =====================================
 // Test Azan
 // =====================================
@@ -126,13 +329,12 @@ function loadStatus()
 function testAzan()
 {
 
-
-    fetch("/api/test/azan",
-    {
-
-        method:"POST"
-
-    })
+    fetch(
+        "/api/test/azan",
+        {
+            method:"POST"
+        }
+    )
 
 
     .then(() =>
@@ -144,7 +346,6 @@ function testAzan()
 
     })
 
-
     .catch(() =>
     {
 
@@ -154,8 +355,9 @@ function testAzan()
 
     });
 
-
 }
+
+
 
 
 
@@ -168,27 +370,27 @@ function testAzan()
 function saveVolume(value)
 {
 
-
-    fetch("/api/settings/volume",
-    {
-
-        method:"POST",
-
-        headers:
+    fetch(
+        "/api/settings/volume",
         {
-            "Content-Type":
-            "application/json"
-        },
+
+            method:"POST",
+
+            headers:
+            {
+                "Content-Type":
+                "application/json"
+            },
 
 
-        body:
-        JSON.stringify(
-        {
-            volume:value
-        })
+            body:
+            JSON.stringify(
+            {
+                volume:value
+            })
 
-    });
-
+        }
+    );
 
 }
 
@@ -196,14 +398,17 @@ function saveVolume(value)
 
 
 
+
+
 // =====================================
-// Load Every 5 Seconds
+// Refresh Status
 // =====================================
 
 setInterval(
     loadStatus,
     5000
 );
+
 
 
 loadStatus();

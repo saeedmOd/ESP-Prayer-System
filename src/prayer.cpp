@@ -3,52 +3,22 @@
 #include <Arduino.h>
 
 #include "PrayerTimes.h"
-
+#include "settings.h"
+#include "storage.h"
+#include "time_manager.h"
 #include "dfplayer.h"
 
-#include "display.h"
 
-#include "time_manager.h"
+// =====================================
+// Prayer Data
+// =====================================
 
-#include "storage.h"
+static float prayerTimes[6];
 
-void calculate_prayer_times();
-void load_prayer_settings();
-
-// ================================
-// Variables
-// ================================
+static int prayerMinutes[6];
 
 
-float latitude  = 24.2075;
-float longitude = 55.7447;
-
-
-
-float prayerTimes[6];
-
-
-int prayerTimeMinutes[6];
-
-
-
-const char* prayerNames[] =
-{
-    "Fajr",
-    "Sunrise",
-    "Dhuhr",
-    "Asr",
-    "Maghrib",
-    "Isha"
-};
-
-
-
-int nextPrayerIndex = -1;
-
-
-
-bool azanPlayed[6] =
+static bool azanPlayed[6] =
 {
     false,
     false,
@@ -60,39 +30,49 @@ bool azanPlayed[6] =
 
 
 
+static const char* prayerNames[6] =
+{
+    "Fajr",
+    "Sunrise",
+    "Dhuhr",
+    "Asr",
+    "Maghrib",
+    "Isha"
+};
 
-// ================================
-// Load Prayer Settings
-// ================================
 
-void load_prayer_settings()
+
+
+// =====================================
+// Apply Calculation Method
+// =====================================
+
+static void apply_calculation_method()
 {
 
-
-    latitude =
-        storage_get_float(
-            "location.latitude",
-            24.2075
-        );
-
-
-
-    longitude =
-        storage_get_float(
-            "location.longitude",
-            55.7447
-        );
+    if(settings.calculationMethod == "MWL")
+    {
+        setCalcMethod(MWL);
+    }
+    else if(settings.calculationMethod == "Egypt")
+    {
+        setCalcMethod(Egyptian);
+    }
+    else
+    {
+        setCalcMethod(UmmAlQura);
+    }
 
 
 
-    Serial.println("Prayer Location:");
-
-    Serial.print("Latitude: ");
-    Serial.println(latitude);
-
-
-    Serial.print("Longitude: ");
-    Serial.println(longitude);
+    if(settings.asrMethod == "Hanafi")
+    {
+        setAsrMethod(Hanafi);
+    }
+    else
+    {
+        setAsrMethod(Shafii);
+    }
 
 }
 
@@ -101,74 +81,62 @@ void load_prayer_settings()
 
 
 
-// ================================
-// Init
-// ================================
+// =====================================
+// Calculate Prayer Times
+// =====================================
 
-void prayer_init()
+static void calculate_prayers()
 {
-
-    Serial.println("Prayer System Init");
-
-
-
-    load_prayer_settings();
-
-
-
-
-    // Default Calculation
-
-    setCalcMethod(
-        MWL
-    );
-
-
-    setAsrMethod(
-        Shafii
-    );
-
-
-    setHighLatsMethod(
-        AngleBased
-    );
-
-
-
-    calculate_prayer_times();
-
-
-}
-
-
-
-
-
-
-
-
-// ================================
-// Calculate Times
-// ================================
-
-void calculate_prayer_times()
-{
-
 
     struct tm timeinfo;
 
 
-
     if(!getLocalTime(&timeinfo))
     {
-
         Serial.println(
-            "Time not ready"
+            "Time not available"
         );
 
         return;
-
     }
+
+
+
+    apply_calculation_method();
+
+
+
+    Serial.println(
+        "===== PRAYER DEBUG ====="
+    );
+
+
+    Serial.print("Date: ");
+    Serial.print(timeinfo.tm_year + 1900);
+    Serial.print("-");
+    Serial.print(timeinfo.tm_mon + 1);
+    Serial.print("-");
+    Serial.println(timeinfo.tm_mday);
+
+
+
+    Serial.print("Latitude: ");
+    Serial.println(settings.latitude);
+
+
+
+    Serial.print("Longitude: ");
+    Serial.println(settings.longitude);
+
+
+
+    Serial.print("Timezone: ");
+    Serial.println(settings.timezone);
+
+
+
+    Serial.print("Method: ");
+    Serial.println(settings.calculationMethod);
 
 
 
@@ -181,49 +149,146 @@ void calculate_prayer_times()
 
         timeinfo.tm_mday,
 
-        latitude,
+        settings.latitude,
 
-        longitude,
+        settings.longitude,
 
-        4,
+        settings.timezone,
 
         prayerTimes
-
     );
 
 
 
 
+    // =====================================
+    // Debug Raw Values
+    // =====================================
 
-    for(int i = 0; i < 6; i++)
+    Serial.println(
+        "RAW PRAYER TIMES:"
+    );
+
+
+    for(int i=0;i<6;i++)
     {
 
+        Serial.print(
+            prayerNames[i]
+        );
 
-        int h;
 
-        int m;
+        Serial.print(
+            " = "
+        );
+
+
+        Serial.println(
+            prayerTimes[i],
+            4
+        );
+
+    }
+
+
+
+
+
+    int offsets[6];
+
+
+    offsets[0] =
+        settings.fajrOffset;
+
+
+    offsets[1] =
+        0;
+
+
+    offsets[2] =
+        settings.dhuhrOffset;
+
+
+    offsets[3] =
+        settings.asrOffset;
+
+
+    offsets[4] =
+        settings.maghribOffset;
+
+
+    offsets[5] =
+        settings.ishaOffset;
+
+
+
+
+
+    for(int i=0;i<6;i++)
+    {
+
+        int hour;
+        int minute;
 
 
 
         getHourMinute(
-
             prayerTimes[i],
-
-            h,
-
-            m
-
+            hour,
+            minute
         );
 
 
 
-        prayerTimeMinutes[i] =
-            h * 60 + m;
+        Serial.print(
+            prayerNames[i]
+        );
 
+
+        Serial.print(
+            " Converted = "
+        );
+
+
+        Serial.print(
+            hour
+        );
+
+
+        Serial.print(
+            ":"
+        );
+
+
+        Serial.println(
+            minute
+        );
+
+
+
+
+        prayerMinutes[i] =
+            (hour * 60)
+            +
+            minute
+            +
+            offsets[i];
+
+
+
+        if(prayerMinutes[i] >= 1440)
+        {
+            prayerMinutes[i] -= 1440;
+        }
+
+
+        if(prayerMinutes[i] < 0)
+        {
+            prayerMinutes[i] += 1440;
+        }
 
 
     }
-
 
 
 
@@ -232,38 +297,69 @@ void calculate_prayer_times()
         "Prayer Times Updated"
     );
 
+
+}
+// =====================================
+// Init
+// =====================================
+
+void prayer_init()
+{
+
+    Serial.println(
+        "Prayer Init"
+    );
+
+
+    calculate_prayers();
+
+}
+
+
+
+// =====================================
+// Reload
+// =====================================
+
+void prayer_reload()
+{
+
+    for(int i=0;i<6;i++)
+    {
+        azanPlayed[i] = false;
+    }
+
+
+
+    calculate_prayers();
+
 }
 
 
 
 
 
-
-
-
-
-// ================================
+// =====================================
 // Main Loop
-// ================================
+// =====================================
 
 void prayer_loop()
 {
 
-
-    static unsigned long lastUpdate = 0;
+    static unsigned long lastCheck = 0;
 
 
 
     if(
-        millis() - lastUpdate < 10000
+        millis() - lastCheck < 30000
     )
-
+    {
         return;
+    }
 
 
 
-    lastUpdate = millis();
-
+    lastCheck = millis();
 
 
 
@@ -277,144 +373,77 @@ void prayer_loop()
 
 
 
-
     if(hour < 0)
         return;
 
 
 
+    int now =
+        hour * 60 +
+        minute;
 
 
-    int current =
-        hour * 60 + minute;
-
-
-
-
-
-
-
-    // ================================
-    // Recalculate Daily
-    // ================================
 
 
     static int lastDay = -1;
 
 
-
-String currentDate =
-    get_current_date();
+    struct tm timeinfo;
 
 
 
-static String lastDate = "";
+    if(getLocalTime(&timeinfo))
+    {
+
+        if(timeinfo.tm_mday != lastDay)
+        {
+
+            lastDay =
+                timeinfo.tm_mday;
+
+
+            prayer_reload();
+
+        }
+
+    }
 
 
 
-if(
-    lastDate != currentDate
-)
-{
 
-    calculate_prayer_times();
 
 
     for(int i=0;i<6;i++)
     {
-        azanPlayed[i]=false;
-    }
 
 
+        // لا يوجد أذان للشروق
 
-    lastDate = currentDate;
-
-}
-
-
-
-
-
-
-
-
-
-    // ================================
-    // Next Prayer
-    // ================================
-
-
-    nextPrayerIndex = -1;
-
-
-
-
-    for(
-        int i=0;
-        i<6;
-        i++
-    )
-    {
-
-
-        if(
-            prayerTimeMinutes[i] > current
-        )
-        {
-
-            nextPrayerIndex=i;
-
-            break;
-
-        }
-
-
-    }
-
-
-
-
-
-    if(nextPrayerIndex==-1)
-
-        nextPrayerIndex=0;
-
-
-
-
-
-
-
-
-
-    // ================================
-    // Azan Check
-    // ================================
-
-
-    for(
-        int i=0;
-        i<6;
-        i++
-    )
-    {
-
-
-        // Skip Sunrise
-
-        if(i==1)
+        if(i == 1)
             continue;
 
 
 
 
-
         if(
-            prayerTimeMinutes[i]==current
+            now >= prayerMinutes[i]
+            &&
+            now <= prayerMinutes[i]+1
             &&
             !azanPlayed[i]
         )
         {
+
+
+            azanPlayed[i] = true;
+
+
+
+            play_folder_file(
+                settings.athanFolder,
+                settings.athanFile
+            );
+
 
 
             Serial.print(
@@ -428,26 +457,187 @@ if(
             );
 
 
-
-
-            playAzan(
-                1,
-                1
-            );
-
-
-
-            azanPlayed[i]=true;
-
-
-
         }
-
 
 
     }
 
 
+}
+
+
+
+
+
+// =====================================
+// Get Prayer Name
+// =====================================
+
+String get_prayer_name(
+    int index
+)
+{
+
+    if(index < 0 || index > 5)
+        return "";
+
+
+
+    return String(
+        prayerNames[index]
+    );
+
+}
+
+
+
+
+
+
+// =====================================
+// Format Prayer Time
+// =====================================
+
+String get_prayer_time(
+    int index
+)
+{
+
+
+    if(index < 0 || index > 5)
+        return "--:--";
+
+
+
+    int hour =
+        prayerMinutes[index] / 60;
+
+
+
+    int minute =
+        prayerMinutes[index] % 60;
+
+
+
+
+    char buffer[16];
+
+
+
+    String format =
+        settings.timeFormat;
+
+
+
+    format.toUpperCase();
+
+
+
+
+    if(format == "12H")
+    {
+
+
+        String period;
+
+
+
+        int displayHour =
+            hour % 12;
+
+
+
+        if(displayHour == 0)
+        {
+            displayHour = 12;
+        }
+
+
+
+        if(hour >= 12)
+        {
+            period = "PM";
+        }
+        else
+        {
+            period = "AM";
+        }
+
+
+
+        snprintf(
+            buffer,
+            sizeof(buffer),
+            "%02d:%02d %s",
+            displayHour,
+            minute,
+            period.c_str()
+        );
+
+
+    }
+    else
+    {
+
+
+        snprintf(
+            buffer,
+            sizeof(buffer),
+            "%02d:%02d",
+            hour,
+            minute
+        );
+
+
+    }
+
+
+
+
+    return String(buffer);
+
+}
+
+
+
+
+
+
+// =====================================
+// Next Prayer Name
+// =====================================
+
+String get_next_prayer_name()
+{
+
+
+    int now =
+        get_current_hour() * 60
+        +
+        get_current_minute();
+
+
+
+
+    for(int i=0;i<6;i++)
+    {
+
+
+        if(prayerMinutes[i] > now)
+        {
+
+            return String(
+                prayerNames[i]
+            );
+
+        }
+
+
+    }
+
+
+
+    return "Fajr";
 
 }
 
@@ -457,23 +647,100 @@ if(
 
 
 
+// =====================================
+// Next Prayer Time
+// =====================================
 
-
-// ================================
-// Next Prayer Name
-// ================================
-
-String get_next_prayer_name()
+String get_next_prayer_time()
 {
 
-    if(
-        nextPrayerIndex >=0
-    )
 
-        return prayerNames[nextPrayerIndex];
+    int now =
+        get_current_hour() * 60
+        +
+        get_current_minute();
 
 
 
-    return "---";
+
+    for(int i=0;i<6;i++)
+    {
+
+
+        if(prayerMinutes[i] > now)
+        {
+
+            return get_prayer_time(i);
+
+        }
+
+
+    }
+
+
+
+    return get_prayer_time(0);
+
+}
+
+
+
+
+
+
+
+// =====================================
+// Countdown Minutes
+// =====================================
+
+int get_prayer_countdown()
+{
+
+    Serial.println("===== COUNTDOWN DEBUG =====");
+
+    Serial.print("Current: ");
+    Serial.print(get_current_hour());
+    Serial.print(":");
+    Serial.println(get_current_minute());
+
+
+    for(int i=0;i<6;i++)
+    {
+        Serial.print(prayerNames[i]);
+        Serial.print(" = ");
+        Serial.println(prayerMinutes[i]);
+    }
+
+
+
+    int now =
+        get_current_hour()*60
+        +
+        get_current_minute();
+
+
+
+
+    for(int i=0;i<6;i++)
+    {
+
+        if(prayerMinutes[i] > now)
+        {
+
+            return
+                prayerMinutes[i]
+                -
+                now;
+
+        }
+
+    }
+
+
+
+    return
+        (1440-now)
+        +
+        prayerMinutes[0];
 
 }

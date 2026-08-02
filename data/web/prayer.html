@@ -148,7 +148,7 @@ step="0.0001"
 </label>
 
 
-<select id="time_format">
+<select id="timeFormat">
 
 
 <option value="24H">
@@ -290,10 +290,8 @@ value="0"
 // Load Settings
 // ================================
 
-
 function loadPrayerSettings()
 {
-
 
 fetch("/api/settings/prayer")
 
@@ -305,66 +303,61 @@ fetch("/api/settings/prayer")
 {
 
 
-console.log(data);
+console.log(
+"Loaded Prayer Settings:",
+data
+);
 
 
 
-if(data.city)
-city.value=data.city;
+document.getElementById("city").value =
+data.city || "";
+
+
+document.getElementById("country").value =
+data.country || "";
+
+
+document.getElementById("latitude").value =
+data.latitude || "";
+
+
+document.getElementById("longitude").value =
+data.longitude || "";
+
+
+document.getElementById("method").value =
+data.method || data.calculation_method || "UmmAlQura";
+
+
+document.getElementById("timeFormat").value =
+data.time_format || data.timeFormat || "24H";
 
 
 
-if(data.country)
-country.value=data.country;
+document.getElementById("fajr_offset").value =
+data.fajr_offset ?? 0;
 
 
-
-if(data.latitude)
-latitude.value=data.latitude;
-
+document.getElementById("dhuhr_offset").value =
+data.dhuhr_offset ?? 0;
 
 
-if(data.longitude)
-longitude.value=data.longitude;
+document.getElementById("asr_offset").value =
+data.asr_offset ?? 0;
 
 
-
-if(data.method)
-method.value=data.method;
-
+document.getElementById("maghrib_offset").value =
+data.maghrib_offset ?? 0;
 
 
-if(data.time_format)
-time_format.value=data.time_format;
-
-
-
-if(data.fajr_offset)
-fajr_offset.value=data.fajr_offset;
-
-
-
-if(data.dhuhr_offset)
-dhuhr_offset.value=data.dhuhr_offset;
-
-
-
-if(data.asr_offset)
-asr_offset.value=data.asr_offset;
-
-
-
-if(data.maghrib_offset)
-maghrib_offset.value=data.maghrib_offset;
-
-
-
-if(data.isha_offset)
-isha_offset.value=data.isha_offset;
+document.getElementById("isha_offset").value =
+data.isha_offset ?? 0;
 
 
 
 })
+
 
 .catch(error =>
 {
@@ -384,13 +377,9 @@ error
 
 
 
-
-
-
 // ================================
 // Save Settings
 // ================================
-
 
 function savePrayerSettings()
 {
@@ -401,47 +390,62 @@ let data =
 
 
 city:
-city.value,
+document.getElementById("city").value,
 
 
 country:
-country.value,
+document.getElementById("country").value,
 
 
 latitude:
-parseFloat(latitude.value),
+parseFloat(
+document.getElementById("latitude").value
+),
 
 
 longitude:
-parseFloat(longitude.value),
+parseFloat(
+document.getElementById("longitude").value
+),
 
 
 method:
-method.value,
+document.getElementById("method").value,
 
 
 time_format:
-time_format.value,
+document.getElementById("timeFormat").value,
+
 
 
 fajr_offset:
-parseInt(fajr_offset.value),
+parseInt(
+document.getElementById("fajr_offset").value
+),
 
 
 dhuhr_offset:
-parseInt(dhuhr_offset.value),
+parseInt(
+document.getElementById("dhuhr_offset").value
+),
 
 
 asr_offset:
-parseInt(asr_offset.value),
+parseInt(
+document.getElementById("asr_offset").value
+),
 
 
 maghrib_offset:
-parseInt(maghrib_offset.value),
+parseInt(
+document.getElementById("maghrib_offset").value
+),
 
 
 isha_offset:
-parseInt(isha_offset.value)
+parseInt(
+document.getElementById("isha_offset").value
+)
 
 
 };
@@ -449,19 +453,23 @@ parseInt(isha_offset.value)
 
 
 
+console.log(
+"Sending:",
+data
+);
+
+
+
+
 fetch("/api/settings/prayer",
 {
 
-
 method:"POST",
-
 
 headers:
 {
-
 "Content-Type":
 "application/json"
-
 },
 
 
@@ -493,14 +501,16 @@ alert(
 "❌ فشل الحفظ"
 );
 
-
 }
 
 
 })
 
+
 .catch(error =>
 {
+
+console.log(error);
 
 
 alert(
@@ -508,14 +518,10 @@ alert(
 );
 
 
-console.log(error);
-
-
 });
 
 
 }
-
 
 
 

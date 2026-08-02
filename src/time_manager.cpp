@@ -7,18 +7,13 @@
 #include "storage.h"
 
 
+
 // =================================
-// NTP Configuration
+// NTP Servers
 // =================================
 
 const char* ntpServer1 = "pool.ntp.org";
 const char* ntpServer2 = "time.nist.gov";
-
-
-// UAE UTC +4
-const long gmtOffset_sec = 4 * 3600;
-
-const int daylightOffset_sec = 0;
 
 
 
@@ -36,15 +31,22 @@ void time_init()
     Serial.println("Initializing Time Manager");
 
 
+    long gmtOffset_sec = settings.timezone * 3600L;
+
+
     configTime(
         gmtOffset_sec,
-        daylightOffset_sec,
+        0, // daylightOffset_sec is 0
         ntpServer1,
         ntpServer2
     );
 
 
-    Serial.println("Waiting for NTP time...");
+
+    Serial.println(
+        "Waiting for NTP time..."
+    );
+
 
 
     struct tm timeinfo;
@@ -53,7 +55,12 @@ void time_init()
     int retry = 0;
 
 
-    while(!getLocalTime(&timeinfo) && retry < 20)
+
+    while(
+        !getLocalTime(&timeinfo)
+        &&
+        retry < 30
+    )
     {
 
         Serial.print(".");
@@ -66,16 +73,24 @@ void time_init()
 
 
 
-    if(retry < 20)
+    if(
+        getLocalTime(&timeinfo)
+    )
     {
 
         timeReady = true;
 
+
         Serial.println();
 
-        Serial.println("Time Synced");
+        Serial.println(
+            "Time Synced"
+        );
 
-        Serial.println(get_current_time());
+
+        Serial.println(
+            get_current_time()
+        );
 
     }
     else
@@ -83,7 +98,12 @@ void time_init()
 
         Serial.println();
 
-        Serial.println("Time Sync Failed");
+        Serial.println(
+            "Time Sync Failed"
+        );
+
+
+        timeReady = false;
 
     }
 
@@ -93,8 +113,9 @@ void time_init()
 
 
 
+
 // =================================
-// Update
+// Update Time
 // =================================
 
 void time_update()
@@ -103,9 +124,19 @@ void time_update()
     struct tm timeinfo;
 
 
-    if(getLocalTime(&timeinfo))
+    if(
+        getLocalTime(&timeinfo)
+    )
     {
+
         timeReady = true;
+
+    }
+    else
+    {
+
+        timeReady = false;
+
     }
 
 }
@@ -114,8 +145,10 @@ void time_update()
 
 
 
+
+
 // =================================
-// Get Time Format
+// Check 12 Hour Format
 // =================================
 
 bool is_12_hour_format()
@@ -128,13 +161,102 @@ bool is_12_hour_format()
         );
 
 
-    if(format == "12H")
+    format.toUpperCase();
+
+
+
+    if(
+        format == "12"
+        ||
+        format == "12H"
+    )
+    {
+
         return true;
+
+    }
+
 
 
     return false;
 
 }
+
+
+
+
+
+
+
+// =================================
+// Format Hour
+// =================================
+
+int format_hour(
+    int hour
+)
+{
+
+    if(
+        !is_12_hour_format()
+    )
+    {
+        return hour;
+    }
+
+
+
+    hour =
+        hour % 12;
+
+
+
+    if(hour == 0)
+    {
+        hour = 12;
+    }
+
+
+
+    return hour;
+
+}
+
+
+
+
+
+
+
+
+// =================================
+// AM / PM
+// =================================
+
+String get_am_pm(
+    int hour
+)
+{
+
+    if(
+        !is_12_hour_format()
+    )
+    {
+        return "";
+    }
+
+
+
+    if(hour >= 12)
+    {
+        return " PM";
+    }
+
+
+    return " AM";
+
+}
+
 
 
 
@@ -151,9 +273,13 @@ String get_current_time()
     struct tm timeinfo;
 
 
-    if(!getLocalTime(&timeinfo))
+    if(
+        !getLocalTime(&timeinfo)
+    )
     {
+
         return "--:--:--";
+
     }
 
 
@@ -163,34 +289,23 @@ String get_current_time()
 
 
 
-    String suffix = "";
+    String suffix =
+        get_am_pm(hour);
 
 
 
-    if(is_12_hour_format())
-    {
-
-        if(hour >= 12)
-            suffix = " PM";
-        else
-            suffix = " AM";
-
-
-        hour = hour % 12;
-
-
-        if(hour == 0)
-            hour = 12;
-
-    }
+    hour =
+        format_hour(hour);
 
 
 
-    char buffer[20];
+    char buffer[16];
 
 
-    sprintf(
+
+    snprintf(
         buffer,
+        sizeof(buffer),
         "%02d:%02d:%02d",
         hour,
         timeinfo.tm_min,
@@ -209,8 +324,10 @@ String get_current_time()
 
 
 
+
+
 // =================================
-// Date
+// Current Date
 // =================================
 
 String get_current_date()
@@ -219,18 +336,24 @@ String get_current_date()
     struct tm timeinfo;
 
 
-    if(!getLocalTime(&timeinfo))
+    if(
+        !getLocalTime(&timeinfo)
+    )
     {
+
         return "--/--/----";
+
     }
 
 
 
-    char buffer[20];
+    char buffer[32];
 
 
-    sprintf(
+
+    snprintf(
         buffer,
+        sizeof(buffer),
         "%02d/%02d/%04d",
         timeinfo.tm_mday,
         timeinfo.tm_mon + 1,
@@ -238,9 +361,12 @@ String get_current_date()
     );
 
 
+
     return String(buffer);
 
 }
+
+
 
 
 
@@ -258,13 +384,22 @@ int get_current_hour()
     struct tm timeinfo;
 
 
-    if(!getLocalTime(&timeinfo))
+    if(
+        !getLocalTime(&timeinfo)
+    )
+    {
         return -1;
+    }
+
 
 
     return timeinfo.tm_hour;
 
 }
+
+
+
+
 
 
 
@@ -280,13 +415,22 @@ int get_current_minute()
     struct tm timeinfo;
 
 
-    if(!getLocalTime(&timeinfo))
+    if(
+        !getLocalTime(&timeinfo)
+    )
+    {
         return -1;
+    }
+
 
 
     return timeinfo.tm_min;
 
 }
+
+
+
+
 
 
 
@@ -302,13 +446,22 @@ int get_current_second()
     struct tm timeinfo;
 
 
-    if(!getLocalTime(&timeinfo))
+    if(
+        !getLocalTime(&timeinfo)
+    )
+    {
         return -1;
+    }
+
 
 
     return timeinfo.tm_sec;
 
 }
+
+
+
+
 
 
 
@@ -324,13 +477,22 @@ int get_week_day()
     struct tm timeinfo;
 
 
-    if(!getLocalTime(&timeinfo))
+    if(
+        !getLocalTime(&timeinfo)
+    )
+    {
         return -1;
+    }
+
 
 
     return timeinfo.tm_wday;
 
 }
+
+
+
+
 
 
 
@@ -345,6 +507,7 @@ String get_day_name()
 
     String days[] =
     {
+
         "Sunday",
         "Monday",
         "Tuesday",
@@ -352,14 +515,26 @@ String get_day_name()
         "Thursday",
         "Friday",
         "Saturday"
+
     };
 
 
-    int day = get_week_day();
+
+    int day =
+        get_week_day();
 
 
-    if(day < 0 || day > 6)
+
+    if(
+        day < 0 ||
+        day > 6
+    )
+    {
+
         return "Unknown";
+
+    }
+
 
 
     return days[day];
@@ -370,8 +545,12 @@ String get_day_name()
 
 
 
+
+
+
+
 // =================================
-// Time Status
+// Time Ready
 // =================================
 
 bool time_is_ready()

@@ -24,19 +24,37 @@
 
 
 
+// =================================
+// Setup
+// =================================
+
 void setup()
 {
 
+
     Serial.begin(74880);
+
 
     delay(1000);
 
 
 
+
     Serial.println();
-    Serial.println("==============================");
-    Serial.println(" ESP Prayer System Starting ");
-    Serial.println("==============================");
+
+    Serial.println(
+        "=============================="
+    );
+
+    Serial.println(
+        " ESP Prayer System Starting "
+    );
+
+    Serial.println(
+        "=============================="
+    );
+
+
 
 
 
@@ -48,21 +66,46 @@ void setup()
 
 
 
-    // ==============================
-    // Settings & Storage
-    // ==============================
 
-    settings_init();
+
+
+    // ==============================
+    // Storage & Settings
+    // ==============================
 
     storage_init();
 
 
+    settings_init();
+
+
+
+
+
 
     // ==============================
-    // Network
+    // WiFi
     // ==============================
 
     wifi_init();
+
+
+
+
+
+
+
+    // ==============================
+    // Web Server
+    // Start Early
+    // Supports AP Setup Mode
+    // ==============================
+
+    web_server_init();
+
+
+
+
 
 
 
@@ -70,7 +113,26 @@ void setup()
     // Time System
     // ==============================
 
-    time_init();
+    if(
+        wifi_connected()
+    )
+    {
+
+        time_init();
+
+    }
+    else
+    {
+
+        Serial.println(
+            "WiFi not connected - Skip NTP"
+        );
+
+    }
+
+
+
+
 
 
 
@@ -78,35 +140,42 @@ void setup()
     // OTA Update
     // ==============================
 
-    // Initialize OTA update service
     OTA.begin();
 
 
+
+
+
+
+
     // ==============================
-    // MQTT & Commands
+    // MQTT
     // ==============================
 
     mqtt_init();
+
 
     command_init();
 
 
 
-    // ==============================
-    // Web Interface
-    // ==============================
 
-    web_server_init();
+
 
 
 
     // ==============================
-    // Hardware Modules
+    // Hardware
     // ==============================
 
     dfplayer_init();
 
+
     display_init();
+
+
+
+
 
 
 
@@ -114,14 +183,43 @@ void setup()
     // Prayer System
     // ==============================
 
-    prayer_init();
+    if(
+        wifi_connected()
+    )
+    {
+
+        prayer_init();
+
+    }
+    else
+    {
+
+        Serial.println(
+            "Prayer waiting for time sync"
+        );
+
+    }
+
+
+
+
 
 
 
     Serial.println();
-    Serial.println("==============================");
-    Serial.println(" System Ready ");
-    Serial.println("==============================");
+
+    Serial.println(
+        "=============================="
+    );
+
+    Serial.println(
+        " System Ready "
+    );
+
+    Serial.println(
+        "=============================="
+    );
+
 
 }
 
@@ -130,41 +228,100 @@ void setup()
 
 
 
+
+
+
+// =================================
+// Main Loop
+// =================================
+
 void loop()
 {
 
 
-    // OTA Service
+
+    // ==============================
+    // OTA
+    // ==============================
 
     OTA.handle();
 
 
 
-    // MQTT Service
+
+
+
+
+    // ==============================
+    // MQTT
+    // ==============================
 
     mqtt_loop();
 
 
 
+
+
+
+
+    // ==============================
+    // WiFi Reconnect
+    // ==============================
+
+    wifi_loop();
+
+
+
+
+
+
+
+    // ==============================
     // Time Update
+    // ==============================
 
-    time_update();
+    if(
+        wifi_connected()
+    )
+    {
+
+        time_update();
+
+    }
 
 
 
-    // Prayer Calculation
+
+
+
+
+    // ==============================
+    // Prayer
+    // ==============================
 
     prayer_loop();
 
 
 
-    // Display Refresh
+
+
+
+
+    // ==============================
+    // Display
+    // ==============================
 
     display_loop();
 
 
 
+
+
+
+
+    // ==============================
     // Web Server
+    // ==============================
 
     web_server_loop();
 

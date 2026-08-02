@@ -5,33 +5,27 @@
 
 
 // =================================
-// Default Device Settings
+// Default Values
 // =================================
 
 #define DEVICE_NAME_DEFAULT "ESP-Prayer-System"
 
+#define DEFAULT_CITY "Al Ain"
+#define DEFAULT_COUNTRY "UAE"
 
+#define DEFAULT_LATITUDE 24.2075
+#define DEFAULT_LONGITUDE 55.7447
 
-// =================================
-// Backward Compatibility
-// الملفات القديمة تستخدم هذه القيم
-// =================================
+#define DEFAULT_TIMEZONE 4
 
-#define WIFI_SSID "AC1300"
-#define WIFI_PASSWORD "66666666"
+#define DEFAULT_VOLUME 25
 
-
-#define MQTT_SERVER "192.168.0.100"
-#define MQTT_PORT 1883
-
-#define MQTT_USER ""
-#define MQTT_PASSWORD ""
-
+#define DEFAULT_TIME_FORMAT "24H"
 
 #define OTA_HOSTNAME "ESP-Prayer-System"
 
-
-
+#define MQTT_SERVER "192.168.0.100"
+#define MQTT_PORT 1883
 
 // =================================
 // System Settings Structure
@@ -40,13 +34,17 @@
 struct SystemSettings
 {
 
+    // =========================
     // Device
+    // =========================
 
     String deviceName;
 
 
 
+    // =========================
     // WiFi
+    // =========================
 
     bool wifiEnable;
 
@@ -58,8 +56,9 @@ struct SystemSettings
 
 
 
-
+    // =========================
     // MQTT
+    // =========================
 
     bool mqttEnable;
 
@@ -75,7 +74,9 @@ struct SystemSettings
 
 
 
+    // =========================
     // OTA
+    // =========================
 
     bool otaEnable;
 
@@ -85,8 +86,9 @@ struct SystemSettings
 
 
 
-
+    // =========================
     // Location
+    // =========================
 
     String city;
 
@@ -100,8 +102,9 @@ struct SystemSettings
 
 
 
-
+    // =========================
     // Prayer
+    // =========================
 
     String calculationMethod;
 
@@ -112,17 +115,36 @@ struct SystemSettings
     String timeFormat;
 
 
+    int fajrOffset;
+
+    int dhuhrOffset;
+
+    int asrOffset;
+
+    int maghribOffset;
+
+    int ishaOffset;
 
 
+
+    // =========================
     // Audio
+    // =========================
 
     bool audioEnable;
 
     int volume;
 
+
     int athanFolder;
 
+    int athanFile;
+
+
     int surahFolder;
+
+    int surahFile;
+
 
     int shortSurahFolder;
 
@@ -130,8 +152,9 @@ struct SystemSettings
 
 
 
-
+    // =========================
     // Display
+    // =========================
 
     bool displayEnable;
 
@@ -146,19 +169,16 @@ struct SystemSettings
 
 
 
-
 // =================================
-// Global Settings
+// Global Object
 // =================================
 
 extern SystemSettings settings;
 
 
 
-
-
 // =================================
-// Functions
+// Initialization
 // =================================
 
 void settings_init();
@@ -171,16 +191,57 @@ void settings_reset();
 
 
 
-// Helpers
+// =================================
+// Getters
+// =================================
+
+
+String get_device_name();
+
 
 String get_time_format();
 
+
 int get_volume();
 
-bool mqtt_is_enabled();
 
 bool wifi_is_enabled();
 
 
+bool mqtt_is_enabled();
+
+
+bool audio_is_enabled();
+
+
+
+String get_city();
+
+
+String get_country();
+
+
+float get_latitude();
+
+
+float get_longitude();
+
+
+int get_timezone();
+
+
+
+String get_calculation_method();
+
+
+String get_asr_method();
+
+
+// =================================
+// Runtime Update
+// =================================
+
+
+void settings_apply();
 
 #endif

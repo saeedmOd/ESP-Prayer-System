@@ -1,69 +1,111 @@
-#ifndef PRAYER_TIMES_H
-#define PRAYER_TIMES_H
-
+#ifndef PRAYERTIMES_H
+#define PRAYERTIMES_H
 
 #include <Arduino.h>
 
 
 // =================================
-// Prayer Times Calculator
+// Calculation Methods
 // =================================
 
-class PrayerTimes
-{
-
-public:
-
-
-    // =================================
-    // Constructor
-    // =================================
-
-    PrayerTimes();
+#define Jafari      0
+#define Karachi     1
+#define ISNA        2
+#define MWL         3
+#define Makkah      4
+#define Egyptian    5
+#define Tehran      6
+#define UmmAlQura   7
 
 
-    // =================================
-    // حساب مواقيت الصلاة
-    // =================================
+// =================================
+// Asr Methods
+// =================================
 
-    void calculate();
-
-
-    // =================================
-    // الحصول على أوقات الصلاة
-    // =================================
-
-    String getFajr();
-
-    String getDhuhr();
-
-    String getAsr();
-
-    String getMaghrib();
-
-    String getIsha();
+#define Shafii      0
+#define Hanafi      1
 
 
 
-private:
+// =================================
+// High Latitude Rules
+// =================================
+
+#define None        0
+#define MidNight    1
+#define OneSeventh  2
+#define AngleBased  3
 
 
-    // =================================
-    // تخزين أوقات الصلاة
-    // =================================
 
-    String fajr;
+// =================================
+// Set Calculation Method
+// =================================
 
-    String dhuhr;
-
-    String asr;
-
-    String maghrib;
-
-    String isha;
+void setCalcMethod(
+    int method
+);
 
 
-};
+
+// =================================
+// Set Asr Calculation Method
+// =================================
+
+void setAsrMethod(
+    int method
+);
+
+
+
+// =================================
+// Set High Latitude Rule
+// =================================
+
+void setHighLatsMethod(
+    int method
+);
+
+
+
+// =================================
+// Calculate Prayer Times
+//
+// Result Array:
+//
+// 0 Fajr
+// 1 Sunrise
+// 2 Dhuhr
+// 3 Asr
+// 4 Maghrib
+// 5 Isha
+//
+// =================================
+
+void getPrayerTimes(
+    int year,
+    int month,
+    int day,
+    float latitude,
+    float longitude,
+    float timezone,
+    float result[]
+);
+
+
+
+// =================================
+// Convert Decimal Time
+// Example:
+// 5.50 -> 05:30
+// =================================
+
+void getHourMinute(
+    float time,
+    int &hour,
+    int &minute
+);
+
 
 
 #endif

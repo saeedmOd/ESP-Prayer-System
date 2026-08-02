@@ -1,79 +1,208 @@
 #include "dfplayer.h"
 
 #include <Arduino.h>
-#include <SoftwareSerial.h>
+#include <HardwareSerial.h>
 #include <DFRobotDFPlayerMini.h>
 
-
-// استخدم SoftwareSerial في ESP8266
-// التوصيل:
-// DFPlayer TX  -> NodeMCU D6 (RX)
-// DFPlayer RX  -> NodeMCU D5 (TX)
-
-SoftwareSerial mySoftwareSerial(D6, D5); 
-DFRobotDFPlayerMini myDFPlayer;
+#include "settings.h"
 
 
 
-void dfplayer_init() {
+HardwareSerial dfSerial(2);
 
-    // ابدأ الاتصال مع DFPlayer
-    mySoftwareSerial.begin(9600);
-
-    Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
+DFRobotDFPlayerMini player;
 
 
-    if (!myDFPlayer.begin(mySoftwareSerial)) {
+bool playerReady = false;
 
-        Serial.println(F("Unable to begin:"));
-        Serial.println(F("1.Please recheck the connection!"));
-        Serial.println(F("2.Please insert the SD card!"));
 
-        // يمكنك إضافة كود هنا لإظهار الخطأ على الشاشة
+
+// =================================
+// Init
+// =================================
+
+void dfplayer_init()
+{
+
+    Serial.println(
+        "Initializing DFPlayer..."
+    );
+
+
+    dfSerial.begin(
+
+        9600
+    );
+
+
+
+    if(!player.begin(dfSerial))
+    {
+
+        Serial.println(
+            "DFPlayer Failed"
+        );
+
+        playerReady=false;
 
         return;
+
     }
 
 
-    Serial.println(F("DFPlayer Mini online."));
 
-
-    myDFPlayer.volume(20); // اضبط مستوى الصوت (0~30)
-
-}
+    playerReady=true;
 
 
 
-// تغيير مستوى الصوت
-void setVolume(uint8_t volume) {
-
-    myDFPlayer.volume(volume);
-
-}
+    player.volume(
+        settings.volume
+    );
 
 
-
-// تشغيل ملف صوتي محدد (مثل الأذان) من مجلد محدد
-void playAzan(uint8_t folder, uint8_t file) {
-
-    myDFPlayer.playFolder(folder, file);
+    Serial.println(
+        "DFPlayer Ready"
+    );
 
 }
 
 
 
-// تشغيل ملف صوتي محدد (مثل دعاء) من مجلد محدد
-void playDua(uint8_t folder, uint8_t file) {
+// =================================
+// Volume
+// =================================
 
-    myDFPlayer.playFolder(folder, file);
+void set_volume(
+    uint8_t volume
+)
+{
+
+    if(!playerReady)
+        return;
+
+
+
+    if(volume>30)
+        volume=30;
+
+
+
+    player.volume(
+        volume
+    );
+
+
+    settings.volume =
+        volume;
+
 
 }
 
 
 
-// إيقاف تشغيل الصوت
-void stopAudio() {
+// =================================
+// Play Folder/File
+// =================================
 
-    myDFPlayer.stop();
+void play_folder_file(
+    uint8_t folder,
+    uint8_t file
+)
+{
+
+    if(!playerReady)
+        return;
+
+
+
+    Serial.printf(
+        "Play Folder %d File %d\n",
+        folder,
+        file
+    );
+
+
+    player.playFolder(
+        folder,
+        file
+    );
+
+}
+
+
+
+// =================================
+// Athan
+// =================================
+
+void play_athan()
+{
+
+    play_folder_file(
+        settings.athanFolder,
+        settings.athanFile
+    );
+
+}
+
+
+
+// =================================
+// Quran
+// =================================
+
+void play_quran()
+{
+
+    play_folder_file(
+        settings.surahFolder,
+        settings.surahFile
+    );
+
+}
+
+
+
+// =================================
+// Dua
+// =================================
+
+void play_dua()
+{
+
+    play_folder_file(
+        settings.duaFolder,
+        1
+    );
+
+}
+
+
+
+// =================================
+// Stop
+// =================================
+
+void stop_audio()
+{
+
+    if(!playerReady)
+        return;
+
+
+    player.stop();
+
+}
+
+
+
+// =================================
+// Status
+// =================================
+
+bool dfplayer_ready()
+{
+
+    return playerReady;
 
 }
