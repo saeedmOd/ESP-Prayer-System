@@ -12,6 +12,8 @@
 #include "version.h"
 #include "prayer.h"
 #include "settings.h"
+#include "time_manager.h" // إضافة هذا السطر
+#include "dfplayer.h"
 
 
 AsyncWebServer server(80);
@@ -40,18 +42,14 @@ static void send_file(
 )
 {
 
-    if(LittleFS.exists(file))
+    Serial.print("Sending file: ");
+    Serial.println(file);
+
+
+    if(!LittleFS.exists(file))
     {
 
-        request->send(
-            LittleFS,
-            file,
-            type
-        );
-
-    }
-    else
-    {
+        Serial.println("File missing");
 
         request->send(
             404,
@@ -59,11 +57,31 @@ static void send_file(
             "File Not Found"
         );
 
+        return;
     }
 
+
+
+    AsyncWebServerResponse *response =
+        request->beginResponse(
+            LittleFS,
+            file,
+            type
+        );
+
+
+    response->addHeader(
+        "Cache-Control",
+        "no-store"
+    );
+
+
+    request->send(
+        response
+    );
+
+
 }
-
-
 
 
 
@@ -298,56 +316,57 @@ server.on(
 // Status API
 // =====================================
 
-
 server.on(
     "/api/status",
     HTTP_GET,
     [](AsyncWebServerRequest *request)
     {
 
-        JsonDocument doc;
+        Serial.println(
+            "API Status Request"
+        );
+
+
+        DynamicJsonDocument doc(2048);
 
 
 
-        doc["status"] =
-            "online";
+        // =========================
+        // System
+        // =========================
+
+        doc["status"] = "online";
 
 
         doc["wifi"] =
-            storage_get_bool(
-                "wifi.enable",
-                true
-            );
+            (WiFi.status() == WL_CONNECTED);
 
 
-        doc["mqtt"] =
-            storage_get_bool(
-                "mqtt.enable",
-                false
-            );
+
+        bool dfReady =
+            dfplayer_ready();
+
+
+
+        doc["playerReady"] =
+            dfReady;
+
+
+        doc["df_status"] =
+            dfReady ? "ready" : "failed/skipped";
+
 
 
         doc["volume"] =
-            storage_get_volume(
-                25
-            );
+            settings.volume;
 
-
-        String format =
-            settings.timeFormat;
-                
-            
-
-
-        format.trim();
-
-
-        format.toUpperCase();
 
 
 
         doc["timeFormat"] =
-            format;
+            storage_get_time_format(
+                "24H"
+            );
 
 
 
@@ -355,46 +374,54 @@ server.on(
             FIRMWARE_VERSION;
 
 
+
+
         // =========================
         // Prayer
         // =========================
 
+        if (time_is_ready())
+        {
+            doc["nextPrayer"] =
+                get_next_prayer_name();
 
-        doc["nextPrayer"] =
-            get_next_prayer_name();
+            doc["nextPrayerTime"] =
+                get_next_prayer_time();
 
+            doc["countdown"] =
+                get_prayer_countdown();
 
-        doc["nextPrayerTime"] =
-            get_next_prayer_time();
+            doc["fajr"] =
+                get_prayer_time(0);
 
+            doc["sunrise"] =
+                get_prayer_time(1);
 
-        doc["countdown"] =
-            get_prayer_countdown() * 60;
+            doc["dhuhr"] =
+                get_prayer_time(2);
 
-            
-        doc["fajr"] =
-            get_prayer_time(0);
+            doc["asr"] =
+                get_prayer_time(3);
 
+            doc["maghrib"] =
+                get_prayer_time(4);
 
-        doc["sunrise"] =
-            get_prayer_time(1);
-
-
-        doc["dhuhr"] =
-            get_prayer_time(2);
-
-
-        doc["asr"] =
-            get_prayer_time(3);
-
-
-        doc["maghrib"] =
-            get_prayer_time(4);
-
-
-        doc["isha"] =
-            get_prayer_time(5);
-
+            doc["isha"] =
+                get_prayer_time(5);
+        }
+        else
+        {
+            // إرسال قيم افتراضية آمنة إذا لم يكن الوقت متزامناً
+            doc["nextPrayer"] = "Waiting...";
+            doc["nextPrayerTime"] = "--:--";
+            doc["countdown"] = 0;
+            doc["fajr"] = "--:--";
+            doc["sunrise"] = "--:--";
+            doc["dhuhr"] = "--:--";
+            doc["asr"] = "--:--";
+            doc["maghrib"] = "--:--";
+            doc["isha"] = "--:--";
+        }
 
 
 
@@ -416,28 +443,26 @@ server.on(
             );
 
 
+
         response->addHeader(
             "Cache-Control",
             "no-store"
         );
 
 
+
         request->send(
             response
         );
+
 
     }
 );
 
 
-
-
-
-
 // =====================================
 // Audio Settings GET
 // =====================================
-
 
 server.on(
     "/api/settings/audio",
@@ -448,10 +473,17 @@ server.on(
         JsonDocument doc;
 
 
-
         doc["volume"] =
             storage_get_volume(
                 25
+            );
+
+
+        // تفعيل الأذان
+        doc["azanEnable"] = 
+            storage_get_bool(
+                "audio.azan_enable",
+                true
             );
 
 
@@ -480,16 +512,13 @@ server.on(
 
 
 
-
         String output;
-
 
 
         serializeJson(
             doc,
             output
         );
-
 
 
         Serial.println(
@@ -502,8 +531,6 @@ server.on(
         );
 
 
-
-
         AsyncWebServerResponse *response =
             request->beginResponse(
                 200,
@@ -512,12 +539,10 @@ server.on(
             );
 
 
-
         response->addHeader(
             "Cache-Control",
             "no-store"
         );
-
 
 
         request->send(
@@ -527,11 +552,6 @@ server.on(
 
     }
 );
-
-
-
-
-
 
 
 // =====================================
@@ -638,126 +658,205 @@ server.on(
 
 
 
-
-
         // =========================
         // Save Values
         // =========================
 
-JsonDocument config;
+        JsonDocument config;
 
 
-if(!storage_read_json(config))
-{
+        if(!storage_read_json(config))
+        {
 
-    Serial.println(
-        "Cannot read config"
-    );
+            Serial.println(
+                "Cannot read config"
+            );
 
-    return;
+            return;
 
-}
-
-
-
-JsonObject audio =
-    config["audio"]
-    .to<JsonObject>();
+        }
 
 
 
-
-// Volume
-
-if(doc["volume"].is<int>())
-{
-
-    audio["volume"] =
-        doc["volume"].as<int>();
-
-}
-
-
-
-// Athan Folder
-
-if(doc["azanFolder"].is<int>())
-{
-
-    audio["athan_folder"] =
-        doc["azanFolder"].as<int>();
-
-}
-
-
-
-// Athan File
-
-if(doc["azanFile"].is<int>())
-{
-
-    audio["athan_file"] =
-        doc["azanFile"].as<int>();
-
-}
-
-
-
-// Surah Folder
-
-if(doc["surahFolder"].is<int>())
-{
-
-    audio["surah_folder"] =
-        doc["surahFolder"].as<int>();
-
-}
-
-
-
-// Surah File
-
-if(doc["surahFile"].is<int>())
-{
-
-    audio["surah_file"] =
-        doc["surahFile"].as<int>();
-
-}
+        JsonObject audio =
+            config["audio"]
+            .to<JsonObject>();
 
 
 
 
 
-if(
-    storage_write_json(config)
-)
-{
+        // =========================
+        // Volume
+        // =========================
 
-    Serial.println(
-        "Audio Settings Saved OK"
-    );
+        if(doc["volume"].is<int>())
+        {
 
+            int volume =
+                doc["volume"].as<int>();
 
-}
-else
-{
-
-    Serial.println(
-        "Audio Save Failed"
-    );
-
-}
+            audio["volume"] =
+                volume;
 
 
+            // Update Runtime Settings
+            settings.volume =
+                volume;
 
-storage_print_debug();
+        }
 
 
-    }   
 
 
-);      
+
+        // =========================
+        // Athan Folder
+        // =========================
+
+        if(doc["azanFolder"].is<int>())
+        {
+
+            int folder =
+                doc["azanFolder"].as<int>();
+
+            audio["athan_folder"] =
+                folder;
+
+
+            // Update Runtime Settings
+            settings.athanFolder =
+                folder;
+
+        }
+
+
+
+
+
+        // =========================
+        // Athan File
+        // =========================
+
+        if(doc["azanFile"].is<int>())
+        {
+
+            int file =
+                doc["azanFile"].as<int>();
+
+            audio["athan_file"] =
+                file;
+
+
+            // Update Runtime Settings
+            settings.athanFile =
+                file;
+
+        }
+
+
+
+
+
+        // =========================
+        // Surah Folder
+        // =========================
+
+        if(doc["surahFolder"].is<int>())
+        {
+
+            int folder =
+                doc["surahFolder"].as<int>();
+
+            audio["surah_folder"] =
+                folder;
+
+
+            // Update Runtime Settings
+            settings.surahFolder =
+                folder;
+
+        }
+
+
+
+
+
+        // =========================
+        // Surah File
+        // =========================
+
+        if(doc["surahFile"].is<int>())
+        {
+
+            int file =
+                doc["surahFile"].as<int>();
+
+            audio["surah_file"] =
+                file;
+
+
+            // Update Runtime Settings
+            settings.surahFile =
+                file;
+
+        }
+
+
+
+
+
+        // =========================
+        // Azan Enable
+        // =========================
+
+        if(doc["azanEnable"].is<bool>())
+        {
+
+            settings.azanEnable =
+                doc["azanEnable"].as<bool>();
+
+        }
+
+
+
+
+
+
+        // =========================
+        // Save To LittleFS
+        // =========================
+
+        if(
+            storage_write_json(config)
+        )
+        {
+
+            Serial.println(
+                "Audio Settings Saved OK"
+            );
+
+
+            Serial.println(
+                "Runtime Settings Updated"
+            );
+
+
+        }
+        else
+        {
+
+            Serial.println(
+                "Audio Save Failed"
+            );
+
+        }
+
+
+
+
+
+        storage_print_debug();
 
 
 
@@ -968,180 +1067,62 @@ server.on(
 
         }
 
-
-
-
-
         // =========================
+        // Save All Settings at Once
+        // =========================
+
+        JsonDocument config;
+        if (!storage_read_json(config))
+        {
+            Serial.println("Cannot read config to update prayer settings");
+            return;
+        }
+
         // Location
-        // =========================
+        if (doc["city"].is<String>()) config["location"]["city"] = doc["city"];
+        if (doc["country"].is<String>()) config["location"]["country"] = doc["country"];
+        if (doc["latitude"].is<float>()) config["location"]["latitude"] = doc["latitude"];
+        if (doc["longitude"].is<float>()) config["location"]["longitude"] = doc["longitude"];
 
-        if(doc["city"].is<String>())
+        // Prayer Method & Format
+        if (doc["method"].is<String>()) config["prayer"]["calculation_method"] = doc["method"];
+        if (doc["time_format"].is<String>())
         {
-            storage_set_city(
-                doc["city"].as<String>()
-            );
-        }
+        String format =
+        doc["time_format"].as<String>();
+
+        format.toUpperCase();
 
 
-        if(doc["country"].is<String>())
+        if(format == "12H" || format == "24H")
         {
-            storage_set_country(
-                doc["country"].as<String>()
-            );
+        config["prayer"]["time_format"] = format;
+
+        Serial.print("Time Format Saved: ");
+        Serial.println(format);
         }
+    else
+    {
+        Serial.println("Invalid Time Format");
+    }
+}
 
-
-        if(doc["latitude"].is<float>())
-        {
-            storage_set_float(
-                "location.latitude",
-                doc["latitude"].as<float>()
-            );
-        }
-
-
-        if(doc["longitude"].is<float>())
-        {
-            storage_set_float(
-                "location.longitude",
-                doc["longitude"].as<float>()
-            );
-        }
-
-
-
-
-        // =========================
-        // Method
-        // =========================
-
-        if(doc["method"].is<String>())
-        {
-            storage_set_calculation_method(
-                doc["method"].as<String>()
-            );
-        }
-
-
-
-
-
-        // =========================
-        // Time Format
-        // =========================
-
-        if(doc["time_format"].is<String>())
-        {
-
-            String format =
-                doc["time_format"].as<String>();
-
-
-            format.toUpperCase();
-
-
-
-            if(
-                format != "12H" &&
-                format != "24H"
-            )
-            {
-                format = "24H";
-            }
-
-
-
-            storage_set_time_format(
-                format
-            );
-
-
-            settings.timeFormat =
-                format;
-
-
-            Serial.print(
-                "Saved Time Format: "
-            );
-
-
-            Serial.println(
-                format
-            );
-
-        }
-
-
-
-
-
-        // =========================
         // Offsets
-        // =========================
+        if (doc["fajr_offset"].is<int>()) config["prayer"]["fajr_offset"] = doc["fajr_offset"];
+        if (doc["dhuhr_offset"].is<int>()) config["prayer"]["dhuhr_offset"] = doc["dhuhr_offset"];
+        if (doc["asr_offset"].is<int>()) config["prayer"]["asr_offset"] = doc["asr_offset"];
+        if (doc["maghrib_offset"].is<int>()) config["prayer"]["maghrib_offset"] = doc["maghrib_offset"];
+        if (doc["isha_offset"].is<int>()) config["prayer"]["isha_offset"] = doc["isha_offset"];
 
-
-        if(doc["fajr_offset"].is<int>())
+        // Write the entire config file once
+        if (storage_write_json(config))
         {
-            settings.fajrOffset =
-                doc["fajr_offset"].as<int>();
-
-            storage_set_fajr_offset(
-                settings.fajrOffset
-            );
+            Serial.println("Prayer Settings Saved OK");
         }
-
-
-
-        if(doc["dhuhr_offset"].is<int>())
+        else
         {
-            settings.dhuhrOffset =
-                doc["dhuhr_offset"].as<int>();
-
-            storage_set_dhuhr_offset(
-                settings.dhuhrOffset
-            );
+            Serial.println("Prayer Settings Save Failed");
         }
-
-
-
-        if(doc["asr_offset"].is<int>())
-        {
-            settings.asrOffset =
-                doc["asr_offset"].as<int>();
-
-            storage_set_asr_offset(
-                settings.asrOffset
-            );
-        }
-
-
-
-        if(doc["maghrib_offset"].is<int>())
-        {
-            settings.maghribOffset =
-                doc["maghrib_offset"].as<int>();
-
-            storage_set_maghrib_offset(
-                settings.maghribOffset
-            );
-        }
-
-
-
-        if(doc["isha_offset"].is<int>())
-        {
-            settings.ishaOffset =
-                doc["isha_offset"].as<int>();
-
-            storage_set_isha_offset(
-                settings.ishaOffset
-            );
-        }
-
-
-
-
 
         Serial.println(
             "Prayer Settings Updated"
@@ -1149,16 +1130,25 @@ server.on(
 
 
 
-        storage_print_debug();
+Serial.println(
+    "Prayer Settings Updated"
+);
 
 
+storage_print_debug();
 
-        prayer_reload();
 
+settings_load();
+
+prayer_reload();
+
+}
+);      
 
     }
 
-);   // مهم جداً إغلاق server.on
+);
+
 // =====================================
 // Network Settings GET
 // =====================================
@@ -1347,95 +1337,74 @@ server.on(
 
         }
 
+        // =========================
+        // Save All Network Settings at Once
+        // =========================
 
-
-
-
-if(
-    doc["ssid"].is<String>() &&
-    doc["password"].is<String>()
-)
-{
-
-    String ssid =
-        doc["ssid"].as<String>();
-
-
-    String password =
-        doc["password"].as<String>();
-
-
-
-    storage_set_wifi(
-        ssid,
-        password
-    );
-
-
-
-    Serial.println(
-        "WiFi Credentials Saved"
-    );
-
-
-    Serial.print(
-        "SSID: "
-    );
-
-    Serial.println(
-        ssid
-    );
-
-
-}
-
-
-
-
-
-        if(doc["wifiEnable"].is<bool>())
+        JsonDocument config;
+        if (!storage_read_json(config))
         {
-
-            storage_set_bool(
-                "wifi.enable",
-                doc["wifiEnable"].as<bool>()
-            );
-
+            Serial.println("Cannot read config to update network settings");
+            return;
         }
 
-
-
-
-
-        if(doc["mqttEnable"].is<bool>())
+        // WiFi SSID and Password
+        if (doc["wifiSSID"].is<String>())
         {
-
-            storage_set_bool(
-                "mqtt.enable",
-                doc["mqttEnable"].as<bool>()
-            );
-
+            config["wifi"]["ssid"] = doc["wifiSSID"].as<String>();
+            config["wifi"]["password"] = doc["wifiPassword"].as<String>();
+            Serial.println("WiFi Credentials Updated in config");
         }
 
+        // WiFi Enable
+        if (doc["wifiEnable"].is<bool>())
+        {
+            config["wifi"]["enable"] = doc["wifiEnable"].as<bool>();
+        }
 
+        // MQTT Enable
+        if (doc["mqttEnable"].is<bool>())
+        {
+            config["mqtt"]["enable"] = doc["mqttEnable"].as<bool>();
+        }
 
+        // MQTT Server
+        if (doc["mqttServer"].is<String>())
+        {
+            config["mqtt"]["server"] = doc["mqttServer"].as<String>();
+        }
 
-Serial.println(
-    "Network Settings Updated"
-);
+        // MQTT Port
+        if (doc["mqttPort"].is<int>())
+        {
+            config["mqtt"]["port"] = doc["mqttPort"].as<int>();
+        }
 
+        // MQTT User
+        if (doc["mqttUser"].is<String>())
+        {
+            config["mqtt"]["user"] = doc["mqttUser"].as<String>();
+        }
 
-delay(1000);
+        // MQTT Password
+        if (doc["mqttPassword"].is<String>())
+        {
+            config["mqtt"]["password"] = doc["mqttPassword"].as<String>();
+        }
 
-
-Serial.println(
-    "Restarting WiFi..."
-);
-
-
-ESP.restart();
-
-
+        // Write the entire config file once
+        if (storage_write_json(config))
+        {
+            Serial.println("Network Settings Saved OK");
+            settings_load(); // Reload settings into memory
+            delay(1000);
+            Serial.println("Restarting Device...");
+            ESP.restart();
+        }
+        else
+        {
+            Serial.println("Network Settings Save Failed");
+        }
     }
 );
 
@@ -1513,6 +1482,43 @@ server.on(
 );
 
 
+
+// =====================================
+// Factory Reset
+// =====================================
+
+server.on(
+    "/api/system/reset",
+    HTTP_POST,
+    [](AsyncWebServerRequest *request)
+    {
+
+        Serial.println(
+            "Factory Reset Requested"
+        );
+
+
+        request->send(
+            200,
+            "text/plain",
+            "Reset OK"
+        );
+
+
+        delay(500);
+
+
+        settings_reset();
+
+
+        delay(1000);
+
+
+        ESP.restart();
+
+
+    }
+);
 
 
 

@@ -20,25 +20,39 @@
     "country": "UAE",
 
     "latitude": 24.2075,
-    "longitude": 55.7447
+    "longitude": 55.7447,
+    "timezone": 4
   },
 
 
-  "audio": {
-    "volume": 5,
+    "audio": {
 
-    "athan_folder": 1,
-    "athan_file": 2,
+    "enable":true,
 
-    "surah_folder": 2,
-    "surah_file": 1
-  },
+    "volume":5,
+
+
+    "reciter":"maher",
+
+
+     "athan": {
+       "folder":1,
+       "file":2
+    },
+
+
+  "iqama": {
+    "enable": true,
+    "delay": 10,
+    "sound": "iqama"
+  }
+},
 
 
   "wifi": {
     "enable": true,
-    "ssid": "AC1300",
-    "password": "66666666"
+    "ssid": "",
+    "password": ""
   },
 
 
@@ -64,7 +78,6 @@
 
 
   "system": {
-    "timezone": "UTC+4",
     "language": "ar"
   }
 }

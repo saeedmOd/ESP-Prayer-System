@@ -18,6 +18,7 @@ static bool apMode = false;
 static unsigned long lastReconnect = 0;
 
 
+
 // =================================
 // Start Access Point
 // =================================
@@ -26,13 +27,14 @@ static void startAP()
 {
 
     Serial.println();
+
     Serial.println(
         "Starting WiFi AP Mode..."
     );
 
 
     WiFi.mode(
-        WIFI_AP_STA
+        WIFI_AP
     );
 
 
@@ -75,7 +77,6 @@ static void startAP()
 
 
 
-
 // =================================
 // Initialize WiFi
 // =================================
@@ -84,6 +85,7 @@ void wifi_init()
 {
 
     Serial.println();
+
     Serial.println(
         "Initializing WiFi..."
     );
@@ -100,9 +102,11 @@ void wifi_init()
 
         wifiStatus = false;
 
+
         return;
 
     }
+
 
 
 
@@ -132,7 +136,6 @@ void wifi_init()
 
 
 
-
     WiFi.mode(
         WIFI_STA
     );
@@ -143,7 +146,6 @@ void wifi_init()
 
 
     delay(100);
-
 
 
 
@@ -158,12 +160,10 @@ void wifi_init()
 
 
 
-
     WiFi.begin(
         settings.wifiSSID.c_str(),
         settings.wifiPassword.c_str()
     );
-
 
 
 
@@ -193,14 +193,15 @@ void wifi_init()
 
 
 
-
     if(
         WiFi.status() == WL_CONNECTED
     )
     {
 
-
         wifiStatus = true;
+
+
+        apMode = false;
 
 
         Serial.println();
@@ -211,7 +212,6 @@ void wifi_init()
         );
 
 
-
         Serial.print(
             "IP Address: "
         );
@@ -220,7 +220,6 @@ void wifi_init()
         Serial.println(
             WiFi.localIP()
         );
-
 
     }
     else
@@ -241,9 +240,7 @@ void wifi_init()
 
     }
 
-
 }
-
 
 
 
@@ -268,7 +265,6 @@ void wifi_loop()
 
 
 
-
     if(
         WiFi.status() == WL_CONNECTED
     )
@@ -280,7 +276,6 @@ void wifi_loop()
         return;
 
     }
-
 
 
 
@@ -299,7 +294,6 @@ void wifi_loop()
 
 
 
-
     if(
         millis() - lastReconnect < 10000
     )
@@ -312,10 +306,8 @@ void wifi_loop()
 
 
 
-
     lastReconnect =
         millis();
-
 
 
 
@@ -330,7 +322,6 @@ void wifi_loop()
 
 
 }
-
 
 
 

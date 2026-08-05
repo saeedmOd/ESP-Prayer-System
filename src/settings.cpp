@@ -237,6 +237,12 @@ void settings_load()
             true
         );
 
+    settings.azanEnable =
+        storage_get_bool(
+            "audio.azan_enable",
+            true
+        );
+
 
     settings.volume =
         storage_get_volume(
@@ -340,9 +346,6 @@ void settings_apply()
 
     // Time format
 
-    settings.timeFormat.toUpperCase();
-
-
     if(
         settings.timeFormat != "12H" &&
         settings.timeFormat != "24H"
@@ -355,7 +358,7 @@ void settings_apply()
 
     // MQTT Port
 
-    if(settings.mqttPort <=0)
+    if(settings.mqttPort <= 0)
         settings.mqttPort = 1883;
 
 
@@ -366,14 +369,11 @@ void settings_apply()
         settings.brightness = 0;
 
 
-    if(settings.brightness >100)
-        settings.brightness =100;
+    if(settings.brightness > 100)
+        settings.brightness = 100;
 
 
 }
-
-
-
 
 // =================================
 // Init
@@ -411,6 +411,18 @@ void settings_save()
     );
 
 
+    Serial.println("SAVE DEBUG");
+
+    Serial.println(settings.deviceName);
+    Serial.println(settings.city);
+    Serial.println(settings.country);
+    Serial.println(settings.timeFormat);
+    Serial.println(settings.wifiSSID);
+
+    Serial.println("END DEBUG");
+
+
+
     settings_apply();
 
 
@@ -423,8 +435,14 @@ void settings_save()
         "wifi.enable",
         settings.wifiEnable
     );
-    storage_set_wifi(settings.wifiSSID, settings.wifiPassword);
-
+    if(settings.wifiSSID.length() > 0)
+    {
+    storage_set_wifi(
+        settings.wifiSSID,
+        settings.wifiPassword
+    );
+    }
+    
     storage_set_bool(
         "mqtt.enable",
         settings.mqttEnable

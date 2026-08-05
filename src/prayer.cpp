@@ -13,7 +13,10 @@
 // Prayer Data
 // =====================================
 
-static float prayerTimes[6];
+static float prayerTimes[6] = {
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+};
+
 
 static int prayerMinutes[6];
 
@@ -349,7 +352,6 @@ void prayer_loop()
     static unsigned long lastCheck = 0;
 
 
-
     if(
         millis() - lastCheck < 30000
     )
@@ -413,7 +415,7 @@ void prayer_loop()
 
 
 
-    for(int i=0;i<6;i++)
+    for(int i = 0; i < 6; i++)
     {
 
 
@@ -425,10 +427,11 @@ void prayer_loop()
 
 
 
+
         if(
             now >= prayerMinutes[i]
             &&
-            now <= prayerMinutes[i]+1
+            now <= prayerMinutes[i] + 1
             &&
             !azanPlayed[i]
         )
@@ -439,22 +442,49 @@ void prayer_loop()
 
 
 
-            play_folder_file(
-                settings.athanFolder,
-                settings.athanFile
-            );
+
+// ==========================
+// Azan Enable Check
+// ==========================
+
+if(settings.azanEnable)
+{
+
+    play_folder_file(
+        settings.athanFolder,
+        settings.athanFile
+    );
 
 
-
-            Serial.print(
-                "Playing Azan: "
-            );
-
+    Serial.print(
+        "Playing Azan: "
+    );
 
 
-            Serial.println(
-                prayerNames[i]
-            );
+    Serial.println(
+        prayerNames[i]
+    );
+
+}
+else
+{
+
+    Serial.print(
+        "Azan Disabled: "
+    );
+
+
+    Serial.println(
+        prayerNames[i]
+    );
+
+}
+
+
+            // ==========================
+            // Iqama Schedule
+            // سيتم إضافته لاحقاً
+            // ==========================
 
 
         }
@@ -464,7 +494,6 @@ void prayer_loop()
 
 
 }
-
 
 
 
@@ -520,8 +549,8 @@ String get_prayer_time(
 
 
 
-    char buffer[16];
-
+    //char buffer[16];
+      char buffer[20];
 
 
     String format =
@@ -693,54 +722,37 @@ String get_next_prayer_time()
 // Countdown Minutes
 // =====================================
 
-int get_prayer_countdown()
-{
-
-    Serial.println("===== COUNTDOWN DEBUG =====");
-
-    Serial.print("Current: ");
-    Serial.print(get_current_hour());
-    Serial.print(":");
-    Serial.println(get_current_minute());
-
-
-    for(int i=0;i<6;i++)
-    {
-        Serial.print(prayerNames[i]);
-        Serial.print(" = ");
-        Serial.println(prayerMinutes[i]);
+int get_prayer_countdown() {
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo)) {
+        return -1; // Indicate error or time not synced
     }
 
+    // Calculate current time in total seconds from midnight
+    long current_total_seconds = timeinfo.tm_hour * 3600 + timeinfo.tm_min * 60 + timeinfo.tm_sec;
 
+    // Find the next prayer index
+    int next_prayer_index = -1;
+    int now_in_minutes = timeinfo.tm_hour * 60 + timeinfo.tm_min;
 
-    int now =
-        get_current_hour()*60
-        +
-        get_current_minute();
-
-
-
-
-    for(int i=0;i<6;i++)
-    {
-
-        if(prayerMinutes[i] > now)
-        {
-
-            return
-                prayerMinutes[i]
-                -
-                now;
-
+    for (int i = 0; i < 6; i++) {
+        if (prayerMinutes[i] > now_in_minutes) {
+            next_prayer_index = i;
+            break;
         }
-
     }
 
+    // If all prayers passed, next is Fajr of the next day
+    if (next_prayer_index == -1) {
+        next_prayer_index = 0; // Fajr
+    }
 
+    long next_prayer_total_seconds = prayerMinutes[next_prayer_index] * 60;
+    long countdown_seconds = next_prayer_total_seconds - current_total_seconds;
 
-    return
-        (1440-now)
-        +
-        prayerMinutes[0];
+    if (countdown_seconds < 0) {
+        countdown_seconds += 86400; // Add 24 hours in seconds
+    }
 
+    return (int)countdown_seconds;
 }

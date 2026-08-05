@@ -133,8 +133,9 @@ struct SystemSettings
 
     bool audioEnable;
 
-    int volume;
+    bool azanEnable;
 
+    int volume;
 
     int athanFolder;
 

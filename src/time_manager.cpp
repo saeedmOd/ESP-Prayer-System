@@ -5,6 +5,7 @@
 
 #include "settings.h"
 #include "storage.h"
+#include "prayer.h"
 
 
 
@@ -92,6 +93,9 @@ void time_init()
             get_current_time()
         );
 
+
+        // الآن بعد أن أصبح الوقت متزامناً، يمكننا تهيئة مواقيت الصلاة
+        prayer_init();
     }
     else
     {

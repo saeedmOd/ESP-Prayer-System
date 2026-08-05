@@ -47,6 +47,22 @@ DFPlayer
 </h2>
 
 
+<label>
+تفعيل الأذان
+</label>
+
+<select id="azanEnable">
+
+<option value="true">
+تشغيل
+</option>
+
+<option value="false">
+إيقاف
+</option>
+
+</select>
+
 
 <label>
 مستوى الصوت
@@ -242,6 +258,8 @@ fetch("/api/settings/audio")
 document.getElementById("volume")
 .value = data.volume;
 
+document.getElementById("azanEnable")
+.value = data.azanEnable;
 
 
 document.getElementById("volumeValue")
@@ -403,12 +421,14 @@ function saveAudioSettings()
 let data =
 {
 
-
 volume:
 Number(
 document.getElementById("volume").value
 ),
 
+
+azanEnable:
+document.getElementById("azanEnable").value === "true",
 
 
 azanFolder:
@@ -417,12 +437,10 @@ document.getElementById("azanFolder").value
 ),
 
 
-
 azanFile:
 Number(
 document.getElementById("azanFile").value
 )
-
 
 };
 

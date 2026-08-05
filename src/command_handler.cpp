@@ -145,7 +145,7 @@ void command_test_azan()
 
     // سيتم ربطه لاحقاً مع dfplayer
     // dfplayer_play_azan();
-
+    play_test();
 }
 
 

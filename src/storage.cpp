@@ -226,7 +226,7 @@ void storage_create_defaults()
         55.7447;
 
     doc["location"]["timezone"] =
-        4;
+        4; // استخدام رقم بدلاً من نص
 
 
 
@@ -277,6 +277,10 @@ void storage_create_defaults()
 
     doc["audio"]["volume"] =
         25;
+
+
+    doc["audio"]["azan_enable"] =
+        true;
 
 
     doc["audio"]["athan_folder"] =
@@ -1338,15 +1342,7 @@ bool storage_set_time_format(
         return false;
     }
 
-
-
-    JsonObject prayer =
-        doc["prayer"]
-        .to<JsonObject>();
-
-
-
-    prayer["time_format"] =
+    doc["prayer"]["time_format"] =
         format;
 
 
@@ -1851,15 +1847,14 @@ void storage_print_debug()
 void storage_reset()
 {
 
-    if(!storage_ready)
-        return;
-
+    Serial.println(
+        "Factory Reset Called"
+    );
 
 
     Serial.println(
         "Reset Storage"
     );
-
 
 
     if(LittleFS.exists(CONFIG_FILE))
@@ -1869,8 +1864,22 @@ void storage_reset()
             CONFIG_FILE
         );
 
+        Serial.println(
+            "Config Deleted"
+        );
+
     }
 
+
+    delay(500);
+
+
+    storage_create_defaults();
+
+
+    Serial.println(
+        "Default Config Created"
+    );
 
 
     delay(500);

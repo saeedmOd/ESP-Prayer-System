@@ -182,25 +182,10 @@ void setup()
     // ==============================
     // Prayer System
     // ==============================
-
-    if(
-        wifi_connected()
-    )
-    {
-
-        prayer_init();
-
-    }
-    else
-    {
-
-        Serial.println(
-            "Prayer waiting for time sync"
-        );
-
-    }
-
-
+    
+    Serial.println(
+        "Prayer system will initialize after time sync."
+    );
 
 
 
