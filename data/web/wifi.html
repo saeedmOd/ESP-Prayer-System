@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ESP Prayer Setup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 400px;
+            margin: auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        select, input, button {
+            width: 95%;
+            padding: 12px;
+            margin: 8px 0;
+            font-size: 16px;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        select, input {
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background: #2196F3;
+            color: white;
+            border: 0;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button.secondary {
+            background: #607D8B;
+            font-size: 14px;
+            padding: 8px;
+        }
+
+        button:disabled {
+            background: #888;
+            cursor: not-allowed;
+        }
+
+        .password-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-container input {
+            width: 100%;
+        }
+
+        .toggle-password {
+            position: absolute;
+            left: 15px; /* Position on the left for RTL layout */
+            cursor: pointer;
+            user-select: none;
+            font-size: 18px;
+        }
+
+        #status {
+            margin-top: 15px;
+            min-height: 25px;
+            color: #444;
+            font-weight: 500;
+        }
+
+        .small {
+            font-size: 13px;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="box">
+        <h3>ESP Prayer System</h3>
+        <p>اختر شبكة WiFi</p>
+
+        <select id="ssid">
+            <option value="">جاري البحث...</option>
+        </select>
+
+        <button type="button" class="secondary" id="rescanBtn" onclick="startScan()">إعادة البحث عن الشبكات 🔄</button>
+
+        <div class="password-container">
+            <input id="password" type="password" placeholder="كلمة مرور WiFi">
+            <span class="toggle-password" onclick="togglePasswordVisibility()">👁️</span>
+        </div>
+
+        <button id="connectBtn" onclick="saveWifi()">اتصال</button>
+
+        <p id="status">بدء البحث...</p>
+        <p class="small">سيتم إعادة تشغيل الجهاز بعد الحفظ</p>
+    </div>
+
+    <script>
+        // ================================
+        // Toggle Password Visibility
+        // ================================
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById("password");
+            const icon = document.querySelector('.toggle-password');
+            const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+            passwordInput.setAttribute("type", type);
+            icon.textContent = type === "password" ? "👁️" : "🙈";
+        }
+        // ================================
+        // Start WiFi Scan
+        // ================================
+        function startScan() {
+             const rescanBtn = document.getElementById("rescanBtn");
+             if (rescanBtn) rescanBtn.disabled = true;
+ 
+             setStatus("جاري البحث عن الشبكات...");
+             let list = document.getElementById("ssid");
+             list.innerHTML = "<option value=''>جاري البحث...</option>";
+ 
+             function pollScanStatus() {
+                 fetch("/scan")
+                     .then(r => r.json())
+                     .then(data => {
+                         console.log("Scan poll result:", data);
+ 
+                         // إذا كان البحث لا يزال جارياً، انتظر ثانيتين وحاول مرة أخرى
+                         if (data.status === "scanning") {
+                             setTimeout(pollScanStatus, 2000);
+                             return;
+                         }
+ 
+                         // إذا اكتمل البحث، اعرض النتائج
+                         if (rescanBtn) rescanBtn.disabled = false;
+                         list.innerHTML = "";
+ 
+                         if (data.status === "complete" && data.networks && data.networks.length > 0) {
+                             // فرز الشبكات حسب قوة الإشارة (RSSI) من الأقوى إلى الأضعف
+                             data.networks.sort((a, b) => b.rssi - a.rssi);
+ 
+                             data.networks.forEach(net => {
+                                 let option = document.createElement("option");
+                                 option.value = net.ssid;
+                                 option.text = `${net.ssid} (${net.rssi} dBm)`;
+                                 list.appendChild(option);
+                             });
+                             setStatus("تم العثور على " + data.networks.length + " شبكة. اختر شبكة للاتصال.");
+                         } else {
+                             list.innerHTML = "<option value=''>لا توجد شبكات</option>";
+                             setStatus("لم يتم العثور على شبكات قريبة. حاول إعادة البحث.");
+                         }
+                     })
+                     .catch(error => {
+                         console.log(error);
+                         setStatus("فشل البحث عن الشبكات. تأكد من الاتصال بالجهاز.");
+                         if (rescanBtn) rescanBtn.disabled = false;
+                     });
+             }
+ 
+             // بدء عملية التحقق الدورية
+             pollScanStatus();
+        }
+
+        // ================================
+        // Save WiFi Settings
+        // ================================
+        function saveWifi() {
+            let ssid = document.getElementById("ssid").value;
+            let password = document.getElementById("password").value;
+
+            if (!ssid) {
+                alert("اختر شبكة WiFi أولاً");
+                return;
+            }
+
+            let btn = document.getElementById("connectBtn");
+            btn.disabled = true;
+
+            setStatus("جاري حفظ البيانات وإعادة التشغيل...");
+
+            fetch("/api/settings/network", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    wifiSSID: ssid,
+                    wifiPassword: password,
+                    wifiEnable: true
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                console.log("Saved:", data);
+                setStatus("تم الحفظ بنجاح! يتم الآن ربط الجهاز بالشبكة...");
+            })
+            .catch(error => {
+                console.log(error);
+                btn.disabled = false;
+                setStatus("فشل الحفظ، حاول مرة أخرى");
+            });
+        }
+
+        // ================================
+        // Status Helper
+        // ================================
+        function setStatus(text) {
+            document.getElementById("status").innerText = text;
+        }
+
+        // بدء المسح التلقائي فور تحميل الصفحة
+        window.addEventListener("DOMContentLoaded", startScan);
+    </script>
+
+</body>
+</html>

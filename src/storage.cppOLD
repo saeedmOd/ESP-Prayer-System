@@ -12,25 +12,12 @@
 #define TEMP_FILE   "/config.tmp"
 
 
-// =================================================
-// Config Version
-// =================================================
-
-#define CONFIG_VERSION 2
-
-
 
 // =================================================
 // Global State
 // =================================================
 
 static bool storage_ready = false;
-
-
-// Cached configuration
-static JsonDocument configDoc;
-
-static bool config_loaded = false;
 
 
 
@@ -53,14 +40,6 @@ bool set_path(
 
 
 
-bool storage_load_cache();
-
-bool storage_save_cache();
-
-void storage_create_defaults();
-
-
-
 
 
 // =================================================
@@ -70,7 +49,6 @@ void storage_create_defaults();
 void storage_init()
 {
 
-    Serial.println();
     Serial.println(
         "Initializing Storage..."
     );
@@ -106,11 +84,6 @@ void storage_init()
     {
 
         Serial.println(
-            "Config Missing"
-        );
-
-
-        Serial.println(
             "Creating Default Configuration"
         );
 
@@ -120,29 +93,7 @@ void storage_init()
     }
 
 
-
-    if(storage_load_cache())
-    {
-
-        Serial.println(
-            "Config Loaded To RAM"
-        );
-
-        config_loaded = true;
-
-    }
-    else
-    {
-
-        Serial.println(
-            "Config Cache Load Failed"
-        );
-
-    }
-
-
 }
-
 
 
 
@@ -163,7 +114,6 @@ bool storage_ready_status()
 
 
 
-
 // =================================================
 // Check Config Exists
 // =================================================
@@ -175,13 +125,11 @@ bool storage_exists()
         return false;
 
 
-
     return LittleFS.exists(
         CONFIG_FILE
     );
 
 }
-
 
 
 
@@ -198,130 +146,93 @@ void storage_create_defaults()
 
 
 
-    // =================================================
-    // System
-    // =================================================
-
-    doc["system"]["config_version"] =
-        CONFIG_VERSION;
-
-
-
-    // =================================================
+    // -----------------------------
     // Device
-    // =================================================
+    // -----------------------------
 
     doc["device"]["name"] =
         "ESP-Prayer-System";
 
 
 
-
-    // =================================================
+    // -----------------------------
     // WiFi
-    // =================================================
+    // -----------------------------
 
     doc["wifi"]["enable"] =
         true;
 
-
     doc["wifi"]["ssid"] =
         "";
 
-
     doc["wifi"]["password"] =
         "";
-
 
     doc["wifi"]["auto_reconnect"] =
         true;
 
 
 
-
-    // =================================================
+    // -----------------------------
     // MQTT
-    // =================================================
+    // -----------------------------
 
     doc["mqtt"]["enable"] =
         false;
 
-
     doc["mqtt"]["server"] =
         "192.168.0.100";
-
 
     doc["mqtt"]["port"] =
         1883;
 
-
     doc["mqtt"]["user"] =
         "";
 
-
     doc["mqtt"]["password"] =
         "";
-
 
     doc["mqtt"]["topic_prefix"] =
         "esp/prayer";
 
 
 
-
-
-    // =================================================
+    // -----------------------------
     // OTA
-    // =================================================
+    // -----------------------------
 
     doc["ota"]["enable"] =
         true;
-
 
     doc["ota"]["hostname"] =
         "ESP-Prayer-System";
 
 
-    doc["ota"]["password"] =
-        "";
 
-
-
-
-
-
-    // =================================================
+    // -----------------------------
     // Location
-    // =================================================
+    // -----------------------------
 
     doc["location"]["city"] =
         "Al Ain";
 
-
     doc["location"]["country"] =
         "UAE";
-
 
     doc["location"]["latitude"] =
         24.2075;
 
-
     doc["location"]["longitude"] =
         55.7447;
 
-
     doc["location"]["timezone"] =
-        4;
+        4; // استخدام رقم بدلاً من نص
 
 
 
-
-
-
-
-    // =================================================
+    // -----------------------------
     // Prayer
-    // =================================================
+    // -----------------------------
 
     doc["prayer"]["calculation_method"] =
         "UmmAlQura";
@@ -339,34 +250,26 @@ void storage_create_defaults()
         "24H";
 
 
-
     doc["prayer"]["fajr_offset"] =
         0;
-
 
     doc["prayer"]["dhuhr_offset"] =
         0;
 
-
     doc["prayer"]["asr_offset"] =
         0;
 
-
     doc["prayer"]["maghrib_offset"] =
         0;
-
 
     doc["prayer"]["isha_offset"] =
         0;
 
 
 
-
-
-
-    // =================================================
+    // -----------------------------
     // Audio
-    // =================================================
+    // -----------------------------
 
     doc["audio"]["enable"] =
         true;
@@ -387,18 +290,6 @@ void storage_create_defaults()
     doc["audio"]["athan_file"] =
         1;
 
-    doc["audio"]["iqama_enable"] =
-        true;
-
-    doc["audio"]["iqama_folder"] =
-        5;
-
-    doc["audio"]["iqama_file"] =
-        1;
-
-    doc["audio"]["iqama_delay"] =
-        10;
-
 
     doc["audio"]["surah_folder"] =
         2;
@@ -408,20 +299,10 @@ void storage_create_defaults()
         1;
 
 
-    doc["audio"]["short_surah_folder"] =
-        3;
 
-
-    doc["audio"]["dua_folder"] =
-        4;
-
-
-
-
-
-    // =================================================
+    // -----------------------------
     // Display
-    // =================================================
+    // -----------------------------
 
     doc["display"]["enable"] =
         true;
@@ -440,8 +321,6 @@ void storage_create_defaults()
 
 
 
-
-
     storage_write_json(
         doc
     );
@@ -454,14 +333,22 @@ void storage_create_defaults()
 
 
 // =================================================
-// Load JSON Cache
+// Read JSON
 // =================================================
 
-bool storage_load_cache()
+bool storage_read_json(
+    JsonDocument &doc
+)
 {
 
     if(!storage_ready)
         return false;
+
+
+
+    if(!LittleFS.exists(CONFIG_FILE))
+        return false;
+
 
 
 
@@ -474,22 +361,14 @@ bool storage_load_cache()
 
 
     if(!file)
-    {
-
-        Serial.println(
-            "Config Open Failed"
-        );
-
-
         return false;
 
-    }
 
 
 
     DeserializationError error =
         deserializeJson(
-            configDoc,
+            doc,
             file
         );
 
@@ -523,39 +402,9 @@ bool storage_load_cache()
 
 
 
-// =================================================
-// Read JSON
-// =================================================
-
-bool storage_read_json(
-    JsonDocument &doc
-)
-{
-
-    if(!storage_ready)
-        return false;
-
-
-
-    if(config_loaded)
-    {
-
-        doc =
-            configDoc;
-
-
-        return true;
-
-    }
-
-
-
-    return storage_load_cache();
-
-}
 
 // =================================================
-// Save JSON Safely
+// Write JSON Safely
 // =================================================
 
 bool storage_write_json(
@@ -565,6 +414,7 @@ bool storage_write_json(
 
     if(!storage_ready)
         return false;
+
 
 
 
@@ -590,36 +440,15 @@ bool storage_write_json(
 
 
 
-    size_t written =
-        serializeJsonPretty(
-            doc,
-            file
-        );
+
+    serializeJsonPretty(
+        doc,
+        file
+    );
 
 
-
-    file.flush();
 
     file.close();
-
-
-
-    if(written == 0)
-    {
-
-        Serial.println(
-            "Config Write Failed"
-        );
-
-
-        LittleFS.remove(
-            TEMP_FILE
-        );
-
-
-        return false;
-
-    }
 
 
 
@@ -636,6 +465,7 @@ bool storage_write_json(
 
 
 
+
     if(!LittleFS.rename(
         TEMP_FILE,
         CONFIG_FILE
@@ -643,7 +473,7 @@ bool storage_write_json(
     {
 
         Serial.println(
-            "Config Rename Failed"
+            "Config rename failed"
         );
 
 
@@ -653,51 +483,11 @@ bool storage_write_json(
 
 
 
-    // Update RAM Cache
-
-    configDoc.clear();
-
-    configDoc =
-        doc;
-
-
-    config_loaded = true;
-
-
-
-    Serial.println(
-        "Config Saved"
-    );
 
 
     return true;
 
 }
-
-
-
-
-
-
-
-// =================================================
-// Save Current Cache
-// =================================================
-
-bool storage_save_cache()
-{
-
-    if(!config_loaded)
-        return false;
-
-
-    return storage_write_json(
-        configDoc
-    );
-
-}
-
-
 
 
 
@@ -710,34 +500,38 @@ bool storage_save_cache()
 bool storage_load()
 {
 
-    return storage_load_cache();
+    JsonDocument doc;
+
+    return storage_read_json(
+        doc
+    );
 
 }
-
-
 
 
 
 bool storage_save()
 {
 
-    return storage_save_cache();
+    JsonDocument doc;
+
+    if(!storage_read_json(doc))
+        return false;
+
+
+    return storage_write_json(
+        doc
+    );
 
 }
-
-
-
-
-
 
 
 // =================================================
 // JSON PATH READER
 // Supports unlimited depth
-//
 // Example:
 // mqtt.server
-// display.brightness
+// display.settings.brightness
 // =================================================
 
 JsonVariant get_path(
@@ -746,18 +540,11 @@ JsonVariant get_path(
 )
 {
 
-    if(path.length() == 0)
-        return JsonVariant();
-
-
-
     JsonVariant current =
         doc.as<JsonVariant>();
 
 
-
     int start = 0;
-
 
 
     while(true)
@@ -770,9 +557,7 @@ JsonVariant get_path(
             );
 
 
-
         String key;
-
 
 
         if(dot == -1)
@@ -797,21 +582,8 @@ JsonVariant get_path(
 
 
 
-        if(!current.isNull())
-        {
-
-            current =
-                current[key];
-
-        }
-        else
-        {
-
-            return JsonVariant();
-
-        }
-
-
+        current =
+            current[key];
 
 
 
@@ -851,11 +623,6 @@ bool set_path(
 )
 {
 
-    if(path.length() == 0)
-        return false;
-
-
-
     JsonVariant current =
         doc.as<JsonVariant>();
 
@@ -867,7 +634,6 @@ bool set_path(
 
     while(true)
     {
-
 
         int dot =
             path.indexOf(
@@ -890,10 +656,8 @@ bool set_path(
                 );
 
 
-
             current[key] =
                 value;
-
 
 
             break;
@@ -909,6 +673,8 @@ bool set_path(
                 );
 
         }
+
+
 
 
 
@@ -938,6 +704,8 @@ bool set_path(
 
 }
 
+
+
 // =================================================
 // STRING
 // =================================================
@@ -948,22 +716,28 @@ bool storage_set_string(
 )
 {
 
-    if(!config_loaded)
+    JsonDocument doc;
+
+
+    if(!storage_read_json(doc))
         return false;
 
 
 
     set_path(
-        configDoc,
+        doc,
         path,
         value
     );
 
 
 
-    return storage_save_cache();
+    return storage_write_json(
+        doc
+    );
 
 }
+
 
 
 
@@ -975,14 +749,18 @@ String storage_get_string(
 )
 {
 
-    if(!config_loaded)
+    JsonDocument doc;
+
+
+    if(!storage_read_json(doc))
         return defaultValue;
+
 
 
 
     JsonVariant value =
         get_path(
-            configDoc,
+            doc,
             path
         );
 
@@ -1003,6 +781,8 @@ String storage_get_string(
 
 
 
+
+
 // =================================================
 // INTEGER
 // =================================================
@@ -1013,20 +793,25 @@ bool storage_set_int(
 )
 {
 
-    if(!config_loaded)
+    JsonDocument doc;
+
+
+    if(!storage_read_json(doc))
         return false;
 
 
 
     set_path(
-        configDoc,
+        doc,
         path,
         value
     );
 
 
 
-    return storage_save_cache();
+    return storage_write_json(
+        doc
+    );
 
 }
 
@@ -1040,14 +825,18 @@ int storage_get_int(
 )
 {
 
-    if(!config_loaded)
+    JsonDocument doc;
+
+
+    if(!storage_read_json(doc))
         return defaultValue;
+
 
 
 
     JsonVariant value =
         get_path(
-            configDoc,
+            doc,
             path
         );
 
@@ -1068,6 +857,8 @@ int storage_get_int(
 
 
 
+
+
 // =================================================
 // FLOAT
 // =================================================
@@ -1078,20 +869,25 @@ bool storage_set_float(
 )
 {
 
-    if(!config_loaded)
+    JsonDocument doc;
+
+
+    if(!storage_read_json(doc))
         return false;
 
 
 
     set_path(
-        configDoc,
+        doc,
         path,
         value
     );
 
 
 
-    return storage_save_cache();
+    return storage_write_json(
+        doc
+    );
 
 }
 
@@ -1105,14 +901,18 @@ float storage_get_float(
 )
 {
 
-    if(!config_loaded)
+    JsonDocument doc;
+
+
+    if(!storage_read_json(doc))
         return defaultValue;
+
 
 
 
     JsonVariant value =
         get_path(
-            configDoc,
+            doc,
             path
         );
 
@@ -1133,6 +933,8 @@ float storage_get_float(
 
 
 
+
+
 // =================================================
 // BOOLEAN
 // =================================================
@@ -1143,22 +945,28 @@ bool storage_set_bool(
 )
 {
 
-    if(!config_loaded)
+    JsonDocument doc;
+
+
+    if(!storage_read_json(doc))
         return false;
 
 
 
     set_path(
-        configDoc,
+        doc,
         path,
         value
     );
 
 
 
-    return storage_save_cache();
+    return storage_write_json(
+        doc
+    );
 
 }
+
 
 
 
@@ -1171,14 +979,18 @@ bool storage_get_bool(
 )
 {
 
-    if(!config_loaded)
+    JsonDocument doc;
+
+
+    if(!storage_read_json(doc))
         return defaultValue;
+
 
 
 
     JsonVariant value =
         get_path(
-            configDoc,
+            doc,
             path
         );
 
@@ -1193,15 +1005,10 @@ bool storage_get_bool(
 
 }
 
-
-
-
-
-
-
 // =================================================
 // DEVICE SETTINGS
 // =================================================
+
 
 String storage_get_device_name(
     String defaultValue
@@ -1237,9 +1044,11 @@ bool storage_set_device_name(
 
 
 
+
 // =================================================
 // WIFI SETTINGS
 // =================================================
+
 
 String storage_get_wifi_ssid(
     String defaultValue
@@ -1281,21 +1090,21 @@ bool storage_set_wifi(
 )
 {
 
-    if(!config_loaded)
-        return false;
+    bool a =
+        storage_set_string(
+            "wifi.ssid",
+            ssid
+        );
 
 
-
-    configDoc["wifi"]["ssid"] =
-        ssid;
-
-
-    configDoc["wifi"]["password"] =
-        password;
+    bool b =
+        storage_set_string(
+            "wifi.password",
+            password
+        );
 
 
-
-    return storage_save_cache();
+    return a && b;
 
 }
 
@@ -1309,6 +1118,7 @@ bool storage_set_wifi(
 // MQTT SETTINGS
 // =================================================
 
+
 String storage_get_mqtt_server(
     String defaultValue
 )
@@ -1320,6 +1130,7 @@ String storage_get_mqtt_server(
     );
 
 }
+
 
 
 
@@ -1344,9 +1155,12 @@ int storage_get_mqtt_port(
 
 
 
+
+
 // =================================================
 // LOCATION SETTINGS
 // =================================================
+
 
 bool storage_set_location(
     float latitude,
@@ -1354,21 +1168,24 @@ bool storage_set_location(
 )
 {
 
-    if(!config_loaded)
-        return false;
+
+    bool lat =
+        storage_set_float(
+            "location.latitude",
+            latitude
+        );
 
 
 
-    configDoc["location"]["latitude"] =
-        latitude;
+    bool lon =
+        storage_set_float(
+            "location.longitude",
+            longitude
+        );
 
 
-    configDoc["location"]["longitude"] =
-        longitude;
 
-
-
-    return storage_save_cache();
+    return lat && lon;
 
 }
 
@@ -1414,6 +1231,8 @@ float storage_get_longitude(
 
 
 
+
+
 bool storage_set_city(
     String city
 )
@@ -1450,6 +1269,8 @@ String storage_get_city(
 
 
 
+
+
 bool storage_set_country(
     String country
 )
@@ -1479,6 +1300,8 @@ String storage_get_country(
     );
 
 }
+
+
 // =================================================
 // PRAYER SETTINGS
 // =================================================
@@ -1494,10 +1317,7 @@ bool storage_set_time_format(
 )
 {
 
-    format.trim();
-
     format.toUpperCase();
-
 
 
     if(
@@ -1505,25 +1325,30 @@ bool storage_set_time_format(
         format != "24H"
     )
     {
-
         format = "24H";
-
     }
 
 
 
-    if(!config_loaded)
+    JsonDocument doc;
+
+
+    if(!storage_read_json(doc))
+    {
+        Serial.println(
+            "Cannot read config"
+        );
+
         return false;
+    }
 
-
-
-    configDoc["prayer"]["time_format"] =
+    doc["prayer"]["time_format"] =
         format;
 
 
 
     Serial.print(
-        "Time Format Saved: "
+        "Saving time_format: "
     );
 
     Serial.println(
@@ -1532,12 +1357,17 @@ bool storage_set_time_format(
 
 
 
-    return storage_save_cache();
+    bool result =
+    storage_write_json(
+        doc
+    );
 
+
+storage_print_debug();
+
+
+return result;
 }
-
-
-
 
 
 
@@ -1547,18 +1377,25 @@ String storage_get_time_format(
 )
 {
 
-    if(!config_loaded)
+    JsonDocument doc;
+
+
+    if(!storage_read_json(doc))
+    {
         return defaultValue;
+    }
 
 
 
     JsonVariant value =
-        configDoc["prayer"]["time_format"];
+        doc["prayer"]["time_format"];
 
 
 
     if(value.isNull())
+    {
         return defaultValue;
+    }
 
 
 
@@ -1577,10 +1414,7 @@ String storage_get_time_format(
         format != "24H"
     )
     {
-
-        format =
-            defaultValue;
-
+        format = defaultValue;
     }
 
 
@@ -1593,11 +1427,10 @@ String storage_get_time_format(
 
 
 
-
-
 // ===============================
 // Calculation Method
 // ===============================
+
 
 bool storage_set_calculation_method(
     String method
@@ -1610,7 +1443,6 @@ bool storage_set_calculation_method(
     );
 
 }
-
 
 
 
@@ -1633,10 +1465,10 @@ String storage_get_calculation_method(
 
 
 
-
 // ===============================
 // Prayer Offsets
 // ===============================
+
 
 bool storage_set_fajr_offset(
     int value
@@ -1666,8 +1498,6 @@ int storage_get_fajr_offset(
 
 
 
-
-
 bool storage_set_dhuhr_offset(
     int value
 )
@@ -1692,7 +1522,6 @@ int storage_get_dhuhr_offset(
     );
 
 }
-
 
 
 
@@ -1727,7 +1556,6 @@ int storage_get_asr_offset(
 
 
 
-
 bool storage_set_maghrib_offset(
     int value
 )
@@ -1752,7 +1580,6 @@ int storage_get_maghrib_offset(
     );
 
 }
-
 
 
 
@@ -1793,6 +1620,7 @@ int storage_get_isha_offset(
 // =================================================
 // AUDIO SETTINGS
 // =================================================
+
 
 bool storage_set_volume(
     int volume
@@ -1836,6 +1664,7 @@ int storage_get_volume(
 
 
 
+
 bool storage_set_athan_folder(
     int folder
 )
@@ -1847,7 +1676,6 @@ bool storage_set_athan_folder(
     );
 
 }
-
 
 
 
@@ -1868,6 +1696,7 @@ int storage_get_athan_folder(
 
 
 
+
 bool storage_set_athan_file(
     int file
 )
@@ -1882,7 +1711,6 @@ bool storage_set_athan_file(
 
 
 
-
 int storage_get_athan_file(
     int defaultValue
 )
@@ -1894,6 +1722,7 @@ int storage_get_athan_file(
     );
 
 }
+
 
 
 
@@ -1926,6 +1755,7 @@ int storage_get_surah_folder(
     );
 
 }
+
 
 
 
@@ -1966,7 +1796,6 @@ int storage_get_surah_file(
 
 
 
-
 // =================================================
 // DEBUG
 // =================================================
@@ -1974,64 +1803,38 @@ int storage_get_surah_file(
 void storage_print_debug()
 {
 
-    Serial.println();
-    Serial.println(
-        "========== STORAGE DEBUG =========="
-    );
+    JsonDocument doc;
 
 
-
-    Serial.print(
-        "Ready: "
-    );
-
-    Serial.println(
-        storage_ready
-    );
-
-
-
-    Serial.print(
-        "Cache Loaded: "
-    );
-
-    Serial.println(
-        config_loaded
-    );
-
-
-
-    if(config_loaded)
-    {
-
-        serializeJsonPretty(
-            configDoc,
-            Serial
-        );
-
-    }
-    else
+    if(!storage_read_json(doc))
     {
 
         Serial.println(
-            "No Config Loaded"
+            "No Config"
         );
+
+        return;
 
     }
 
 
 
-    Serial.println();
-
     Serial.println(
-        "==================================="
+        "===== CONFIG ====="
     );
 
+
+
+    serializeJsonPretty(
+        doc,
+        Serial
+    );
+
+
+
+    Serial.println();
+
 }
-
-
-
-
 
 
 
@@ -2049,13 +1852,9 @@ void storage_reset()
     );
 
 
-
-    config_loaded = false;
-
-
-
-    configDoc.clear();
-
+    Serial.println(
+        "Reset Storage"
+    );
 
 
     if(LittleFS.exists(CONFIG_FILE))
@@ -2065,7 +1864,6 @@ void storage_reset()
             CONFIG_FILE
         );
 
-
         Serial.println(
             "Config Deleted"
         );
@@ -2073,13 +1871,10 @@ void storage_reset()
     }
 
 
-
-    delay(300);
-
+    delay(500);
 
 
     storage_create_defaults();
-
 
 
     Serial.println(
@@ -2087,9 +1882,7 @@ void storage_reset()
     );
 
 
-
     delay(500);
-
 
 
     ESP.restart();

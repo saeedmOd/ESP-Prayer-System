@@ -205,6 +205,32 @@ void play_athan()
 }
 
 // =================================
+// Iqama
+// =================================
+
+void play_iqama()
+{
+    if (!playerReady)
+    {
+        Serial.println("[Iqama] DFPlayer not ready, cannot play iqama.");
+        return;
+    }
+
+    if(!settings.iqamaEnable)
+    {
+        Serial.println("[Iqama] Iqama is disabled in settings.");
+        return;
+    }
+
+    Serial.println("[Iqama] Playing Iqama...");
+
+    play_folder_file(
+        settings.iqamaFolder,
+        settings.iqamaFile
+    );
+}
+
+// =================================
 // Quran
 // =================================
 

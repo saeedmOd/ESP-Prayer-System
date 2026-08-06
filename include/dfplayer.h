@@ -41,6 +41,8 @@ void play_folder_file(
 
 void play_athan();
 
+void play_iqama();
+
 void play_quran();
 
 void play_dua();

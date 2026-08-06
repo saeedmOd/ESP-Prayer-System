@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-
+#include "ota_manager.h"
 #include "settings.h"
 #include "version.h"
 
@@ -15,7 +15,7 @@
 #include "command_handler.h"
 
 #include "web_server.h"
-
+#include <ESPAsyncWebServer.h>
 #include "dfplayer.h"
 #include "display.h"
 #include "prayer.h"
@@ -28,35 +28,12 @@
 // Setup
 // =================================
 
-void setup()
-{
+void setup() {
+    Serial.begin(115200);
 
-
-    Serial.begin(74880);
-
-
-    delay(1000);
-
-
-
-
-    Serial.println();
-
-    Serial.println(
-        "=============================="
-    );
-
-    Serial.println(
-        " ESP Prayer System Starting "
-    );
-
-    Serial.println(
-        "=============================="
-    );
-
-
-
-
+    // 1. إعداد الـ Access Point والواي فاي كالمعتاد
+    WiFi.mode(WIFI_AP_STA);
+    WiFi.softAP("ESP_Config_AP");
 
     // ==============================
     // System Information
@@ -83,27 +60,50 @@ void setup()
 
 
 
-    // ==============================
-    // WiFi
-    // ==============================
+// ==============================
+// WiFi
+// ==============================
 
-    wifi_init();
+wifi_init();
 
+Serial.print("AP MODE STATUS: ");
+Serial.println(wifi_is_ap_mode());
 
+// ==============================
+// Web Server
+// ==============================
 
-
-
-
-
-    // ==============================
-    // Web Server
-    // Start Early
-    // Supports AP Setup Mode
-    // ==============================
-
-    web_server_init();
+web_server_init();
 
 
+
+// ==============================
+// Start System Services
+// Only when WiFi Connected
+// ==============================
+
+if(wifi_connected())
+{
+
+    OTA.begin();
+
+    mqtt_init();
+
+    dfplayer_init();
+
+    prayer_init();
+
+    display_init();
+
+}
+else
+{
+
+    Serial.println(
+        "Waiting for WiFi Setup..."
+    );
+
+}
 
 
 
@@ -162,18 +162,18 @@ void setup()
 
 
 
+// ==============================
+// Hardware
+// ==============================
 
+//if(wifi_connected())
+//{
 
-    // ==============================
-    // Hardware
-    // ==============================
+//    dfplayer_init();
 
-    dfplayer_init();
+ //   display_init();
 
-
-    display_init();
-
-
+//}
 
 
 
@@ -215,14 +215,14 @@ void setup()
 
 
 
-
-// =================================
-// Main Loop
-// =================================
-
 void loop()
 {
 
+    // ==============================
+    // WiFi
+    // ==============================
+
+    wifi_loop();
 
 
     // ==============================
@@ -232,11 +232,6 @@ void loop()
     OTA.handle();
 
 
-
-
-
-
-
     // ==============================
     // MQTT
     // ==============================
@@ -244,40 +239,14 @@ void loop()
     mqtt_loop();
 
 
-
-
-
-
-
-    // ==============================
-    // WiFi Reconnect
-    // ==============================
-
-    wifi_loop();
-
-
-
-
-
-
-
     // ==============================
     // Time Update
     // ==============================
 
-    if(
-        wifi_connected()
-    )
+    if(wifi_connected())
     {
-
         time_update();
-
     }
-
-
-
-
-
 
 
     // ==============================
@@ -287,11 +256,6 @@ void loop()
     prayer_loop();
 
 
-
-
-
-
-
     // ==============================
     // Display
     // ==============================
@@ -299,17 +263,10 @@ void loop()
     display_loop();
 
 
-
-
-
-
-
     // ==============================
     // Web Server
     // ==============================
 
     web_server_loop();
-
-
 
 }

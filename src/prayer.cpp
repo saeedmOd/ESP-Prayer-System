@@ -31,6 +31,16 @@ static bool azanPlayed[6] =
     false
 };
 
+static bool iqamaPlayed[6] =
+{
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+};
+
 
 
 static const char* prayerNames[6] =
@@ -290,7 +300,6 @@ static void calculate_prayers()
             prayerMinutes[i] += 1440;
         }
 
-
     }
 
 
@@ -330,6 +339,7 @@ void prayer_reload()
     for(int i=0;i<6;i++)
     {
         azanPlayed[i] = false;
+        iqamaPlayed[i] = false;
     }
 
 
@@ -487,6 +497,38 @@ else
             // ==========================
 
 
+        }
+
+
+        int iqamaMinute =
+            prayerMinutes[i] + settings.iqamaDelayMinutes;
+
+        if(iqamaMinute >= 1440)
+        {
+            iqamaMinute -= 1440;
+        }
+
+        if(
+            settings.iqamaEnable
+            &&
+            now >= iqamaMinute
+            &&
+            now <= iqamaMinute + 1
+            &&
+            !iqamaPlayed[i]
+        )
+        {
+            iqamaPlayed[i] = true;
+
+            play_iqama();
+
+            Serial.print(
+                "Playing Iqama: "
+            );
+
+            Serial.println(
+                prayerNames[i]
+            );
         }
 
 

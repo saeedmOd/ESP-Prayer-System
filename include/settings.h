@@ -141,6 +141,14 @@ struct SystemSettings
 
     int athanFile;
 
+    bool iqamaEnable;
+
+    int iqamaFolder;
+
+    int iqamaFile;
+
+    int iqamaDelayMinutes;
+
 
     int surahFolder;
 

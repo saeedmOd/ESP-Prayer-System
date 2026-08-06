@@ -1,420 +1,291 @@
 #include "web_server.h"
-#include "wifi_manager.h"
+
 #include <Arduino.h>
-#include <ESPAsyncWebServer.h>
+#include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
+#include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 
-
+#include "wifi_manager.h"
 #include "command_handler.h"
 #include "storage.h"
+#include "settings.h"
 #include "version.h"
 #include "prayer.h"
-#include "settings.h"
-#include "time_manager.h" // إضافة هذا السطر
+#include "time_manager.h"
 #include "dfplayer.h"
+#include <Ticker.h>
 
+Ticker rebootTimer;
+// =====================================
+// Route Forward Declarations
+// =====================================
+
+static void registerStaticRoutes();
+static void registerPageRoutes();
+static void registerApiRoutes();
+static void registerSystemRoutes();
+static void registerScanRoutes();
+static void register_not_found();
+static void start_mdns();
+
+// =====================================
+// Web Server & State
+// =====================================
 
 AsyncWebServer server(80);
+static bool webServerStarted = false;
 
-
-
-// =====================================
-// POST Buffers
-// =====================================
-
+// Buffers for multi-chunk POST body assembly
 static String audioBody;
 static String prayerBody;
 static String networkBody;
 
-
-
-
 // =====================================
-// Send File Helper
+// Response Helpers
 // =====================================
 
-static void send_file(
-    AsyncWebServerRequest *request,
-    const char *file,
-    const char *type
-)
-{
+static void send_json(AsyncWebServerRequest *request, JsonDocument &doc) {
+    String output;
+    serializeJson(doc, output);
 
-    Serial.print("Sending file: ");
-    Serial.println(file);
+    AsyncWebServerResponse *response = request->beginResponse(200, "application/json", output);
+    response->addHeader("Cache-Control", "no-store");
+    request->send(response);
+}
 
+static void send_text(AsyncWebServerRequest *request, int code, const char *text) {
+    AsyncWebServerResponse *response = request->beginResponse(code, "text/plain", text);
+    response->addHeader("Cache-Control", "no-store");
+    request->send(response);
+}
 
-    if(!LittleFS.exists(file))
-    {
+// Supports static and gzipped file delivery from LittleFS
+static void send_file(AsyncWebServerRequest *request, const char *file, const char *type) {
+    String path = String(file);
+    String gzipPath = path + ".gz";
 
-        Serial.println("File missing");
+    // Try gzip version first
+    if (LittleFS.exists(gzipPath)) {
+        Serial.print(F("[FS] Sending gzip: "));
+        Serial.println(gzipPath);
 
-        request->send(
-            404,
-            "text/plain",
-            "File Not Found"
-        );
-
+        AsyncWebServerResponse *response = request->beginResponse(LittleFS, gzipPath, type);
+        response->addHeader("Content-Encoding", "gzip");
+        response->addHeader("Cache-Control", "no-store");
+        request->send(response);
         return;
     }
 
+    // Try uncompressed file
+    if (!LittleFS.exists(path)) {
+        Serial.print(F("[FS] Missing: "));
+        Serial.println(path);
+        send_text(request, 404, "File Not Found");
+        return;
+    }
 
+    Serial.print(F("[FS] Sending: "));
+    Serial.println(path);
 
-    AsyncWebServerResponse *response =
-        request->beginResponse(
-            LittleFS,
-            file,
-            type
-        );
-
-
-    response->addHeader(
-        "Cache-Control",
-        "no-store"
-    );
-
-
-    request->send(
-        response
-    );
-
-
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, path, type);
+    response->addHeader("Cache-Control", "no-store");
+    request->send(response);
 }
 
+// =====================================
+// 404 & mDNS
+// =====================================
 
+static void register_not_found() {
+    server.onNotFound([](AsyncWebServerRequest *request) {
+        Serial.print(F("[404] "));
+        Serial.println(request->url());
+
+        String html;
+        html.reserve(256);
+        html = "<!DOCTYPE html><html dir='rtl'><head><meta charset='UTF-8'>"
+               "<title>ESP Prayer System</title></head><body>"
+               "<h2>ESP Prayer System</h2><p>الصفحة غير موجودة</p>"
+               "</body></html>";
+
+        AsyncWebServerResponse *response = request->beginResponse(404, "text/html", html);
+        response->addHeader("Cache-Control", "no-store");
+        request->send(response);
+    });
+}
+
+static void start_mdns() {
+    if (MDNS.begin("esp-prayer-system")) {
+        Serial.println(F("[MDNS] Started (esp-prayer-system.local)"));
+        MDNS.addService("http", "tcp", 80);
+    } else {
+        Serial.println(F("[MDNS] Failed"));
+    }
+}
 
 // =====================================
 // Web Server Init
 // =====================================
 
-void web_server_init()
-{
-
-    Serial.println(
-        "Starting Web Server"
-    );
-
-
-
-    if(!LittleFS.begin())
-    {
-
-        Serial.println(
-            "LittleFS Mount Failed"
-        );
-
+void web_server_init() {
+    if (webServerStarted) {
+        Serial.println(F("[WEB] Already running"));
         return;
-
     }
 
+    Serial.println(F("[WEB] Initializing routes..."));
 
+    registerScanRoutes();
+    registerStaticRoutes();
+    registerPageRoutes();
+    registerApiRoutes();
+    registerSystemRoutes();
+    register_not_found();
 
+    server.begin();
+    start_mdns();
 
+    webServerStarted = true;
+    Serial.println(F("[WEB] Server Started successfully"));
+}
 
-    // =====================================
-    // mDNS
-    // =====================================
-
-
-    if(MDNS.begin("esp-prayer-system"))
-    {
-
-        Serial.println(
-            "mDNS Started"
-        );
-
-
-        MDNS.addService(
-            "http",
-            "tcp",
-            80
-        );
-
-    }
-    else
-    {
-
-        Serial.println(
-            "mDNS Failed"
-        );
-
-    }
-
-
-
-
-
-
+/// =====================================
+// WiFi Scan Routes (Fixed & Non-blocking)
 // =====================================
-// Main Page
-// =====================================
+static void registerScanRoutes() {
 
+    // مسح غير حاجب للمعالج لتجنب WDT Reset
+    server.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request) {
+        int n = WiFi.scanComplete();
 
-server.on(
-    "/",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
+        // 1. إذا كان المسح جارياً حالياً في الخلفية
+        if (n == WIFI_SCAN_RUNNING) {
+            request->send(200, "application/json", "{\"status\":\"scanning\"}");
+            return;
+        }
 
-        send_file(
-            request,
-            "/web/index.html",
-            "text/html"
-        );
+        // 2. إذا اكتمل المسح وهناك نتائج جاهزة
+        if (n >= 0) {
+            JsonDocument doc;
+            JsonObject root = doc.to<JsonObject>();
+            root["status"] = "complete";
+            JsonArray networks = root["networks"].to<JsonArray>();
 
-    }
-);
+            for (int i = 0; i < n; i++) {
+                JsonObject net = networks.add<JsonObject>();
+                net["ssid"] = WiFi.SSID(i);
+                net["rssi"] = WiFi.RSSI(i);
+            }
 
+            String jsonResponse;
+            serializeJson(root, jsonResponse);
 
+            request->send(200, "application/json", jsonResponse);
 
+            // مسح النتائج من الذاكرة للتحضير للمرة القادمة
+            WiFi.scanDelete();
+            return;
+        }
 
-
-server.on(
-    "/index.html",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
-
-        request->redirect("/");
-
-    }
-);
-
-
-
-
-
-
-
+        // 3. إذا لم يبدأ المسح بعد، ابدأ مسحاً جديداً في الخلفية
+        WiFi.scanNetworks(true); // true = Async Mode (غير حاجب)
+        Serial.println(F("[WIFI] Started async scan in background..."));
+        
+        request->send(200, "application/json", "{\"status\":\"scanning\"}");
+    });
+}
 // =====================================
 // Static Files
 // =====================================
 
+static void registerStaticRoutes() {
+    server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+        send_file(request, "/web/style.css", "text/css");
+    });
 
-server.on(
-    "/style.css",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
-
-        send_file(
-            request,
-            "/web/style.css",
-            "text/css"
-        );
-
-    }
-);
-
-
-
-
-
-server.on(
-    "/script.js",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
-
-        send_file(
-            request,
-            "/web/script.js",
-            "application/javascript"
-        );
-
-    }
-);
-
-
-
-
-
-
+    server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+        send_file(request, "/web/script.js", "application/javascript");
+    });
+}
 
 // =====================================
 // HTML Pages
 // =====================================
 
+static void registerPageRoutes() {
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+            Serial.println(F("[WEB] AP Mode active -> wifi.html"));
+            send_file(request, "/web/wifi.html", "text/html");
+        } else {
+            Serial.println(F("[WEB] Normal Mode -> index.html"));
+            send_file(request, "/web/index.html", "text/html");
+        }
+    });
 
-server.on(
-    "/audio.html",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
+    server.on("/audio.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+        send_file(request, "/web/audio.html", "text/html");
+    });
 
-        send_file(
-            request,
-            "/web/audio.html",
-            "text/html"
-        );
+    server.on("/prayer.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+        send_file(request, "/web/prayer.html", "text/html");
+    });
 
-    }
-);
+    server.on("/network.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+        send_file(request, "/web/network.html", "text/html");
+    });
 
-
-
-
-
-server.on(
-    "/prayer.html",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
-
-        send_file(
-            request,
-            "/web/prayer.html",
-            "text/html"
-        );
-
-    }
-);
-
-
-
-
-
-server.on(
-    "/network.html",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
-
-        send_file(
-            request,
-            "/web/network.html",
-            "text/html"
-        );
-
-    }
-);
-
-
-
-
-
-server.on(
-    "/system.html",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
-
-        send_file(
-            request,
-            "/web/system.html",
-            "text/html"
-        );
-
-    }
-);
-
-
+    server.on("/system.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+        send_file(request, "/web/system.html", "text/html");
+    });
+}
 
 // =====================================
-// Status API
+// API Routes
 // =====================================
 
-server.on(
-    "/api/status",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
+static void registerApiRoutes() {
+    // ---------------------------------
+    // System Status API
+    // ---------------------------------
+    server.on("/api/status", HTTP_GET, [](AsyncWebServerRequest *request) {
+        Serial.println(F("[API] Status requested"));
 
-        Serial.println(
-            "API Status Request"
-        );
-
-
-        DynamicJsonDocument doc(2048);
-
-
-
-        // =========================
-        // System
-        // =========================
+        JsonDocument doc;
 
         doc["status"] = "online";
+        doc["wifi"] = (WiFi.status() == WL_CONNECTED);
 
+        bool dfReady = dfplayer_ready();
+        doc["playerReady"] = dfReady;
+        doc["df_status"] = dfReady ? "ready" : "failed/skipped";
+        doc["volume"] = settings.volume;
 
-        doc["wifi"] =
-            (WiFi.status() == WL_CONNECTED);
-
-
-
-        bool dfReady =
-            dfplayer_ready();
-
-
-
-        doc["playerReady"] =
-            dfReady;
-
-
-        doc["df_status"] =
-            dfReady ? "ready" : "failed/skipped";
-
-
-
-        doc["volume"] =
-            settings.volume;
-
-
-
-
-        doc["timeFormat"] =
-            storage_get_time_format(
-                "24H"
-            );
-
-
-
-        doc["version"] =
-            FIRMWARE_VERSION;
-
-
-
-
-        // =========================
-        // Prayer
-        // =========================
-
-        if (time_is_ready())
-        {
-            doc["nextPrayer"] =
-                get_next_prayer_name();
-
-            doc["nextPrayerTime"] =
-                get_next_prayer_time();
-
-            doc["countdown"] =
-                get_prayer_countdown();
-
-            doc["fajr"] =
-                get_prayer_time(0);
-
-            doc["sunrise"] =
-                get_prayer_time(1);
-
-            doc["dhuhr"] =
-                get_prayer_time(2);
-
-            doc["asr"] =
-                get_prayer_time(3);
-
-            doc["maghrib"] =
-                get_prayer_time(4);
-
-            doc["isha"] =
-                get_prayer_time(5);
+        String format = settings.timeFormat;
+        if (format != "12H" && format != "24H") {
+            format = storage_get_time_format("24H");
         }
-        else
-        {
-            // إرسال قيم افتراضية آمنة إذا لم يكن الوقت متزامناً
+        doc["timeFormat"] = format;
+        doc["version"] = FIRMWARE_VERSION;
+
+        if (time_is_ready()) {
+            doc["nextPrayer"] = get_next_prayer_name();
+            doc["nextPrayerTime"] = get_next_prayer_time();
+            doc["countdown"] = get_prayer_countdown();
+
+            doc["fajr"] = get_prayer_time(0);
+            doc["sunrise"] = get_prayer_time(1);
+            doc["dhuhr"] = get_prayer_time(2);
+            doc["asr"] = get_prayer_time(3);
+            doc["maghrib"] = get_prayer_time(4);
+            doc["isha"] = get_prayer_time(5);
+        } else {
             doc["nextPrayer"] = "Waiting...";
             doc["nextPrayerTime"] = "--:--";
             doc["countdown"] = 0;
+
             doc["fajr"] = "--:--";
             doc["sunrise"] = "--:--";
             doc["dhuhr"] = "--:--";
@@ -423,1256 +294,420 @@ server.on(
             doc["isha"] = "--:--";
         }
 
+        send_json(request, doc);
+    });
 
+    // ---------------------------------
+    // Volume Compatibility POST API
+    // ---------------------------------
+    server.on("/api/settings/volume", HTTP_POST,
+        [](AsyncWebServerRequest *request) {
+            request->send(200, "application/json", "{\"status\":\"saved\"}");
+        },
+        NULL,
+        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            String body;
+            body.reserve(len);
+            for (size_t i = 0; i < len; i++) {
+                body += (char)data[i];
+            }
 
-        String output;
+            JsonDocument doc;
+            if (deserializeJson(doc, body) == DeserializationError::Ok) {
+                if (doc["volume"].is<int>()) {
+                    int volume = doc["volume"];
+                    settings.volume = volume;
+                    storage_set_volume(volume);
+                    Serial.print(F("[AUDIO] Volume set to: "));
+                    Serial.println(volume);
+                }
+            }
+        }
+    );
 
-
-        serializeJson(
-            doc,
-            output
-        );
-
-
-
-        AsyncWebServerResponse *response =
-            request->beginResponse(
-                200,
-                "application/json",
-                output
-            );
-
-
-
-        response->addHeader(
-            "Cache-Control",
-            "no-store"
-        );
-
-
-
-        request->send(
-            response
-        );
-
-
-    }
-);
-
-
-// =====================================
-// Audio Settings GET
-// =====================================
-
-server.on(
-    "/api/settings/audio",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
-
+    // ---------------------------------
+    // Audio Settings GET
+    // ---------------------------------
+    server.on("/api/settings/audio", HTTP_GET, [](AsyncWebServerRequest *request) {
         JsonDocument doc;
 
+        doc["volume"] = storage_get_volume(25);
+        doc["azanEnable"] = storage_get_bool("audio.azan_enable", true);
+        doc["azanFolder"] = storage_get_athan_folder(1);
+        doc["azanFile"] = storage_get_athan_file(1);
+        doc["iqamaEnable"] = storage_get_bool("audio.iqama_enable", true);
+        doc["iqamaFolder"] = storage_get_int("audio.iqama_folder", 5);
+        doc["iqamaFile"] = storage_get_int("audio.iqama_file", 1);
+        doc["iqamaDelay"] = storage_get_int("audio.iqama_delay", 10);
+        doc["surahFolder"] = storage_get_surah_folder(2);
+        doc["surahFile"] = storage_get_surah_file(1);
 
-        doc["volume"] =
-            storage_get_volume(
-                25
-            );
+        send_json(request, doc);
+    });
 
+    // ---------------------------------
+    // Audio Settings POST
+    // ---------------------------------
+    server.on("/api/settings/audio", HTTP_POST,
+        [](AsyncWebServerRequest *request) {
+            request->send(200, "application/json", "{\"status\":\"saved\"}");
+        },
+        NULL,
+        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            if (index == 0) {
+                audioBody = "";
+                audioBody.reserve(total);
+            }
 
-        // تفعيل الأذان
-        doc["azanEnable"] = 
-            storage_get_bool(
-                "audio.azan_enable",
-                true
-            );
+            for (size_t i = 0; i < len; i++) {
+                audioBody += (char)data[i];
+            }
 
+            if (index + len != total) return;
 
-        doc["azanFolder"] =
-            storage_get_athan_folder(
-                1
-            );
+            Serial.println(F("[API] Audio Save received"));
 
+            JsonDocument doc;
+            if (deserializeJson(doc, audioBody)) {
+                Serial.println(F("[AUDIO] JSON Error"));
+                return;
+            }
 
-        doc["azanFile"] =
-            storage_get_athan_file(
-                1
-            );
+            JsonDocument config;
+            if (!storage_read_json(config)) {
+                Serial.println(F("[AUDIO] Config read failed"));
+                return;
+            }
 
+            JsonObject audio = config["audio"].to<JsonObject>();
 
-        doc["surahFolder"] =
-            storage_get_surah_folder(
-                2
-            );
+            if (doc["volume"].is<int>()) {
+                int vol = doc["volume"];
+                vol = constrain(vol, 0, 30);
+                audio["volume"] = vol;
+                settings.volume = vol;
+            }
 
+            if (doc["azanEnable"].is<bool>()) {
+                bool enable = doc["azanEnable"];
+                audio["azan_enable"] = enable;
+                settings.azanEnable = enable;
+            }
 
-        doc["surahFile"] =
-            storage_get_surah_file(
-                1
-            );
+            if (doc["azanFolder"].is<int>()) {
+                int folder = doc["azanFolder"];
+                audio["athan_folder"] = folder;
+                settings.athanFolder = folder;
+            }
 
+            if (doc["azanFile"].is<int>()) {
+                int file = doc["azanFile"];
+                audio["athan_file"] = file;
+                settings.athanFile = file;
+            }
 
+            if (doc["iqamaEnable"].is<bool>()) {
+                bool enable = doc["iqamaEnable"];
+                audio["iqama_enable"] = enable;
+                settings.iqamaEnable = enable;
+            }
 
-        String output;
+            if (doc["iqamaFolder"].is<int>()) {
+                int folder = doc["iqamaFolder"];
+                audio["iqama_folder"] = folder;
+                settings.iqamaFolder = folder;
+            }
 
+            if (doc["iqamaFile"].is<int>()) {
+                int file = doc["iqamaFile"];
+                audio["iqama_file"] = file;
+                settings.iqamaFile = file;
+            }
 
-        serializeJson(
-            doc,
-            output
-        );
+            if (doc["iqamaDelay"].is<int>()) {
+                int delayMinutes = doc["iqamaDelay"];
+                delayMinutes = constrain(delayMinutes, 0, 60);
+                audio["iqama_delay"] = delayMinutes;
+                settings.iqamaDelayMinutes = delayMinutes;
+            }
 
+            if (doc["surahFolder"].is<int>()) {
+                int folder = doc["surahFolder"];
+                audio["surah_folder"] = folder;
+                settings.surahFolder = folder;
+            }
 
-        Serial.println(
-            "Audio GET:"
-        );
+            if (doc["surahFile"].is<int>()) {
+                int file = doc["surahFile"];
+                audio["surah_file"] = file;
+                settings.surahFile = file;
+            }
 
-
-        Serial.println(
-            output
-        );
-
-
-        AsyncWebServerResponse *response =
-            request->beginResponse(
-                200,
-                "application/json",
-                output
-            );
-
-
-        response->addHeader(
-            "Cache-Control",
-            "no-store"
-        );
-
-
-        request->send(
-            response
-        );
-
-
-    }
-);
-
-
-// =====================================
-// Audio Settings POST
-// =====================================
-
-
-server.on(
-    "/api/settings/audio",
-    HTTP_POST,
-
-
-    [](AsyncWebServerRequest *request)
-    {
-
-        request->send(
-            200,
-            "application/json",
-            "{\"status\":\"saved\"}"
-        );
-
-    },
-
-
-    NULL,
-
-
-    [](AsyncWebServerRequest *request,
-       uint8_t *data,
-       size_t len,
-       size_t index,
-       size_t total)
-    {
-
-
-
-        if(index == 0)
-        {
-
-            audioBody = "";
-
+            if (storage_write_json(config)) {
+                settings_apply();
+                Serial.println(F("[AUDIO] Settings saved successfully"));
+            } else {
+                Serial.println(F("[AUDIO] Save failed"));
+            }
         }
+    );
 
-
-
-
-        for(size_t i=0;i<len;i++)
-        {
-
-            audioBody +=
-                (char)data[i];
-
-        }
-
-
-
-
-
-        if(index + len != total)
-            return;
-
-
-
-
-
-
-        Serial.println(
-            "Audio JSON:"
-        );
-
-
-        Serial.println(
-            audioBody
-        );
-
-
-
-
-
+    // ---------------------------------
+    // Prayer Settings GET
+    // ---------------------------------
+    server.on("/api/settings/prayer", HTTP_GET, [](AsyncWebServerRequest *request) {
         JsonDocument doc;
 
+        doc["city"] = storage_get_city("Al Ain");
+        doc["country"] = storage_get_country("UAE");
+        doc["latitude"] = storage_get_latitude(24.2075);
+        doc["longitude"] = storage_get_longitude(55.7447);
+        doc["method"] = storage_get_calculation_method("UmmAlQura");
 
+        String format = storage_get_time_format("24H");
+        doc["time_format"] = format;
 
-        DeserializationError error =
-            deserializeJson(
-                doc,
-                audioBody
-            );
+        doc["fajr_offset"] = storage_get_fajr_offset(0);
+        doc["dhuhr_offset"] = storage_get_dhuhr_offset(0);
+        doc["asr_offset"] = storage_get_asr_offset(0);
+        doc["maghrib_offset"] = storage_get_maghrib_offset(0);
+        doc["isha_offset"] = storage_get_isha_offset(0);
 
+        send_json(request, doc);
+    });
 
+    // ---------------------------------
+    // Prayer Settings POST
+    // ---------------------------------
+    server.on("/api/settings/prayer", HTTP_POST,
+        [](AsyncWebServerRequest *request) {
+            request->send(200, "application/json", "{\"status\":\"saved\"}");
+        },
+        NULL,
+        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            if (index == 0) {
+                prayerBody = "";
+                prayerBody.reserve(total);
+            }
 
-        if(error)
-        {
+            for (size_t i = 0; i < len; i++) {
+                prayerBody += (char)data[i];
+            }
 
-            Serial.println(
-                "Audio JSON Error"
-            );
+            if (index + len != total) return;
 
-            return;
+            Serial.println(F("[PRAYER] Save request received"));
 
+            JsonDocument doc;
+            if (deserializeJson(doc, prayerBody)) {
+                Serial.println(F("[PRAYER] JSON Parsing Error"));
+                return;
+            }
+
+            JsonDocument config;
+            if (!storage_read_json(config)) {
+                Serial.println(F("[PRAYER] Config read failed"));
+                return;
+            }
+
+            if (doc["city"].is<String>()) config["location"]["city"] = doc["city"];
+            if (doc["country"].is<String>()) config["location"]["country"] = doc["country"];
+            if (doc["latitude"].is<float>()) config["location"]["latitude"] = doc["latitude"];
+            if (doc["longitude"].is<float>()) config["location"]["longitude"] = doc["longitude"];
+
+            if (doc["method"].is<String>()) {
+                config["prayer"]["calculation_method"] = doc["method"];
+            }
+
+            if (doc["time_format"].is<String>()) {
+                String format = doc["time_format"].as<String>();
+                format.trim();
+                format.toUpperCase();
+                if (format == "12H" || format == "24H") {
+                    config["prayer"]["time_format"] = format;
+                }
+            }
+
+            if (doc["fajr_offset"].is<int>()) config["prayer"]["fajr_offset"] = doc["fajr_offset"];
+            if (doc["dhuhr_offset"].is<int>()) config["prayer"]["dhuhr_offset"] = doc["dhuhr_offset"];
+            if (doc["asr_offset"].is<int>()) config["prayer"]["asr_offset"] = doc["asr_offset"];
+            if (doc["maghrib_offset"].is<int>()) config["prayer"]["maghrib_offset"] = doc["maghrib_offset"];
+            if (doc["isha_offset"].is<int>()) config["prayer"]["isha_offset"] = doc["isha_offset"];
+
+            if (storage_write_json(config)) {
+                Serial.println(F("[PRAYER] Saved OK"));
+            } else {
+                Serial.println(F("[PRAYER] Save Failed"));
+                return;
+            }
+
+            settings_load();
+            prayer_reload();
         }
-
-
-
-
-
-        // =========================
-        // Save Values
-        // =========================
-
-        JsonDocument config;
-
-
-        if(!storage_read_json(config))
-        {
-
-            Serial.println(
-                "Cannot read config"
-            );
-
-            return;
-
-        }
-
-
-
-        JsonObject audio =
-            config["audio"]
-            .to<JsonObject>();
-
-
-
-
-
-        // =========================
-        // Volume
-        // =========================
-
-        if(doc["volume"].is<int>())
-        {
-
-            int volume =
-                doc["volume"].as<int>();
-
-            audio["volume"] =
-                volume;
-
-
-            // Update Runtime Settings
-            settings.volume =
-                volume;
-
-        }
-
-
-
-
-
-        // =========================
-        // Athan Folder
-        // =========================
-
-        if(doc["azanFolder"].is<int>())
-        {
-
-            int folder =
-                doc["azanFolder"].as<int>();
-
-            audio["athan_folder"] =
-                folder;
-
-
-            // Update Runtime Settings
-            settings.athanFolder =
-                folder;
-
-        }
-
-
-
-
-
-        // =========================
-        // Athan File
-        // =========================
-
-        if(doc["azanFile"].is<int>())
-        {
-
-            int file =
-                doc["azanFile"].as<int>();
-
-            audio["athan_file"] =
-                file;
-
-
-            // Update Runtime Settings
-            settings.athanFile =
-                file;
-
-        }
-
-
-
-
-
-        // =========================
-        // Surah Folder
-        // =========================
-
-        if(doc["surahFolder"].is<int>())
-        {
-
-            int folder =
-                doc["surahFolder"].as<int>();
-
-            audio["surah_folder"] =
-                folder;
-
-
-            // Update Runtime Settings
-            settings.surahFolder =
-                folder;
-
-        }
-
-
-
-
-
-        // =========================
-        // Surah File
-        // =========================
-
-        if(doc["surahFile"].is<int>())
-        {
-
-            int file =
-                doc["surahFile"].as<int>();
-
-            audio["surah_file"] =
-                file;
-
-
-            // Update Runtime Settings
-            settings.surahFile =
-                file;
-
-        }
-
-
-
-
-
-        // =========================
-        // Azan Enable
-        // =========================
-
-        if(doc["azanEnable"].is<bool>())
-        {
-
-            settings.azanEnable =
-                doc["azanEnable"].as<bool>();
-
-        }
-
-
-
-
-
-
-        // =========================
-        // Save To LittleFS
-        // =========================
-
-        if(
-            storage_write_json(config)
-        )
-        {
-
-            Serial.println(
-                "Audio Settings Saved OK"
-            );
-
-
-            Serial.println(
-                "Runtime Settings Updated"
-            );
-
-
-        }
-        else
-        {
-
-            Serial.println(
-                "Audio Save Failed"
-            );
-
-        }
-
-
-
-
-
-        storage_print_debug();
-
-
-
-// =====================================
-// Prayer Settings GET
-// =====================================
-
-
-server.on(
-    "/api/settings/prayer",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
-
+    );
+
+    // ---------------------------------
+    // Network Settings GET
+    // ---------------------------------
+    server.on("/api/settings/network", HTTP_GET, [](AsyncWebServerRequest *request) {
         JsonDocument doc;
 
+        doc["ssid"] = storage_get_wifi_ssid("");
+        doc["password"] = storage_get_wifi_password("");
+        doc["wifiEnable"] = storage_get_bool("wifi.enable", true);
 
+        send_json(request, doc);
+    });
 
-        doc["city"] =
-            storage_get_city(
-                "Al Ain"
-            );
+// ---------------------------------
+    // Network Settings POST
+    // ---------------------------------
+    server.on("/api/settings/network", HTTP_POST,
+        [](AsyncWebServerRequest *request) {
+            request->send(200, "application/json", "{\"status\":\"saved\"}");
+        },
+        NULL,
+        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            if (index == 0) {
+                networkBody = "";
+                networkBody.reserve(total);
+            }
 
+            for (size_t i = 0; i < len; i++) {
+                networkBody += (char)data[i];
+            }
 
-        doc["country"] =
-            storage_get_country(
-                "UAE"
-            );
+            if (index + len != total) return;
 
+            Serial.println(F("[NETWORK] Save request received"));
 
-        doc["latitude"] =
-            storage_get_latitude(
-                24.2075
-            );
+            JsonDocument doc;
+            if (deserializeJson(doc, networkBody)) {
+                Serial.println(F("[NETWORK] JSON Error"));
+                return;
+            }
 
+            JsonDocument config;
+            if (!storage_read_json(config)) return;
 
-        doc["longitude"] =
-            storage_get_longitude(
-                55.7447
-            );
+            // Handle keys from both wifi.html (wifiSSID) and network.html (ssid)
+            if (doc["ssid"].is<String>()) {
+                config["wifi"]["ssid"] = doc["ssid"];
+            } else if (doc["wifiSSID"].is<String>()) {
+                config["wifi"]["ssid"] = doc["wifiSSID"];
+            }
 
+            // Handle keys from both wifi.html (wifiPassword) and network.html (password)
+            if (doc["password"].is<String>() || doc["wifiPassword"].is<String>()) {
+                config["wifi"]["password"] = doc["password"] | doc["wifiPassword"];
+            }
 
-        doc["method"] =
-            storage_get_calculation_method(
-                "UmmAlQura"
-            );
+            if (storage_write_json(config)) {
+                Serial.println(F("[NETWORK] WiFi configurations updated."));
 
-
-        doc["time_format"] =
-         storage_get_time_format(
-              "24H"
-           );
-
-
-        doc["fajr_offset"] =
-            storage_get_fajr_offset(
-                0
-            );
-
-
-        doc["dhuhr_offset"] =
-            storage_get_dhuhr_offset(
-                0
-            );
-
-
-        doc["asr_offset"] =
-            storage_get_asr_offset(
-                0
-            );
-
-
-        doc["maghrib_offset"] =
-            storage_get_maghrib_offset(
-                0
-            );
-
-
-        doc["isha_offset"] =
-            storage_get_isha_offset(
-                0
-            );
-
-
-
-
-
-        String output;
-
-
-
-        serializeJson(
-            doc,
-            output
-        );
-
-
-
-
-        AsyncWebServerResponse *response =
-            request->beginResponse(
-                200,
-                "application/json",
-                output
-            );
-
-
-        response->addHeader(
-            "Cache-Control",
-            "no-store"
-        );
-
-
-        request->send(
-            response
-        );
-
-
-
-    }
-);
-
-
-
-
-
-
-// =====================================
-// Prayer Settings POST
-// =====================================
-
-server.on(
-    "/api/settings/prayer",
-    HTTP_POST,
-
-    [](AsyncWebServerRequest *request)
-    {
-
-        request->send(
-            200,
-            "application/json",
-            "{\"status\":\"saved\"}"
-        );
-
-    },
-
-    NULL,
-
-    [](AsyncWebServerRequest *request,
-       uint8_t *data,
-       size_t len,
-       size_t index,
-       size_t total)
-    {
-
-
-        if(index == 0)
-        {
-            prayerBody = "";
+                // 🔴 التعديل هنا: جدولة إعادة التشغيل بعد 1.5 ثانية
+                rebootTimer.once_ms(1500, []() {
+                    Serial.println(F("[SYSTEM] Restarting to apply new WiFi settings..."));
+                    ESP.restart();
+                });
+            }
         }
-
-
-
-        for(size_t i = 0; i < len; i++)
-        {
-            prayerBody += (char)data[i];
-        }
-
-
-
-
-        if(index + len != total)
-            return;
-
-
-
-
-        Serial.println(
-            "Prayer JSON:"
-        );
-
-        Serial.println(
-            prayerBody
-        );
-
-
-
-
-        JsonDocument doc;
-
-
-        DeserializationError error =
-            deserializeJson(
-                doc,
-                prayerBody
-            );
-
-
-
-        if(error)
-        {
-
-            Serial.println(
-                "Prayer JSON Error"
-            );
-
-            return;
-
-        }
-
-        // =========================
-        // Save All Settings at Once
-        // =========================
-
-        JsonDocument config;
-        if (!storage_read_json(config))
-        {
-            Serial.println("Cannot read config to update prayer settings");
-            return;
-        }
-
-        // Location
-        if (doc["city"].is<String>()) config["location"]["city"] = doc["city"];
-        if (doc["country"].is<String>()) config["location"]["country"] = doc["country"];
-        if (doc["latitude"].is<float>()) config["location"]["latitude"] = doc["latitude"];
-        if (doc["longitude"].is<float>()) config["location"]["longitude"] = doc["longitude"];
-
-        // Prayer Method & Format
-        if (doc["method"].is<String>()) config["prayer"]["calculation_method"] = doc["method"];
-        if (doc["time_format"].is<String>())
-        {
-        String format =
-        doc["time_format"].as<String>();
-
-        format.toUpperCase();
-
-
-        if(format == "12H" || format == "24H")
-        {
-        config["prayer"]["time_format"] = format;
-
-        Serial.print("Time Format Saved: ");
-        Serial.println(format);
-        }
-    else
-    {
-        Serial.println("Invalid Time Format");
-    }
+    );
 }
 
-        // Offsets
-        if (doc["fajr_offset"].is<int>()) config["prayer"]["fajr_offset"] = doc["fajr_offset"];
-        if (doc["dhuhr_offset"].is<int>()) config["prayer"]["dhuhr_offset"] = doc["dhuhr_offset"];
-        if (doc["asr_offset"].is<int>()) config["prayer"]["asr_offset"] = doc["asr_offset"];
-        if (doc["maghrib_offset"].is<int>()) config["prayer"]["maghrib_offset"] = doc["maghrib_offset"];
-        if (doc["isha_offset"].is<int>()) config["prayer"]["isha_offset"] = doc["isha_offset"];
-
-        // Write the entire config file once
-        if (storage_write_json(config))
-        {
-            Serial.println("Prayer Settings Saved OK");
-        }
-        else
-        {
-            Serial.println("Prayer Settings Save Failed");
-        }
-
-        Serial.println(
-            "Prayer Settings Updated"
-        );
-
-
-
-Serial.println(
-    "Prayer Settings Updated"
-);
-
-
-storage_print_debug();
-
-
-settings_load();
-
-prayer_reload();
-
-}
-);      
-
-    }
-
-);
-
 // =====================================
-// Network Settings GET
+// System Routes
 // =====================================
 
-
-server.on(
-    "/api/settings/network",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
-
-        JsonDocument doc;
-
-
-
-        doc["ssid"] =
-            storage_get_wifi_ssid(
-                ""
-            );
-
-
-        doc["password"] =
-            storage_get_wifi_password(
-                ""
-            );
-
-
-
-        doc["wifiEnable"] =
-            storage_get_bool(
-                "wifi.enable",
-                true
-            );
-
-
-
-        doc["mqttEnable"] =
-            storage_get_bool(
-                "mqtt.enable",
-                false
-            );
-
-
-
-        doc["mqttServer"] =
-            storage_get_string(
-                "mqtt.server",
-                ""
-            );
-
-
-
-
-        String output;
-
-
-
-        serializeJson(
-            doc,
-            output
-        );
-
-
-
-        AsyncWebServerResponse *response =
-            request->beginResponse(
-                200,
-                "application/json",
-                output
-            );
-
-
-        response->addHeader(
-            "Cache-Control",
-            "no-store"
-        );
-
-
-        request->send(
-            response
-        );
-
-
-    }
-);
-
-
-
-
-
-
-
-// =====================================
-// Network Settings POST
-// =====================================
-
-
-server.on(
-    "/api/settings/network",
-    HTTP_POST,
-
-
-    [](AsyncWebServerRequest *request)
-    {
-
-        request->send(
-            200,
-            "application/json",
-            "{\"status\":\"saved\"}"
-        );
-
-    },
-
-
-    NULL,
-
-
-    [](AsyncWebServerRequest *request,
-       uint8_t *data,
-       size_t len,
-       size_t index,
-       size_t total)
-    {
-
-
-
-        if(index == 0)
-        {
-
-            networkBody = "";
-
-        }
-
-
-
-        for(size_t i=0;i<len;i++)
-        {
-
-            networkBody +=
-                (char)data[i];
-
-        }
-
-
-
-
-        if(index + len != total)
-            return;
-
-
-
-
-
-        Serial.println(
-            "Network JSON:"
-        );
-
-
-        Serial.println(
-            networkBody
-        );
-
-
-
-
-
-        JsonDocument doc;
-
-
-        DeserializationError error =
-            deserializeJson(
-                doc,
-                networkBody
-            );
-
-
-
-        if(error)
-        {
-
-            Serial.println(
-                "Network JSON Error"
-            );
-
-            return;
-
-        }
-
-        // =========================
-        // Save All Network Settings at Once
-        // =========================
-
-        JsonDocument config;
-        if (!storage_read_json(config))
-        {
-            Serial.println("Cannot read config to update network settings");
-            return;
-        }
-
-        // WiFi SSID and Password
-        if (doc["wifiSSID"].is<String>())
-        {
-            config["wifi"]["ssid"] = doc["wifiSSID"].as<String>();
-            config["wifi"]["password"] = doc["wifiPassword"].as<String>();
-            Serial.println("WiFi Credentials Updated in config");
-        }
-
-        // WiFi Enable
-        if (doc["wifiEnable"].is<bool>())
-        {
-            config["wifi"]["enable"] = doc["wifiEnable"].as<bool>();
-        }
-
-        // MQTT Enable
-        if (doc["mqttEnable"].is<bool>())
-        {
-            config["mqtt"]["enable"] = doc["mqttEnable"].as<bool>();
-        }
-
-        // MQTT Server
-        if (doc["mqttServer"].is<String>())
-        {
-            config["mqtt"]["server"] = doc["mqttServer"].as<String>();
-        }
-
-        // MQTT Port
-        if (doc["mqttPort"].is<int>())
-        {
-            config["mqtt"]["port"] = doc["mqttPort"].as<int>();
-        }
-
-        // MQTT User
-        if (doc["mqttUser"].is<String>())
-        {
-            config["mqtt"]["user"] = doc["mqttUser"].as<String>();
-        }
-
-        // MQTT Password
-        if (doc["mqttPassword"].is<String>())
-        {
-            config["mqtt"]["password"] = doc["mqttPassword"].as<String>();
-        }
-
-        // Write the entire config file once
-        if (storage_write_json(config))
-        {
-            Serial.println("Network Settings Saved OK");
-            settings_load(); // Reload settings into memory
-            delay(1000);
-            Serial.println("Restarting Device...");
+static void registerSystemRoutes() {
+    // ---------------------------------
+    // Test Azan
+    // ---------------------------------
+    server.on("/api/test/azan", HTTP_POST, [](AsyncWebServerRequest *request) {
+        Serial.println(F("[SYSTEM] Test Azan"));
+        
+        #ifdef COMMAND_HANDLER_H
+            command_process("test_azan");
+        #else
+            handle_command("test_azan");
+        #endif
+
+        request->send(200, "application/json", "{\"status\":\"playing\"}");
+    });
+
+    // ---------------------------------
+    // Test Iqama
+    // ---------------------------------
+    server.on("/api/test/iqama", HTTP_POST, [](AsyncWebServerRequest *request) {
+        Serial.println(F("[SYSTEM] Test Iqama"));
+
+        play_iqama();
+
+        request->send(200, "application/json", "{\"status\":\"playing\"}");
+    });
+
+    // ---------------------------------
+    // Test Audio Compatibility
+    // ---------------------------------
+    server.on("/api/test/audio", HTTP_POST, [](AsyncWebServerRequest *request) {
+        Serial.println(F("[SYSTEM] Test Audio"));
+
+        play_test();
+
+        request->send(200, "application/json", "{\"status\":\"playing\"}");
+    });
+
+    // ---------------------------------
+    // Restart / Reboot
+    // ---------------------------------
+    server.on("/api/system/restart", HTTP_POST, [](AsyncWebServerRequest *request) {
+        Serial.println(F("[SYSTEM] Restart requested"));
+
+        request->send(200, "application/json", "{\"status\":\"restart\"}");
+        delay(500);
+
+        #ifdef COMMAND_HANDLER_H
+            command_process("restart");
+        #else
             ESP.restart();
-        }
-        else
-        {
-            Serial.println("Network Settings Save Failed");
-        }
-    }
-);
+        #endif
+    });
 
+    // ---------------------------------
+    // Factory Reset
+    // ---------------------------------
+    server.on("/api/system/reset", HTTP_POST, [](AsyncWebServerRequest *request) {
+        Serial.println(F("[SYSTEM] Factory reset"));
 
-
-
-
-
-
-// =====================================
-// Test Azan
-// =====================================
-
-
-server.on(
-    "/api/test/azan",
-    HTTP_POST,
-    [](AsyncWebServerRequest *request)
-    {
-
-
-        command_process(
-            "test_azan"
-        );
-
-
-
-        request->send(
-            200,
-            "application/json",
-            "{\"status\":\"playing\"}"
-        );
-
-
-    }
-);
-
-
-
-
-
-
-
-
-// =====================================
-// System Restart
-// =====================================
-
-
-server.on(
-    "/api/system/restart",
-    HTTP_POST,
-    [](AsyncWebServerRequest *request)
-    {
-
-
-        request->send(
-            200,
-            "application/json",
-            "{\"status\":\"restart\"}"
-        );
-
-
-
+        request->send(200, "application/json", "{\"status\":\"reset\"}");
         delay(500);
-
-
-
-        command_process(
-            "restart"
-        );
-
-
-    }
-);
-
-
-
-// =====================================
-// Factory Reset
-// =====================================
-
-server.on(
-    "/api/system/reset",
-    HTTP_POST,
-    [](AsyncWebServerRequest *request)
-    {
-
-        Serial.println(
-            "Factory Reset Requested"
-        );
-
-
-        request->send(
-            200,
-            "text/plain",
-            "Reset OK"
-        );
-
-
-        delay(500);
-
 
         settings_reset();
+    });
 
-
-        delay(1000);
-
-
-        ESP.restart();
-
-
-    }
-);
-
-
-
-
-
-
-// =====================================
-// System Info
-// =====================================
-
-
-server.on(
-    "/api/system/info",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
-
+    // ---------------------------------
+    // System Info
+    // ---------------------------------
+    server.on("/api/system/info", HTTP_GET, [](AsyncWebServerRequest *request) {
         JsonDocument doc;
 
+        doc["device"] = storage_get_device_name("ESP-Prayer-System");
+        doc["version"] = FIRMWARE_VERSION;
+        doc["volume"] = storage_get_volume(25);
+        doc["timeFormat"] = storage_get_time_format("24H");
+        doc["wifi"] = storage_get_bool("wifi.enable", true);
+        doc["mqtt"] = storage_get_bool("mqtt.enable", false);
 
-
-
-        doc["device"] =
-            storage_get_device_name(
-                "ESP-Prayer-System"
-            );
-
-
-
-        doc["version"] =
-            FIRMWARE_VERSION;
-
-
-
-        doc["volume"] =
-            storage_get_volume(
-                25
-            );
-
-
-
-        doc["timeFormat"] =
-            storage_get_time_format(
-                "24H"
-            );
-
-
-
-        doc["wifi"] =
-            storage_get_bool(
-                "wifi.enable",
-                true
-            );
-
-
-
-        doc["mqtt"] =
-            storage_get_bool(
-                "mqtt.enable",
-                false
-            );
-
-
-
-
-
-        String output;
-
-
-
-        serializeJson(
-            doc,
-            output
-        );
-
-
-
-        request->send(
-            200,
-            "application/json",
-            output
-        );
-
-
-    }
-);
-
-
-
-
-
-
-
-
-
-
-// =====================================
-// Test Page
-// =====================================
-
-
-server.on(
-    "/test",
-    HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
-
-        request->send(
-            200,
-            "text/plain",
-            "ESP Web Server OK"
-        );
-
-    }
-);
-
-
-
-
-
-
-
-// =====================================
-// Start Server
-// =====================================
-
-
-server.begin();
-
-
-
-Serial.println(
-    "Web Server Ready"
-);
-
-
-
+        send_json(request, doc);
+    });
 }
 
-
-
-
-
-
-
-
 // =====================================
-// Web Server Loop
+// Web Loop
 // =====================================
 
-
-void web_server_loop()
-{
-
-    MDNS.update();
-
+void web_server_loop() {
+    if (webServerStarted) {
+        MDNS.update();
+    }
 }

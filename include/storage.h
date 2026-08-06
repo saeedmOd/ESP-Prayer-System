@@ -1,8 +1,43 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
+
 #include <Arduino.h>
 #include <ArduinoJson.h>
+
+
+
+// =================================================
+// Storage Constants
+// =================================================
+
+#define STORAGE_CONFIG_FILE "/config.json"
+#define STORAGE_TEMP_FILE   "/config.tmp"
+#define STORAGE_BACKUP_FILE "/config.bak"
+
+
+#define STORAGE_VERSION "1.0.0"
+
+
+
+// =================================================
+// Default Values
+// =================================================
+
+#define DEFAULT_DEVICE_NAME "ESP-Prayer-System"
+
+#define DEFAULT_CITY        "Al Ain"
+#define DEFAULT_COUNTRY     "UAE"
+
+#define DEFAULT_LATITUDE    24.2075
+#define DEFAULT_LONGITUDE   55.7447
+
+#define DEFAULT_TIMEZONE    4
+
+#define DEFAULT_TIME_FORMAT "24H"
+
+#define DEFAULT_VOLUME      25
+
 
 
 // =================================================
@@ -11,31 +46,43 @@
 
 void storage_init();
 
+
 bool storage_ready_status();
 
 
 
 // =================================================
-// JSON File Handling
+// Config File Management
 // =================================================
+
+bool storage_exists();
+
 
 bool storage_load();
 
+
 bool storage_save();
 
-bool storage_exists();
 
 void storage_reset();
 
 
 
+void storage_create_defaults();
+
+
+bool storage_validate_config();
+
+
+
 // =================================================
-// Direct JSON Access
+// JSON Direct Access
 // =================================================
 
 bool storage_read_json(
     JsonDocument &doc
 );
+
 
 
 bool storage_write_json(
@@ -45,18 +92,25 @@ bool storage_write_json(
 
 
 // =================================================
-// Generic String
-// Supports:
-// wifi.ssid
-// mqtt.server
-// prayer.time_format
-// audio.volume
+// Backup / Restore
+// =================================================
+
+bool storage_backup_config();
+
+
+bool storage_restore_config();
+
+
+
+// =================================================
+// Generic JSON String
 // =================================================
 
 bool storage_set_string(
     String path,
     String value
 );
+
 
 
 String storage_get_string(
@@ -67,13 +121,14 @@ String storage_get_string(
 
 
 // =================================================
-// Generic Integer
+// Generic JSON Integer
 // =================================================
 
 bool storage_set_int(
     String path,
     int value
 );
+
 
 
 int storage_get_int(
@@ -84,13 +139,14 @@ int storage_get_int(
 
 
 // =================================================
-// Generic Float
+// Generic JSON Float
 // =================================================
 
 bool storage_set_float(
     String path,
     float value
 );
+
 
 
 float storage_get_float(
@@ -101,7 +157,7 @@ float storage_get_float(
 
 
 // =================================================
-// Generic Boolean
+// Generic JSON Boolean
 // =================================================
 
 bool storage_set_bool(
@@ -110,19 +166,34 @@ bool storage_set_bool(
 );
 
 
+
 bool storage_get_bool(
     String path,
-    bool defaultValue = false);
+    bool defaultValue = false
+);
 
 
 
 // =================================================
-// Device
+// Storage Information
+// =================================================
+
+size_t storage_get_file_size();
+
+
+
+String storage_get_version();
+
+
+
+// =================================================
+// Device Settings
 // =================================================
 
 String storage_get_device_name(
-    String defaultValue = "ESP-Prayer-System"
+    String defaultValue = DEFAULT_DEVICE_NAME
 );
+
 
 
 bool storage_set_device_name(
@@ -132,18 +203,8 @@ bool storage_set_device_name(
 
 
 // =================================================
-// WiFi
+// WiFi Settings
 // =================================================
-
-String storage_get_wifi_ssid(
-    String defaultValue = ""
-);
-
-
-String storage_get_wifi_password(
-    String defaultValue = ""
-);
-
 
 bool storage_set_wifi(
     String ssid,
@@ -152,13 +213,68 @@ bool storage_set_wifi(
 
 
 
+String storage_get_wifi_ssid(
+    String defaultValue = ""
+);
+
+
+
+String storage_get_wifi_password(
+    String defaultValue = ""
+);
+
+
+
+bool storage_set_wifi_enable(
+    bool state
+);
+
+
+
+bool storage_get_wifi_enable(
+    bool defaultValue = true
+);
+
+
+
+bool storage_set_wifi_auto_reconnect(
+    bool state
+);
+
+
+
+bool storage_get_wifi_auto_reconnect(
+    bool defaultValue = true
+);
+
+
+
 // =================================================
-// MQTT
+// MQTT Settings
 // =================================================
+
+bool storage_set_mqtt_enable(
+    bool state
+);
+
+
+
+bool storage_get_mqtt_enable(
+    bool defaultValue = false
+);
+
+
 
 String storage_get_mqtt_server(
     String defaultValue = ""
 );
+
+
+
+bool storage_set_mqtt_server(
+    String server
+);
+
 
 
 int storage_get_mqtt_port(
@@ -167,9 +283,51 @@ int storage_get_mqtt_port(
 
 
 
+bool storage_set_mqtt_port(
+    int port
+);
+
+
+
+String storage_get_mqtt_user(
+    String defaultValue = ""
+);
+
+
+
+bool storage_set_mqtt_user(
+    String user
+);
+
+
+
+String storage_get_mqtt_password(
+    String defaultValue = ""
+);
+
+
+
+bool storage_set_mqtt_password(
+    String password
+);
+
+
+
+String storage_get_mqtt_topic(
+    String defaultValue = "esp/prayer"
+);
+
+
+
+bool storage_set_mqtt_topic(
+    String topic
+);
+
+
 // =================================================
-// Location
+// Location Settings
 // =================================================
+
 
 bool storage_set_location(
     float latitude,
@@ -177,13 +335,15 @@ bool storage_set_location(
 );
 
 
+
 float storage_get_latitude(
-    float defaultValue = 24.2075
+    float defaultValue = DEFAULT_LATITUDE
 );
 
 
+
 float storage_get_longitude(
-    float defaultValue = 55.7447
+    float defaultValue = DEFAULT_LONGITUDE
 );
 
 
@@ -193,8 +353,9 @@ bool storage_set_city(
 );
 
 
+
 String storage_get_city(
-    String defaultValue = "Al Ain"
+    String defaultValue = DEFAULT_CITY
 );
 
 
@@ -204,30 +365,52 @@ bool storage_set_country(
 );
 
 
+
 String storage_get_country(
-    String defaultValue = "UAE"
+    String defaultValue = DEFAULT_COUNTRY
 );
 
 
 
+// Timezone
+
+bool storage_set_timezone(
+    int timezone
+);
+
+
+
+int storage_get_timezone(
+    int defaultValue = DEFAULT_TIMEZONE
+);
+
+
+
+
+
 // =================================================
-// Prayer
+// Prayer Settings
 // =================================================
+
 
 bool storage_set_time_format(
     String format
 );
 
 
+
 String storage_get_time_format(
-    String defaultValue = "24H"
+    String defaultValue = DEFAULT_TIME_FORMAT
 );
 
 
+
+// Calculation Method
 
 bool storage_set_calculation_method(
     String method
 );
+
 
 
 String storage_get_calculation_method(
@@ -236,47 +419,144 @@ String storage_get_calculation_method(
 
 
 
+// Asr Method
+
+bool storage_set_asr_method(
+    String method
+);
+
+
+
+String storage_get_asr_method(
+    String defaultValue = "Standard"
+);
+
+
+
+// High Latitude Rule
+
+bool storage_set_high_latitude_rule(
+    String rule
+);
+
+
+
+String storage_get_high_latitude_rule(
+    String defaultValue = "None"
+);
+
+
+
 // Prayer Offsets
 
-bool storage_set_fajr_offset(int value);
-int storage_get_fajr_offset(int defaultValue = 0);
+bool storage_set_fajr_offset(
+    int value
+);
 
 
-bool storage_set_dhuhr_offset(int value);
-int storage_get_dhuhr_offset(int defaultValue = 0);
+
+int storage_get_fajr_offset(
+    int defaultValue = 0
+);
 
 
-bool storage_set_asr_offset(int value);
-int storage_get_asr_offset(int defaultValue = 0);
+
+bool storage_set_dhuhr_offset(
+    int value
+);
 
 
-bool storage_set_maghrib_offset(int value);
-int storage_get_maghrib_offset(int defaultValue = 0);
+
+int storage_get_dhuhr_offset(
+    int defaultValue = 0
+);
 
 
-bool storage_set_isha_offset(int value);
-int storage_get_isha_offset(int defaultValue = 0);
+
+bool storage_set_asr_offset(
+    int value
+);
+
+
+
+int storage_get_asr_offset(
+    int defaultValue = 0
+);
+
+
+
+bool storage_set_maghrib_offset(
+    int value
+);
+
+
+
+int storage_get_maghrib_offset(
+    int defaultValue = 0
+);
+
+
+
+bool storage_set_isha_offset(
+    int value
+);
+
+
+
+int storage_get_isha_offset(
+    int defaultValue = 0
+);
+
 
 
 
 // =================================================
-// Audio
+// Audio Settings
 // =================================================
+
 
 bool storage_set_volume(
     int volume
 );
 
 
+
 int storage_get_volume(
-    int defaultValue = 25
+    int defaultValue = DEFAULT_VOLUME
 );
 
 
+
+bool storage_set_audio_enable(
+    bool state
+);
+
+
+
+bool storage_get_audio_enable(
+    bool defaultValue = true
+);
+
+
+
+bool storage_set_azan_enable(
+    bool state
+);
+
+
+
+bool storage_get_azan_enable(
+    bool defaultValue = true
+);
+
+
+
+// Athan
 
 bool storage_set_athan_folder(
     int folder
 );
+
 
 
 int storage_get_athan_folder(
@@ -290,15 +570,19 @@ bool storage_set_athan_file(
 );
 
 
+
 int storage_get_athan_file(
     int defaultValue = 1
 );
 
 
 
+// Surah
+
 bool storage_set_surah_folder(
     int folder
 );
+
 
 
 int storage_get_surah_folder(
@@ -312,9 +596,135 @@ bool storage_set_surah_file(
 );
 
 
+
 int storage_get_surah_file(
     int defaultValue = 1
 );
+
+
+
+// Short Surah
+
+bool storage_set_short_surah_folder(
+    int folder
+);
+
+
+
+int storage_get_short_surah_folder(
+    int defaultValue = 3
+);
+
+
+
+// Dua
+
+bool storage_set_dua_folder(
+    int folder
+);
+
+
+
+int storage_get_dua_folder(
+    int defaultValue = 4
+);
+
+
+
+// =================================================
+// Display Settings
+// =================================================
+
+
+bool storage_set_display_enable(
+    bool state
+);
+
+
+
+bool storage_get_display_enable(
+    bool defaultValue = true
+);
+
+
+
+bool storage_set_brightness(
+    int value
+);
+
+
+
+int storage_get_brightness(
+    int defaultValue = 100
+);
+
+
+
+bool storage_set_show_date(
+    bool state
+);
+
+
+
+bool storage_get_show_date(
+    bool defaultValue = true
+);
+
+
+
+bool storage_set_show_temperature(
+    bool state
+);
+
+
+
+bool storage_get_show_temperature(
+    bool defaultValue = false
+);
+
+
+
+
+// =================================================
+// OTA Settings
+// =================================================
+
+
+bool storage_set_ota_enable(
+    bool state
+);
+
+
+
+bool storage_get_ota_enable(
+    bool defaultValue = true
+);
+
+
+
+bool storage_set_ota_hostname(
+    String hostname
+);
+
+
+
+String storage_get_ota_hostname(
+    String defaultValue = DEFAULT_DEVICE_NAME
+);
+
+
+
+bool storage_set_ota_password(
+    String password
+);
+
+
+
+String storage_get_ota_password(
+    String defaultValue = ""
+);
+
+
 
 
 
@@ -322,14 +732,54 @@ int storage_get_surah_file(
 // Debug
 // =================================================
 
+
 void storage_print_debug();
 
 
+
+void storage_print_summary();
+
+
+
+
+
 // =================================================
-// Factory
+// Factory / Maintenance
 // =================================================
 
-void storage_create_defaults();
 
+bool storage_factory_reset();
+
+
+
+bool storage_delete_config();
+
+
+
+bool storage_format();
+
+
+
+
+// =================================================
+// JSON Utility
+// =================================================
+
+
+bool storage_has_key(
+    String path
+);
+
+
+
+bool storage_remove_key(
+    String path
+);
+
+
+
+// =================================================
+// End
+// =================================================
 
 #endif

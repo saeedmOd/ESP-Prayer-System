@@ -2,502 +2,199 @@
 <html lang="ar" dir="rtl">
 
 <head>
-
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>
-إعدادات الصوت
-</title>
-
+<title>إعدادات الصوت</title>
 <link rel="stylesheet" href="style.css">
-
 </head>
 
-
 <body>
-
-
 <div class="app">
 
-
-
 <header class="header">
-
-<h1>
-🔊 إعدادات الصوت
-</h1>
-
-<span id="status">
-جاري التحميل...
-</span>
-
+<h1>إعدادات الصوت</h1>
+<span id="status">جاري التحميل...</span>
 </header>
 
-
-
-
-
 <section class="card">
+<h2>التحكم العام</h2>
 
-
-<h2>
-DFPlayer
-</h2>
-
-
-<label>
-تفعيل الأذان
-</label>
-
-<select id="azanEnable">
-
-<option value="true">
-تشغيل
-</option>
-
-<option value="false">
-إيقاف
-</option>
-
-</select>
-
-
-<label>
-مستوى الصوت
-</label>
-
-
-
-<input
-type="range"
-id="volume"
-min="0"
-max="30"
-value="25"
-oninput="showVolume(this.value)"
->
-
-
+<label for="volume">مستوى الصوت</label>
+<input type="range" id="volume" min="0" max="30" value="25" oninput="showVolume(this.value)">
 
 <p>
 الصوت:
-<span id="volumeValue">
-25
-</span>
+<span id="volumeValue">25</span>
 </p>
-
-
-
 </section>
-
-
-
-
-
-
 
 <section class="card">
+<h2>الأذان</h2>
 
+<label for="azanEnable">تفعيل الأذان</label>
+<select id="azanEnable">
+<option value="true">تشغيل</option>
+<option value="false">إيقاف</option>
+</select>
 
-<h2>
-ملفات الصوت
-</h2>
+<label for="azanPreset">اسم المؤذن</label>
+<select id="azanPreset" onchange="applyPreset('azan')">
+<option value="1:1">مؤذن 1 - folder 1 file 1</option>
+<option value="1:2">مؤذن 2 - folder 1 file 2</option>
+<option value="1:3">مؤذن 3 - folder 1 file 3</option>
+<option value="1:4">مؤذن 4 - folder 1 file 4</option>
+</select>
 
+<div class="field-row">
+<div>
+<label for="azanFolder">مجلد الأذان</label>
+<input type="number" id="azanFolder" min="1" max="99">
+</div>
 
+<div>
+<label for="azanFile">ملف الأذان</label>
+<input type="number" id="azanFile" min="1" max="999">
+</div>
+</div>
 
-
-<label>
-مجلد الأذان
-</label>
-
-
-<input
-
-type="number"
-
-id="azanFolder"
-
-min="1"
-
-max="99"
-
->
-
-
-
-
-<label>
-رقم ملف الأذان
-</label>
-
-
-<input
-
-type="number"
-
-id="azanFile"
-
-min="1"
-
-max="999"
-
->
-
-
-
+<button onclick="testAzan()">تشغيل أذان تجريبي</button>
 </section>
-
-
-
-
-
-
-
-
 
 <section class="card">
+<h2>الإقامة</h2>
 
+<label for="iqamaEnable">تفعيل الإقامة</label>
+<select id="iqamaEnable">
+<option value="true">تشغيل</option>
+<option value="false">إيقاف</option>
+</select>
 
-<h2>
-اختبار الصوت
-</h2>
+<label for="iqamaPreset">صوت الإقامة</label>
+<select id="iqamaPreset" onchange="applyPreset('iqama')">
+<option value="5:1">إقامة 1 - folder 5 file 1</option>
+<option value="5:2">إقامة 2 - folder 5 file 2</option>
+<option value="5:3">إقامة 3 - folder 5 file 3</option>
+<option value="5:4">إقامة 4 - folder 5 file 4</option>
+</select>
 
+<div class="field-row">
+<div>
+<label for="iqamaFolder">مجلد الإقامة</label>
+<input type="number" id="iqamaFolder" min="1" max="99">
+</div>
 
+<div>
+<label for="iqamaFile">ملف الإقامة</label>
+<input type="number" id="iqamaFile" min="1" max="999">
+</div>
+</div>
 
-<button onclick="testAzan()">
+<label for="iqamaDelay">الإقامة بعد الأذان بالدقائق</label>
+<input type="number" id="iqamaDelay" min="0" max="60" value="10">
 
-▶ تشغيل أذان تجريبي
-
-</button>
-
-
-
-<button onclick="testSound()">
-
-🎵 تشغيل ملف اختبار
-
-</button>
-
-
-
+<button onclick="testIqama()">تشغيل إقامة تجريبية</button>
 </section>
-
-
-
-
-
-
-
-
 
 <section class="card">
-
-
-<button onclick="saveAudioSettings()">
-
-💾 حفظ الإعدادات
-
-</button>
-
-
-
-
-<button onclick="location.href='/'">
-
-⬅ العودة
-
-</button>
-
-
-
+<button onclick="saveAudioSettings()">حفظ الإعدادات</button>
+<button onclick="location.href='/'">العودة</button>
 </section>
-
-
-
-
 
 </div>
 
-
-
-
-
-
-
-<script src="script.js"></script>
-
-
-
 <script>
-
-
-
-/*
-==============================
-تحميل الإعدادات من ESP
-==============================
-*/
-
-
-window.onload = function()
-{
-
-
-fetch("/api/settings/audio")
-
-
-.then(response => response.json())
-
-
-.then(data =>
-{
-
-
-document.getElementById("volume")
-.value = data.volume;
-
-document.getElementById("azanEnable")
-.value = data.azanEnable;
-
-
-document.getElementById("volumeValue")
-.innerHTML = data.volume;
-
-
-
-document.getElementById("azanFolder")
-.value = data.azanFolder;
-
-
-
-document.getElementById("azanFile")
-.value = data.azanFile;
-
-
-
-document.getElementById("status")
-.innerHTML =
-"متصل";
-
-
-
-})
-
-
-
-.catch(error =>
-{
-
-
-document.getElementById("status")
-.innerHTML =
-"خطأ اتصال";
-
-
-});
-
-
-
-};
-
-
-
-
-
-
-
-/*
-==============================
-عرض مستوى الصوت
-==============================
-*/
-
-
-function showVolume(value)
-{
-
-
-document.getElementById("volumeValue")
-.innerHTML=value;
-
-
+function splitPreset(value) {
+    const parts = value.split(":");
+    return {
+        folder: Number(parts[0]),
+        file: Number(parts[1])
+    };
 }
 
+function setPresetFromValues(type, folder, file) {
+    const preset = document.getElementById(type + "Preset");
+    const value = folder + ":" + file;
 
-
-
-
-
-
-
-
-/*
-==============================
-اختبار الأذان
-==============================
-*/
-
-
-function testAzan()
-{
-
-
-fetch("/api/test/azan",
-{
-
-method:"POST"
-
-})
-
-
-.then(() =>
-{
-
-alert("تم تشغيل الأذان");
-
-});
-
-
+    for (const option of preset.options) {
+        if (option.value === value) {
+            preset.value = value;
+            return;
+        }
+    }
 }
 
-
-
-
-
-
-
-
-
-/*
-==============================
-اختبار ملف صوت
-==============================
-*/
-
-
-function testSound()
-{
-
-
-fetch("/api/test/audio",
-{
-
-method:"POST"
-
-})
-
-
-.then(() =>
-{
-
-alert("تم تشغيل الملف");
-
-});
-
-
+function applyPreset(type) {
+    const selected = splitPreset(document.getElementById(type + "Preset").value);
+    document.getElementById(type + "Folder").value = selected.folder;
+    document.getElementById(type + "File").value = selected.file;
 }
 
-
-
-
-
-
-
-
-
-/*
-==============================
-حفظ الإعدادات
-==============================
-*/
-
-
-function saveAudioSettings()
-{
-
-
-let data =
-{
-
-volume:
-Number(
-document.getElementById("volume").value
-),
-
-
-azanEnable:
-document.getElementById("azanEnable").value === "true",
-
-
-azanFolder:
-Number(
-document.getElementById("azanFolder").value
-),
-
-
-azanFile:
-Number(
-document.getElementById("azanFile").value
-)
-
-};
-
-
-
-
-fetch("/api/settings/audio",
-{
-
-
-method:"POST",
-
-
-headers:
-{
-
-"Content-Type":"application/json"
-
-},
-
-
-
-body:
-JSON.stringify(data)
-
-
-
-})
-
-
-
-.then(response => response.text())
-
-
-.then(() =>
-{
-
-
-alert(
-"تم حفظ إعدادات الصوت"
-);
-
-
-
-});
-
-
-
+function showVolume(value) {
+    document.getElementById("volumeValue").textContent = value;
 }
 
+function loadAudioSettings() {
+    fetch("/api/settings/audio")
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("volume").value = data.volume;
+            document.getElementById("volumeValue").textContent = data.volume;
 
+            document.getElementById("azanEnable").value = String(data.azanEnable);
+            document.getElementById("azanFolder").value = data.azanFolder;
+            document.getElementById("azanFile").value = data.azanFile;
+            setPresetFromValues("azan", data.azanFolder, data.azanFile);
 
+            document.getElementById("iqamaEnable").value = String(data.iqamaEnable);
+            document.getElementById("iqamaFolder").value = data.iqamaFolder;
+            document.getElementById("iqamaFile").value = data.iqamaFile;
+            document.getElementById("iqamaDelay").value = data.iqamaDelay;
+            setPresetFromValues("iqama", data.iqamaFolder, data.iqamaFile);
+
+            document.getElementById("status").textContent = "متصل";
+        })
+        .catch(() => {
+            document.getElementById("status").textContent = "خطأ اتصال";
+        });
+}
+
+function testAzan() {
+    fetch("/api/test/azan", { method: "POST" })
+        .then(() => alert("تم تشغيل الأذان"));
+}
+
+function testIqama() {
+    fetch("/api/test/iqama", { method: "POST" })
+        .then(() => alert("تم تشغيل الإقامة"));
+}
+
+function saveAudioSettings() {
+    const data = {
+        volume: Number(document.getElementById("volume").value),
+        azanEnable: document.getElementById("azanEnable").value === "true",
+        azanFolder: Number(document.getElementById("azanFolder").value),
+        azanFile: Number(document.getElementById("azanFile").value),
+        iqamaEnable: document.getElementById("iqamaEnable").value === "true",
+        iqamaFolder: Number(document.getElementById("iqamaFolder").value),
+        iqamaFile: Number(document.getElementById("iqamaFile").value),
+        iqamaDelay: Number(document.getElementById("iqamaDelay").value)
+    };
+
+    fetch("/api/settings/audio", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    })
+    .then(() => {
+        document.getElementById("status").textContent = "تم الحفظ";
+        alert("تم حفظ إعدادات الصوت");
+    });
+}
+
+window.onload = loadAudioSettings;
 </script>
 
-
-
-
 </body>
-
 </html>

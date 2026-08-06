@@ -257,6 +257,30 @@ void settings_load()
     settings.athanFile =
         storage_get_athan_file(1);
 
+    settings.iqamaEnable =
+        storage_get_bool(
+            "audio.iqama_enable",
+            true
+        );
+
+    settings.iqamaFolder =
+        storage_get_int(
+            "audio.iqama_folder",
+            5
+        );
+
+    settings.iqamaFile =
+        storage_get_int(
+            "audio.iqama_file",
+            1
+        );
+
+    settings.iqamaDelayMinutes =
+        storage_get_int(
+            "audio.iqama_delay",
+            10
+        );
+
 
     settings.surahFolder =
         storage_get_surah_folder(2);
@@ -341,6 +365,24 @@ void settings_apply()
 
     if(settings.volume > 30)
         settings.volume = 30;
+
+    if(settings.athanFolder < 1)
+        settings.athanFolder = 1;
+
+    if(settings.athanFile < 1)
+        settings.athanFile = 1;
+
+    if(settings.iqamaFolder < 1)
+        settings.iqamaFolder = 5;
+
+    if(settings.iqamaFile < 1)
+        settings.iqamaFile = 1;
+
+    if(settings.iqamaDelayMinutes < 0)
+        settings.iqamaDelayMinutes = 0;
+
+    if(settings.iqamaDelayMinutes > 60)
+        settings.iqamaDelayMinutes = 60;
 
 
 
@@ -504,6 +546,26 @@ void settings_save()
 
     storage_set_athan_file(
         settings.athanFile
+    );
+
+    storage_set_bool(
+        "audio.iqama_enable",
+        settings.iqamaEnable
+    );
+
+    storage_set_int(
+        "audio.iqama_folder",
+        settings.iqamaFolder
+    );
+
+    storage_set_int(
+        "audio.iqama_file",
+        settings.iqamaFile
+    );
+
+    storage_set_int(
+        "audio.iqama_delay",
+        settings.iqamaDelayMinutes
     );
 
 
