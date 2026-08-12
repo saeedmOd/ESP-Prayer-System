@@ -1,173 +1,768 @@
 // =====================================
 // ESP Prayer System Web Controller
+// script.js
 // =====================================
 
-// =====================================
-// Real-time Clock
-// =====================================
-function updateClock() {
-    const now = new Date();
+console.log(
+    "ESP Prayer System script.js LOADED"
+);
 
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-
-    setText("time", `${hours}:${minutes}:${seconds}`);
-
-    const date = now.toLocaleDateString("ar-EG", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric"
-    });
-
-    setText("date", date);
-}
-
-setInterval(updateClock, 1000);
-updateClock();
 
 // =====================================
-// Countdown Global State
+// Global State
 // =====================================
+
+let timeFormat = "24H";
+
 let countdownTimer = null;
+
 let countdownSeconds = 0;
 
-// =====================================
-// Load ESP Status
-// =====================================
-function loadStatus() {
-    // مهلة زمنية للطلب لمنع تراكم الـ Requests في حال بطء الـ WiFi
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
-
-    fetch("/api/status", { signal: controller.signal })
-        .then(response => {
-            clearTimeout(timeoutId);
-            if (!response.ok) throw new Error("Network response was not ok");
-            return response.json();
-        })
-        .then(data => {
-            // Prayer Times
-            setText("fajr", data.fajr);
-            setText("dhuhr", data.dhuhr);
-            setText("asr", data.asr);
-            setText("maghrib", data.maghrib);
-            setText("isha", data.isha);
-
-            // Next Prayer
-            setText("nextPrayer", data.nextPrayer);
-            setText("nextPrayerTime", data.nextPrayerTime);
-
-            // Countdown Logic
-            if (data.countdown !== undefined && data.countdown !== null) {
-                let newSeconds = Number(data.countdown);
-
-                // Re-sync if first load or if drift exceeds 10s
-                if (countdownTimer === null || Math.abs(newSeconds - countdownSeconds) > 10) {
-                    countdownSeconds = newSeconds;
-
-                    if (countdownTimer) {
-                        clearInterval(countdownTimer);
-                    }
-
-                    updateCountdown();
-                    countdownTimer = setInterval(updateCountdown, 1000);
-                }
-            }
-
-            // System Status
-            setText("wifi", data.wifi ? "متصل" : "غير متصل");
-            setText("mqtt", data.mqtt ? "متصل" : "غير متصل");
-            
-            // Sync Volume Controls (Text & Slider)
-            setText("volume", data.volume);
-            setInputValue("volumeSlider", data.volume);
-        })
-        .catch(error => {
-            console.warn("ESP Offline or connection error:", error);
-            setText("wifi", "غير متصل");
-            setText("mqtt", "غير متصل");
-        });
-}
 
 // =====================================
-// Countdown Timer Execution
+// Arabic Prayer Names
 // =====================================
-function updateCountdown() {
-    if (countdownSeconds <= 0) {
-        setText("countdown", "حان الآن وقت الصلاة");
-        if (countdownTimer) {
-            clearInterval(countdownTimer);
-            countdownTimer = null;
-        }
-        return;
-    }
 
-    const hours = Math.floor(countdownSeconds / 3600);
-    const minutes = Math.floor((countdownSeconds % 3600) / 60);
-    const seconds = countdownSeconds % 60;
+const prayerNamesArabic = {
 
-    const formattedTime = [
-        String(hours).padStart(2, '0'),
-        String(minutes).padStart(2, '0'),
-        String(seconds).padStart(2, '0')
-    ].join(':');
+    Fajr:
+        "الفجر",
 
-    setText("countdown", "بعد " + formattedTime);
+    Sunrise:
+        "الشروق",
 
-    countdownSeconds--;
-}
+    Dhuhr:
+        "الظهر",
+
+    Asr:
+        "العصر",
+
+    Maghrib:
+        "المغرب",
+
+    Isha:
+        "العشاء"
+
+};
+
 
 // =====================================
 // Safe DOM Helpers
 // =====================================
-function setText(id, value) {
-    const element = document.getElementById(id);
-    if (element && value !== undefined && value !== null) {
-        element.textContent = value;
+
+function setText(
+    id,
+    value
+) {
+
+    const element =
+        document.getElementById(id);
+
+
+    if (
+        element &&
+        value !== undefined &&
+        value !== null
+    ) {
+
+        element.textContent =
+            value;
+
     }
+
 }
 
-function setInputValue(id, value) {
-    const element = document.getElementById(id);
-    // عدم التحديث إذا كان المستخدم يسحب شريط الصوت حالياً
-    if (element && value !== undefined && document.activeElement !== element) {
-        element.value = value;
+
+function setInputValue(
+    id,
+    value
+) {
+
+    const element =
+        document.getElementById(id);
+
+
+    if (
+        element &&
+        value !== undefined &&
+        document.activeElement !== element
+    ) {
+
+        element.value =
+            value;
+
     }
+
 }
 
+
 // =====================================
-// Actions & API Callers
+// Real-time Clock
 // =====================================
-function testAzan() {
-    fetch("/api/test/azan", { method: "POST" })
-        .then(response => {
-            if (response.ok) {
-                alert("تم تشغيل الأذان التجريبي");
-            } else {
-                alert("فشل في إرسال الأمر للجهاز");
+
+function updateClock() {
+
+    const now =
+        new Date();
+
+
+    let hours =
+        now.getHours();
+
+
+    const minutes =
+        String(
+            now.getMinutes()
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    const seconds =
+        String(
+            now.getSeconds()
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    let timeString;
+
+
+    // =====================================
+    // 12 Hour
+    // =====================================
+
+    if (
+        timeFormat === "12H"
+    ) {
+
+        const period =
+            hours >= 12
+                ? "PM"
+                : "AM";
+
+
+        hours =
+            hours % 12;
+
+
+        if (
+            hours === 0
+        ) {
+
+            hours = 12;
+
+        }
+
+
+        timeString =
+            String(hours).padStart(
+                2,
+                "0"
+            ) +
+            ":" +
+            minutes +
+            ":" +
+            seconds +
+            " " +
+            period;
+
+    }
+
+
+    // =====================================
+    // 24 Hour
+    // =====================================
+
+    else {
+
+        timeString =
+            String(hours).padStart(
+                2,
+                "0"
+            ) +
+            ":" +
+            minutes +
+            ":" +
+            seconds;
+
+    }
+
+
+    setText(
+        "time",
+        timeString
+    );
+
+
+    // =====================================
+    // Date
+    // =====================================
+
+    const date =
+        now.toLocaleDateString(
+            "ar-EG",
+            {
+
+                weekday:
+                    "long",
+
+                year:
+                    "numeric",
+
+                month:
+                    "long",
+
+                day:
+                    "numeric"
+
             }
-        })
-        .catch(() => {
-            alert("الجهاز غير متصل");
-        });
+        );
+
+
+    setText(
+        "date",
+        date
+    );
+
 }
 
-function saveVolume(value) {
-    // تحديث النتيجة فوراً في الواجهة لتفاعل أسرع للمستخدم
-    setText("volume", value);
 
-    fetch("/api/settings/volume", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ volume: Number(value) })
-    })
-    .catch(err => console.error("Error saving volume:", err));
+// =====================================
+// Start Clock
+// =====================================
+
+updateClock();
+
+
+setInterval(
+    updateClock,
+    1000
+);
+
+
+// =====================================
+// Load ESP Status
+// =====================================
+
+async function loadStatus() {
+
+    console.log(
+        "[STATUS] Requesting /api/status"
+    );
+
+
+    const controller =
+        new AbortController();
+
+
+    const timeoutId =
+        setTimeout(
+            () => {
+
+                controller.abort();
+
+            },
+            4000
+        );
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/status",
+                {
+
+                    signal:
+                        controller.signal,
+
+                    cache:
+                        "no-store"
+
+                }
+            );
+
+
+        clearTimeout(
+            timeoutId
+        );
+
+
+        if (
+            !response.ok
+        ) {
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "[STATUS]",
+            data
+        );
+
+
+        // =================================
+        // Time Format
+        // =================================
+
+        if (
+            data.timeFormat === "12H" ||
+            data.timeFormat === "24H"
+        ) {
+
+            timeFormat =
+                data.timeFormat;
+
+
+            updateClock();
+
+        }
+
+
+        // =================================
+        // Prayer Times
+        // =================================
+
+        setText(
+            "fajr",
+            data.fajr
+        );
+
+
+        setText(
+            "dhuhr",
+            data.dhuhr
+        );
+
+
+        setText(
+            "asr",
+            data.asr
+        );
+
+
+        setText(
+            "maghrib",
+            data.maghrib
+        );
+
+
+        setText(
+            "isha",
+            data.isha
+        );
+
+
+        // =================================
+        // Next Prayer
+        // =================================
+
+        const nextPrayer =
+            prayerNamesArabic[
+                data.nextPrayer
+            ] ||
+            data.nextPrayer ||
+            "---";
+
+
+        setText(
+            "nextPrayer",
+            nextPrayer
+        );
+
+
+        // =================================
+        // Next Prayer Time
+        // =================================
+
+        setText(
+            "nextPrayerTime",
+            data.nextPrayerTime ||
+            "--:--"
+        );
+
+
+        // =================================
+        // Countdown
+        // =================================
+
+        updateCountdownFromStatus(
+            data.countdown
+        );
+
+
+        // =================================
+        // Wi-Fi
+        // =================================
+
+        setText(
+            "wifi",
+            data.wifi
+                ? "متصل"
+                : "غير متصل"
+        );
+
+
+        // =================================
+        // MQTT
+        // =================================
+
+        setText(
+            "mqtt",
+            data.mqtt
+                ? "متصل"
+                : "غير متصل"
+        );
+
+
+        // =================================
+        // Device Status
+        // =================================
+
+        updateDeviceStatus(
+            data.status
+        );
+
+
+        // =================================
+        // DFPlayer
+        // =================================
+
+        if (
+            data.playerReady !== undefined
+        ) {
+
+            setText(
+                "dfplayer",
+                data.playerReady
+                    ? "متصل"
+                    : "غير متصل"
+            );
+
+        }
+
+
+        // =================================
+        // Volume
+        // =================================
+
+        setText(
+            "volume",
+            data.volume
+        );
+
+
+        setInputValue(
+            "volumeSlider",
+            data.volume
+        );
+
+    }
+
+
+    catch (error) {
+
+        clearTimeout(
+            timeoutId
+        );
+
+
+        console.warn(
+            "[STATUS ERROR]",
+            error
+        );
+
+
+        handleStatusError();
+
+    }
+
 }
 
-// Sync status every 5 seconds
-setInterval(loadStatus, 5000);
+
+// =====================================
+// Countdown Status Update
+// =====================================
+
+function updateCountdownFromStatus(
+    value
+) {
+
+    if (
+        value === undefined ||
+        value === null
+    ) {
+
+        return;
+
+    }
+
+
+    const newSeconds =
+        Number(value);
+
+
+    if (
+        !Number.isFinite(
+            newSeconds
+        ) ||
+        newSeconds < 0
+    ) {
+
+        return;
+
+    }
+
+
+    countdownSeconds =
+        Math.floor(
+            newSeconds
+        );
+
+
+    updateCountdown();
+
+
+    /*
+     * تأكد أن هناك Timer واحد فقط.
+     */
+
+    if (
+        countdownTimer === null
+    ) {
+
+        countdownTimer =
+            setInterval(
+                updateCountdown,
+                1000
+            );
+
+    }
+
+}
+
+
+// =====================================
+// Device Status
+// =====================================
+
+function updateDeviceStatus(
+    status
+) {
+
+    const element =
+        document.getElementById(
+            "deviceStatus"
+        );
+
+
+    if (!element) {
+        return;
+    }
+
+
+    if (
+        status === "online"
+    ) {
+
+        element.textContent =
+            "متصل";
+
+        element.className =
+            "status-online";
+
+    }
+
+
+    else {
+
+        element.textContent =
+            "غير متصل";
+
+        element.className =
+            "status-offline";
+
+    }
+
+}
+
+
+// =====================================
+// Status Error
+// =====================================
+
+function handleStatusError() {
+
+    setText(
+        "wifi",
+        "غير متصل"
+    );
+
+
+    setText(
+        "mqtt",
+        "غير متصل"
+    );
+
+
+    setText(
+        "dfplayer",
+        "غير متصل"
+    );
+
+
+    setText(
+        "nextPrayer",
+        "---"
+    );
+
+
+    setText(
+        "nextPrayerTime",
+        "--:--"
+    );
+
+
+    updateDeviceStatus(
+        "offline"
+    );
+
+}
+
+
+// =====================================
+// Countdown Timer
+// =====================================
+
+function updateCountdown() {
+
+    const element =
+        document.getElementById(
+            "countdown"
+        );
+
+
+    if (!element) {
+
+        console.warn(
+            "[COUNTDOWN] Element not found"
+        );
+
+        return;
+
+    }
+
+
+    // =====================================
+    // Prayer Time Now
+    // =====================================
+
+    if (
+        countdownSeconds <= 0
+    ) {
+
+        element.textContent =
+            "حان الآن وقت الصلاة";
+
+
+        if (
+            countdownTimer !== null
+        ) {
+
+            clearInterval(
+                countdownTimer
+            );
+
+
+            countdownTimer =
+                null;
+
+        }
+
+
+        return;
+
+    }
+
+
+    // =====================================
+    // Calculate Time
+    // =====================================
+
+    const hours =
+        Math.floor(
+            countdownSeconds /
+            3600
+        );
+
+
+    const minutes =
+        Math.floor(
+            (
+                countdownSeconds %
+                3600
+            ) / 60
+        );
+
+
+    const seconds =
+        countdownSeconds %
+        60;
+
+
+    const formattedTime =
+
+        String(hours).padStart(
+            2,
+            "0"
+        ) +
+        ":" +
+        String(minutes).padStart(
+            2,
+            "0"
+        ) +
+        ":" +
+        String(seconds).padStart(
+            2,
+            "0"
+        );
+
+
+    element.textContent =
+        "بعد " +
+        formattedTime;
+
+
+    countdownSeconds--;
+
+}
+
+
+// =====================================
+// Initial Load
+// =====================================
+
 loadStatus();
+
+
+// =====================================
+// Sync ESP Status Every 5 Seconds
+// =====================================
+
+setInterval(
+    loadStatus,
+    5000
+);

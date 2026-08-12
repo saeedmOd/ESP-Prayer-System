@@ -41,6 +41,12 @@ static bool iqamaPlayed[6] =
     false
 };
 
+static bool morningAdhkarPlayed = false;
+
+static bool eveningAdhkarPlayed = false;
+
+static bool kahfPlayed = false;
+
 
 
 static const char* prayerNames[6] =
@@ -342,6 +348,10 @@ void prayer_reload()
         iqamaPlayed[i] = false;
     }
 
+    morningAdhkarPlayed = false;
+    eveningAdhkarPlayed = false;
+    kahfPlayed = false;
+
 
 
     calculate_prayers();
@@ -420,6 +430,75 @@ void prayer_loop()
 
     }
 
+    if(
+        settings.morningAdhkarEnable
+        &&
+        now >= ((settings.morningAdhkarHour * 60) + settings.morningAdhkarMinute)
+        &&
+        now <= ((settings.morningAdhkarHour * 60) + settings.morningAdhkarMinute + 1)
+        &&
+        !morningAdhkarPlayed
+    )
+    {
+        morningAdhkarPlayed = true;
+
+        play_folder_file_with_volume(
+            settings.morningAdhkarFolder,
+            settings.morningAdhkarFile,
+            settings.morningAdhkarVolume
+        );
+
+        Serial.println("Playing Morning Adhkar");
+    }
+
+
+    if(
+        settings.eveningAdhkarEnable
+        &&
+        now >= ((settings.eveningAdhkarHour * 60) + settings.eveningAdhkarMinute)
+        &&
+        now <= ((settings.eveningAdhkarHour * 60) + settings.eveningAdhkarMinute + 1)
+        &&
+        !eveningAdhkarPlayed
+    )
+    {
+        eveningAdhkarPlayed = true;
+
+        play_folder_file_with_volume(
+            settings.eveningAdhkarFolder,
+            settings.eveningAdhkarFile,
+            settings.eveningAdhkarVolume
+        );
+
+        Serial.println("Playing Evening Adhkar");
+    }
+
+
+    if(
+        settings.kahfEnable
+        &&
+        getLocalTime(&timeinfo)
+        &&
+        timeinfo.tm_wday == 5
+        &&
+        now >= ((settings.kahfHour * 60) + settings.kahfMinute)
+        &&
+        now <= ((settings.kahfHour * 60) + settings.kahfMinute + 1)
+        &&
+        !kahfPlayed
+    )
+    {
+        kahfPlayed = true;
+
+        play_folder_file_with_volume(
+            settings.kahfFolder,
+            settings.kahfFile,
+            settings.kahfVolume
+        );
+
+        Serial.println("Playing Surat Al-Kahf");
+    }
+
 
 
 
@@ -491,53 +570,131 @@ else
 }
 
 
-            // ==========================
-            // Iqama Schedule
-            // سيتم إضافته لاحقاً
-            // ==========================
+// ==========================
+// Iqama Schedule
+// ==========================
+
+int iqamaMinute =
+    prayerMinutes[i] + settings.iqamaDelayMinutes;
 
 
-        }
-
-
-        int iqamaMinute =
-            prayerMinutes[i] + settings.iqamaDelayMinutes;
-
-        if(iqamaMinute >= 1440)
-        {
-            iqamaMinute -= 1440;
-        }
-
-        if(
-            settings.iqamaEnable
-            &&
-            now >= iqamaMinute
-            &&
-            now <= iqamaMinute + 1
-            &&
-            !iqamaPlayed[i]
-        )
-        {
-            iqamaPlayed[i] = true;
-
-            play_iqama();
-
-            Serial.print(
-                "Playing Iqama: "
-            );
-
-            Serial.println(
-                prayerNames[i]
-            );
-        }
-
-
-    }
-
-
+if(iqamaMinute >= 1440)
+{
+    iqamaMinute -= 1440;
 }
 
 
+// ==========================
+// Check Iqama Prayer Enable
+// ==========================
+
+bool iqamaPrayerEnabled = false;
+
+
+switch(i)
+{
+    case 0: // Fajr
+        iqamaPrayerEnabled =
+            settings.iqamaPrayerEnable[0];
+        break;
+
+
+    case 2: // Dhuhr
+        iqamaPrayerEnabled =
+            settings.iqamaPrayerEnable[2];
+        break;
+
+
+    case 3: // Asr
+        iqamaPrayerEnabled =
+            settings.iqamaPrayerEnable[3];
+        break;
+
+
+    case 4: // Maghrib
+        iqamaPrayerEnabled =
+            settings.iqamaPrayerEnable[4];
+        break;
+
+
+    case 5: // Isha
+        iqamaPrayerEnabled =
+            settings.iqamaPrayerEnable[5];
+        break;
+
+
+    default:
+        iqamaPrayerEnabled = false;
+        break;
+}
+
+
+// ==========================
+// Play Iqama
+// ==========================
+
+if(
+    settings.iqamaEnable
+    &&
+    iqamaPrayerEnabled
+    &&
+    now >= iqamaMinute
+    &&
+    now <= iqamaMinute + 1
+    &&
+    !iqamaPlayed[i]
+)
+{
+    iqamaPlayed[i] = true;
+
+
+    play_folder_file_with_volume(
+        settings.iqamaFolder,
+        settings.iqamaFile,
+        settings.iqamaVolume
+    );
+
+
+    Serial.print(
+        "Playing Iqama: "
+    );
+
+
+    Serial.println(
+        prayerNames[i]
+    );
+}
+
+
+// ==========================
+// Iqama Disabled
+// ==========================
+
+else if(
+    settings.iqamaEnable
+    &&
+    !iqamaPrayerEnabled
+    &&
+    now >= iqamaMinute
+    &&
+    now <= iqamaMinute + 1
+)
+{
+    Serial.print(
+        "Iqama Disabled: "
+    );
+
+
+    Serial.println(
+        prayerNames[i]
+    );
+}
+
+        }
+
+    }
+
+}
 
 
 // =====================================

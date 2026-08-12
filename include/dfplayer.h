@@ -33,6 +33,30 @@ void play_folder_file(
     uint8_t file
 );
 
+void play_folder_file_with_volume(
+    uint8_t folder,
+    uint8_t file,
+    uint8_t volume
+);
+
+void play_folder_with_volume(
+    uint8_t folder,
+    uint8_t volume
+);
+
+
+// =================================
+// Playback Controls
+// =================================
+
+void play_audio();
+
+void pause_audio();
+
+void stop_audio();
+
+void volume_down();
+
 
 
 // =================================
@@ -54,13 +78,6 @@ void play_dua();
 
 void play_test();
 
-
-
-// =================================
-// Control
-// =================================
-
-void stop_audio();
 
 
 // =================================

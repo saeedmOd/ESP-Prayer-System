@@ -249,6 +249,18 @@ void settings_load()
             DEFAULT_VOLUME
         );
 
+    settings.lowVolumeEnable =
+        storage_get_bool(
+            "audio.low_volume_enable",
+            false
+        );
+
+    settings.lowVolumeLevel =
+        storage_get_int(
+            "audio.low_volume_level",
+            8
+        );
+
 
     settings.athanFolder =
         storage_get_athan_folder(1);
@@ -281,6 +293,26 @@ void settings_load()
             10
         );
 
+    settings.iqamaVolume =
+        storage_get_int(
+            "audio.iqama_volume",
+            12
+        );
+
+    settings.iqamaPrayerEnable[0] = storage_get_bool("audio.iqama_fajr_enable", true);
+    settings.iqamaPrayerEnable[1] = false;
+    settings.iqamaPrayerEnable[2] = storage_get_bool("audio.iqama_dhuhr_enable", true);
+    settings.iqamaPrayerEnable[3] = storage_get_bool("audio.iqama_asr_enable", true);
+    settings.iqamaPrayerEnable[4] = storage_get_bool("audio.iqama_maghrib_enable", true);
+    settings.iqamaPrayerEnable[5] = storage_get_bool("audio.iqama_isha_enable", true);
+
+    settings.iqamaPrayerDelay[0] = storage_get_int("audio.iqama_fajr_delay", 20);
+    settings.iqamaPrayerDelay[1] = 0;
+    settings.iqamaPrayerDelay[2] = storage_get_int("audio.iqama_dhuhr_delay", 10);
+    settings.iqamaPrayerDelay[3] = storage_get_int("audio.iqama_asr_delay", 10);
+    settings.iqamaPrayerDelay[4] = storage_get_int("audio.iqama_maghrib_delay", 5);
+    settings.iqamaPrayerDelay[5] = storage_get_int("audio.iqama_isha_delay", 10);
+
 
     settings.surahFolder =
         storage_get_surah_folder(2);
@@ -288,6 +320,132 @@ void settings_load()
 
     settings.surahFile =
         storage_get_surah_file(1);
+
+    settings.morningAdhkarEnable =
+        storage_get_bool(
+            "audio.morning_adhkar_enable",
+            false
+        );
+
+    settings.morningAdhkarFolder =
+        storage_get_int(
+            "audio.morning_adhkar_folder",
+            4
+        );
+
+    settings.morningAdhkarFile =
+        storage_get_int(
+            "audio.morning_adhkar_file",
+            1
+        );
+
+    settings.morningAdhkarHour =
+        storage_get_int(
+            "audio.morning_adhkar_hour",
+            6
+        );
+
+    settings.morningAdhkarMinute =
+        storage_get_int(
+            "audio.morning_adhkar_minute",
+            0
+        );
+
+    settings.morningAdhkarVolume =
+        storage_get_int(
+            "audio.morning_adhkar_volume",
+            DEFAULT_VOLUME
+        );
+
+    settings.morningAdhkarPlayFolder =
+        storage_get_bool(
+            "audio.morning_adhkar_play_folder",
+            false
+        );
+
+    settings.eveningAdhkarEnable =
+        storage_get_bool(
+            "audio.evening_adhkar_enable",
+            false
+        );
+
+    settings.eveningAdhkarFolder =
+        storage_get_int(
+            "audio.evening_adhkar_folder",
+            4
+        );
+
+    settings.eveningAdhkarFile =
+        storage_get_int(
+            "audio.evening_adhkar_file",
+            2
+        );
+
+    settings.eveningAdhkarHour =
+        storage_get_int(
+            "audio.evening_adhkar_hour",
+            18
+        );
+
+    settings.eveningAdhkarMinute =
+        storage_get_int(
+            "audio.evening_adhkar_minute",
+            0
+        );
+
+    settings.eveningAdhkarVolume =
+        storage_get_int(
+            "audio.evening_adhkar_volume",
+            DEFAULT_VOLUME
+        );
+
+    settings.eveningAdhkarPlayFolder =
+        storage_get_bool(
+            "audio.evening_adhkar_play_folder",
+            false
+        );
+
+    settings.kahfEnable =
+        storage_get_bool(
+            "audio.kahf_enable",
+            false
+        );
+
+    settings.kahfFolder =
+        storage_get_int(
+            "audio.kahf_folder",
+            2
+        );
+
+    settings.kahfFile =
+        storage_get_int(
+            "audio.kahf_file",
+            5
+        );
+
+    settings.kahfHour =
+        storage_get_int(
+            "audio.kahf_hour",
+            9
+        );
+
+    settings.kahfMinute =
+        storage_get_int(
+            "audio.kahf_minute",
+            0
+        );
+
+    settings.kahfVolume =
+        storage_get_int(
+            "audio.kahf_volume",
+            DEFAULT_VOLUME
+        );
+
+    settings.kahfPlayFolder =
+        storage_get_bool(
+            "audio.kahf_play_folder",
+            false
+        );
 
 
     settings.shortSurahFolder =
@@ -366,6 +524,8 @@ void settings_apply()
     if(settings.volume > 30)
         settings.volume = 30;
 
+    settings.lowVolumeLevel = constrain(settings.lowVolumeLevel, 0, 30);
+
     if(settings.athanFolder < 1)
         settings.athanFolder = 1;
 
@@ -383,6 +543,41 @@ void settings_apply()
 
     if(settings.iqamaDelayMinutes > 60)
         settings.iqamaDelayMinutes = 60;
+
+    for(int i = 0; i < 6; i++)
+    {
+        settings.iqamaPrayerDelay[i] = constrain(settings.iqamaPrayerDelay[i], 0, 60);
+    }
+
+    if(settings.morningAdhkarFolder < 4)
+        settings.morningAdhkarFolder = 4;
+
+    if(settings.morningAdhkarFile < 1)
+        settings.morningAdhkarFile = 1;
+
+    if(settings.eveningAdhkarFolder < 1)
+        settings.eveningAdhkarFolder = 7;
+
+    if(settings.eveningAdhkarFile < 1)
+        settings.eveningAdhkarFile = 1;
+
+    if(settings.kahfFolder < 1)
+        settings.kahfFolder = 8;
+
+    if(settings.kahfFile < 1)
+        settings.kahfFile = 1;
+
+    settings.morningAdhkarHour = constrain(settings.morningAdhkarHour, 0, 23);
+    settings.morningAdhkarMinute = constrain(settings.morningAdhkarMinute, 0, 59);
+    settings.morningAdhkarVolume = constrain(settings.morningAdhkarVolume, 0, 30);
+
+    settings.eveningAdhkarHour = constrain(settings.eveningAdhkarHour, 0, 23);
+    settings.eveningAdhkarMinute = constrain(settings.eveningAdhkarMinute, 0, 59);
+    settings.eveningAdhkarVolume = constrain(settings.eveningAdhkarVolume, 0, 30);
+
+    settings.kahfHour = constrain(settings.kahfHour, 0, 23);
+    settings.kahfMinute = constrain(settings.kahfMinute, 0, 59);
+    settings.kahfVolume = constrain(settings.kahfVolume, 0, 30);
 
 
 
@@ -473,18 +668,55 @@ void settings_save()
         settings.deviceName
     );
 
-    storage_set_bool(
-        "wifi.enable",
-        settings.wifiEnable
-    );
-    if(settings.wifiSSID.length() > 0)
-    {
-    storage_set_wifi(
-        settings.wifiSSID,
-        settings.wifiPassword
-    );
-    }
-    
+storage_set_bool(
+    "wifi.enable",
+    settings.wifiEnable
+);
+
+storage_set_bool(
+    "wifi.auto_reconnect",
+    settings.wifiAutoReconnect
+);
+
+
+Serial.println();
+Serial.println("========== WIFI SAVE ==========");
+
+Serial.print("SSID RAM: ");
+Serial.println(settings.wifiSSID);
+
+Serial.print("Password RAM: ");
+Serial.println(settings.wifiPassword);
+
+
+bool wifiSaved = storage_set_wifi(
+    settings.wifiSSID,
+    settings.wifiPassword
+);
+
+
+Serial.print("storage_set_wifi(): ");
+Serial.println(
+    wifiSaved ? "SUCCESS" : "FAILED"
+);
+
+
+Serial.print("SSID STORAGE: ");
+Serial.println(
+    storage_get_wifi_ssid("EMPTY")
+);
+
+
+Serial.print("Password STORAGE: ");
+Serial.println(
+    storage_get_wifi_password("EMPTY")
+);
+
+
+Serial.println("===============================");
+
+
+        
     storage_set_bool(
         "mqtt.enable",
         settings.mqttEnable
@@ -538,6 +770,9 @@ void settings_save()
         settings.volume
     );
 
+    storage_set_bool("audio.low_volume_enable", settings.lowVolumeEnable);
+    storage_set_int("audio.low_volume_level", settings.lowVolumeLevel);
+
 
     storage_set_athan_folder(
         settings.athanFolder
@@ -568,6 +803,23 @@ void settings_save()
         settings.iqamaDelayMinutes
     );
 
+    storage_set_int(
+        "audio.iqama_volume",
+        settings.iqamaVolume
+    );
+
+    storage_set_bool("audio.iqama_fajr_enable", settings.iqamaPrayerEnable[0]);
+    storage_set_bool("audio.iqama_dhuhr_enable", settings.iqamaPrayerEnable[2]);
+    storage_set_bool("audio.iqama_asr_enable", settings.iqamaPrayerEnable[3]);
+    storage_set_bool("audio.iqama_maghrib_enable", settings.iqamaPrayerEnable[4]);
+    storage_set_bool("audio.iqama_isha_enable", settings.iqamaPrayerEnable[5]);
+
+    storage_set_int("audio.iqama_fajr_delay", settings.iqamaPrayerDelay[0]);
+    storage_set_int("audio.iqama_dhuhr_delay", settings.iqamaPrayerDelay[2]);
+    storage_set_int("audio.iqama_asr_delay", settings.iqamaPrayerDelay[3]);
+    storage_set_int("audio.iqama_maghrib_delay", settings.iqamaPrayerDelay[4]);
+    storage_set_int("audio.iqama_isha_delay", settings.iqamaPrayerDelay[5]);
+
 
     storage_set_surah_folder(
         settings.surahFolder
@@ -577,6 +829,30 @@ void settings_save()
     storage_set_surah_file(
         settings.surahFile
     );
+
+    storage_set_bool("audio.morning_adhkar_enable", settings.morningAdhkarEnable);
+    storage_set_int("audio.morning_adhkar_folder", settings.morningAdhkarFolder);
+    storage_set_int("audio.morning_adhkar_file", settings.morningAdhkarFile);
+    storage_set_int("audio.morning_adhkar_hour", settings.morningAdhkarHour);
+    storage_set_int("audio.morning_adhkar_minute", settings.morningAdhkarMinute);
+    storage_set_int("audio.morning_adhkar_volume", settings.morningAdhkarVolume);
+    storage_set_bool("audio.morning_adhkar_play_folder", settings.morningAdhkarPlayFolder);
+
+    storage_set_bool("audio.evening_adhkar_enable", settings.eveningAdhkarEnable);
+    storage_set_int("audio.evening_adhkar_folder", settings.eveningAdhkarFolder);
+    storage_set_int("audio.evening_adhkar_file", settings.eveningAdhkarFile);
+    storage_set_int("audio.evening_adhkar_hour", settings.eveningAdhkarHour);
+    storage_set_int("audio.evening_adhkar_minute", settings.eveningAdhkarMinute);
+    storage_set_int("audio.evening_adhkar_volume", settings.eveningAdhkarVolume);
+    storage_set_bool("audio.evening_adhkar_play_folder", settings.eveningAdhkarPlayFolder);
+
+    storage_set_bool("audio.kahf_enable", settings.kahfEnable);
+    storage_set_int("audio.kahf_folder", settings.kahfFolder);
+    storage_set_int("audio.kahf_file", settings.kahfFile);
+    storage_set_int("audio.kahf_hour", settings.kahfHour);
+    storage_set_int("audio.kahf_minute", settings.kahfMinute);
+    storage_set_int("audio.kahf_volume", settings.kahfVolume);
+    storage_set_bool("audio.kahf_play_folder", settings.kahfPlayFolder);
 
 
 

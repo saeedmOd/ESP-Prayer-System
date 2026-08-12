@@ -368,53 +368,155 @@ void storage_create_defaults()
     // Audio
     // =================================================
 
-    doc["audio"]["enable"] =
-        true;
+// =================================================
+// Audio
+// =================================================
+
+doc["audio"]["enable"] =
+    true;
+
+doc["audio"]["volume"] =
+    25;
 
 
-    doc["audio"]["volume"] =
-        25;
+// =================================================
+// Azan
+// =================================================
+
+doc["audio"]["azan_enable"] =
+    true;
+
+doc["audio"]["athan_folder"] =
+    1;
+
+doc["audio"]["athan_file"] =
+    1;
 
 
-    doc["audio"]["azan_enable"] =
-        true;
+// =================================================
+// Iqama
+// =================================================
+
+doc["audio"]["iqama_enable"] =
+    true;
+
+doc["audio"]["iqama_folder"] =
+    5;
+
+doc["audio"]["iqama_file"] =
+    1;
+
+doc["audio"]["iqama_delay"] =
+    10;
+
+doc["audio"]["iqama_volume"] =
+    12;
+
+doc["audio"]["iqama_fajr"] =
+    true;
+
+doc["audio"]["iqama_dhuhr"] =
+    true;
+
+doc["audio"]["iqama_asr"] =
+    true;
+
+doc["audio"]["iqama_maghrib"] =
+    true;
+
+doc["audio"]["iqama_isha"] =
+    true;
 
 
-    doc["audio"]["athan_folder"] =
-        1;
+// =================================================
+// Surah
+// =================================================
+
+doc["audio"]["surah_folder"] =
+    2;
+
+doc["audio"]["surah_file"] =
+    1;
 
 
-    doc["audio"]["athan_file"] =
-        1;
+// =================================================
+// Morning Adhkar
+// =================================================
 
-    doc["audio"]["iqama_enable"] =
-        true;
+doc["audio"]["morning_adhkar_enable"] =
+    false;
 
-    doc["audio"]["iqama_folder"] =
-        5;
+doc["audio"]["morning_adhkar_folder"] =
+    6;
 
-    doc["audio"]["iqama_file"] =
-        1;
+doc["audio"]["morning_adhkar_file"] =
+    1;
 
-    doc["audio"]["iqama_delay"] =
-        10;
+doc["audio"]["morning_adhkar_hour"] =
+    6;
 
+doc["audio"]["morning_adhkar_minute"] =
+    0;
 
-    doc["audio"]["surah_folder"] =
-        2;
-
-
-    doc["audio"]["surah_file"] =
-        1;
-
-
-    doc["audio"]["short_surah_folder"] =
-        3;
+doc["audio"]["morning_adhkar_volume"] =
+    25;
 
 
-    doc["audio"]["dua_folder"] =
-        4;
+// =================================================
+// Evening Adhkar
+// =================================================
 
+doc["audio"]["evening_adhkar_enable"] =
+    false;
+
+doc["audio"]["evening_adhkar_folder"] =
+    7;
+
+doc["audio"]["evening_adhkar_file"] =
+    1;
+
+doc["audio"]["evening_adhkar_hour"] =
+    18;
+
+doc["audio"]["evening_adhkar_minute"] =
+    0;
+
+doc["audio"]["evening_adhkar_volume"] =
+    25;
+
+
+// =================================================
+// Kahf
+// =================================================
+
+doc["audio"]["kahf_enable"] =
+    false;
+
+doc["audio"]["kahf_folder"] =
+    8;
+
+doc["audio"]["kahf_file"] =
+    1;
+
+doc["audio"]["kahf_hour"] =
+    9;
+
+doc["audio"]["kahf_minute"] =
+    0;
+
+doc["audio"]["kahf_volume"] =
+    25;
+
+
+// =================================================
+// Other
+// =================================================
+
+doc["audio"]["short_surah_folder"] =
+    3;
+
+doc["audio"]["dua_folder"] =
+    4;
 
 
 
@@ -952,7 +1054,6 @@ bool storage_set_string(
         return false;
 
 
-
     set_path(
         configDoc,
         path,
@@ -960,13 +1061,8 @@ bool storage_set_string(
     );
 
 
-
-    return storage_save_cache();
-
+    return true;
 }
-
-
-
 
 
 String storage_get_string(
@@ -979,7 +1075,6 @@ String storage_get_string(
         return defaultValue;
 
 
-
     JsonVariant value =
         get_path(
             configDoc,
@@ -987,20 +1082,12 @@ String storage_get_string(
         );
 
 
-
     if(value.isNull())
         return defaultValue;
 
 
-
     return value.as<String>();
-
 }
-
-
-
-
-
 
 
 // =================================================
@@ -1017,7 +1104,6 @@ bool storage_set_int(
         return false;
 
 
-
     set_path(
         configDoc,
         path,
@@ -1025,13 +1111,8 @@ bool storage_set_int(
     );
 
 
-
-    return storage_save_cache();
-
+    return true;
 }
-
-
-
 
 
 int storage_get_int(
@@ -1044,7 +1125,6 @@ int storage_get_int(
         return defaultValue;
 
 
-
     JsonVariant value =
         get_path(
             configDoc,
@@ -1052,17 +1132,12 @@ int storage_get_int(
         );
 
 
-
     if(value.isNull())
         return defaultValue;
 
 
-
     return value.as<int>();
-
 }
-
-
 
 
 
@@ -1147,7 +1222,6 @@ bool storage_set_bool(
         return false;
 
 
-
     set_path(
         configDoc,
         path,
@@ -1155,14 +1229,8 @@ bool storage_set_bool(
     );
 
 
-
-    return storage_save_cache();
-
+    return true;
 }
-
-
-
-
 
 
 bool storage_get_bool(
@@ -1175,7 +1243,6 @@ bool storage_get_bool(
         return defaultValue;
 
 
-
     JsonVariant value =
         get_path(
             configDoc,
@@ -1183,21 +1250,12 @@ bool storage_get_bool(
         );
 
 
-
     if(value.isNull())
         return defaultValue;
 
 
-
     return value.as<bool>();
-
 }
-
-
-
-
-
-
 
 // =================================================
 // DEVICE SETTINGS
@@ -1651,6 +1709,7 @@ bool storage_set_fajr_offset(
 }
 
 
+
 int storage_get_fajr_offset(
     int defaultValue
 )
@@ -1662,9 +1721,6 @@ int storage_get_fajr_offset(
     );
 
 }
-
-
-
 
 
 
@@ -1681,6 +1737,7 @@ bool storage_set_dhuhr_offset(
 }
 
 
+
 int storage_get_dhuhr_offset(
     int defaultValue
 )
@@ -1692,9 +1749,6 @@ int storage_get_dhuhr_offset(
     );
 
 }
-
-
-
 
 
 
@@ -1711,6 +1765,7 @@ bool storage_set_asr_offset(
 }
 
 
+
 int storage_get_asr_offset(
     int defaultValue
 )
@@ -1722,9 +1777,6 @@ int storage_get_asr_offset(
     );
 
 }
-
-
-
 
 
 
@@ -1741,6 +1793,7 @@ bool storage_set_maghrib_offset(
 }
 
 
+
 int storage_get_maghrib_offset(
     int defaultValue
 )
@@ -1752,9 +1805,6 @@ int storage_get_maghrib_offset(
     );
 
 }
-
-
-
 
 
 
@@ -1771,6 +1821,7 @@ bool storage_set_isha_offset(
 }
 
 
+
 int storage_get_isha_offset(
     int defaultValue
 )
@@ -1782,11 +1833,6 @@ int storage_get_isha_offset(
     );
 
 }
-
-
-
-
-
 
 
 
@@ -1817,8 +1863,6 @@ bool storage_set_volume(
 
 
 
-
-
 int storage_get_volume(
     int defaultValue
 )
@@ -1830,9 +1874,6 @@ int storage_get_volume(
     );
 
 }
-
-
-
 
 
 
@@ -1850,7 +1891,6 @@ bool storage_set_athan_folder(
 
 
 
-
 int storage_get_athan_folder(
     int defaultValue
 )
@@ -1862,9 +1902,6 @@ int storage_get_athan_folder(
     );
 
 }
-
-
-
 
 
 
@@ -1882,7 +1919,6 @@ bool storage_set_athan_file(
 
 
 
-
 int storage_get_athan_file(
     int defaultValue
 )
@@ -1894,9 +1930,6 @@ int storage_get_athan_file(
     );
 
 }
-
-
-
 
 
 
@@ -1914,7 +1947,6 @@ bool storage_set_surah_folder(
 
 
 
-
 int storage_get_surah_folder(
     int defaultValue
 )
@@ -1926,9 +1958,6 @@ int storage_get_surah_folder(
     );
 
 }
-
-
-
 
 
 
@@ -1946,7 +1975,6 @@ bool storage_set_surah_file(
 
 
 
-
 int storage_get_surah_file(
     int defaultValue
 )
@@ -1958,11 +1986,6 @@ int storage_get_surah_file(
     );
 
 }
-
-
-
-
-
 
 
 

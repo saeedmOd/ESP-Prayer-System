@@ -1,292 +1,231 @@
 <!DOCTYPE html>
+
 <html lang="ar" dir="rtl">
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>
-        ESP Prayer System
-    </title>
+<title>ESP Prayer System</title>
 
-
-    <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="/web/style.css?v=5">
 
 </head>
 
-
 <body>
-
 
 <div class="app">
 
+<!-- Header -->
 
-    <!-- Header -->
+<header class="header">
 
-    <header class="header">
+<div>
+    <h1>🕌 ESP Prayer System</h1>
+    <small>نظام الأذان الذكي</small>
+</div>
 
-        <h1>
-            🕌 ESP Prayer System
-        </h1>
+<span id="deviceStatus" class="status-online">
+    متصل
+</span>
 
-        <span id="deviceStatus">
-            متصل
-        </span>
+</header>
 
-    </header>
+<!-- Clock -->
 
+<section class="clock-card">
 
+<div id="time">
+    12:35:20
+</div>
 
-    <!-- Clock -->
+<div id="date">
+    الثلاثاء 28 يوليو 2026
+</div>
 
-    <section class="clock-card">
+</section>
 
+<!-- Next Prayer -->
 
-        <div id="time">
-            12:35:20
-        </div>
+<section class="card next-prayer">
 
+<h2>
+    الصلاة القادمة
+</h2>
 
-        <div id="date">
-            الثلاثاء 28 يوليو 2026
-        </div>
+<div class="prayer-name" id="nextPrayer">
 
-
-    </section>
-
-
-
-
-    <!-- Next Prayer -->
-
-    <section class="card next-prayer">
-
-
-        <h2>
-            الصلاة القادمة
-        </h2>
-
-
-        <div class="prayer-name" id="nextPrayer">
-
-            العصر
-
-        </div>
-
-
-        <div class="countdown" id="countdown">
-
-            بعد 00:00:00
-
-        </div>
-
-
-    </section>
-
-
-
-
-
-    <!-- Prayer Times -->
-
-    <section class="card">
-
-
-        <h2>
-            مواقيت الصلاة
-        </h2>
-
-
-
-        <div class="prayer-list">
-
-
-            <div>
-                <span>
-                    الفجر
-                </span>
-
-                <b id="fajr">
-                    04:20
-                </b>
-            </div>
-
-
-
-            <div>
-                <span>
-                    الظهر
-                </span>
-
-                <b id="dhuhr">
-                    12:25
-                </b>
-            </div>
-
-
-
-
-            <div>
-                <span>
-                    العصر
-                </span>
-
-                <b id="asr">
-                    15:50
-                </b>
-            </div>
-
-
-
-
-            <div>
-                <span>
-                    المغرب
-                </span>
-
-                <b id="maghrib">
-                    19:05
-                </b>
-            </div>
-
-
-
-
-            <div>
-                <span>
-                    العشاء
-                </span>
-
-                <b id="isha">
-                    20:35
-                </b>
-            </div>
-
-
-        </div>
-
-
-    </section>
-
-
-
-
-
-    <!-- System Status -->
-
-    <section class="card status">
-
-
-        <h2>
-            حالة النظام
-        </h2>
-
-
-        <div>
-
-            📶 WiFi
-
-            <span id="wifi">
-                متصل
-            </span>
-
-        </div>
-
-
-
-        <div>
-
-            📡 MQTT
-
-            <span id="mqtt">
-                متصل
-            </span>
-
-        </div>
-
-
-
-        <div>
-
-            🔊 الصوت
-
-            <span id="volume">
-                25
-            </span>
-
-        </div>
-
-
-    </section>
-
-
-
-
-
-    <!-- Controls -->
-
-    <section class="card">
-
-
-        <h2>
-            التحكم
-        </h2>
-
-
-
-        <button onclick="testAzan()">
-
-            ▶ تشغيل أذان تجريبي
-
-        </button>
-
-
-
-        <button onclick="location.href='audio.html'">
-
-            🔊 إعدادات الصوت
-
-        </button>
-
-
-
-        <button onclick="location.href='prayer.html'">
-
-            🕌 إعدادات الصلاة
-
-        </button>
-
-
-
-        <button onclick="location.href='network.html'">
-
-            📡 الشبكة
-
-        </button>
-
-
-
-        <button onclick="location.href='system.html'">
-
-            ⚙ النظام
-
-        </button>
-
-
-
-    </section>
-
-
+العصر
 
 </div>
 
+<div id="nextPrayerTime" class="prayer-time">
+</div>
+
+<div class="countdown" id="countdown">
+</div>
+
+</section>
+
+<!-- Prayer Times -->
+
+<section class="card">
+
+<h2>
+    مواقيت الصلاة
+</h2>
+
+<div class="prayer-list">
+
+<div id="prayer-fajr">
+<span>🌅 الفجر</span>
+<b id="fajr">04:20</b>
+</div>
+
+<div id="prayer-dhuhr">
+<span>☀️ الظهر</span>
+<b id="dhuhr">12:25</b>
+</div>
+
+<div id="prayer-asr">
+<span>🌤️ العصر</span>
+<b id="asr">15:50</b>
+</div>
+
+<div id="prayer-maghrib">
+<span>🌇 المغرب</span>
+<b id="maghrib">19:05</b>
+</div>
+
+<div id="prayer-isha">
+<span>🌙 العشاء</span>
+<b id="isha">20:35</b>
+</div>
+
+</div>
+
+</section>
+
+<!-- System Status -->
+
+<section class="card">
+
+<h2>
+حالة النظام
+</h2>
+
+<div class="system-row">
+
+<span>
+    📶 WiFi
+</span>
+
+<b id="wifi">
+    متصل
+</b>
+
+</div>
+
+<div class="system-row">
+
+<span>
+    📡 MQTT
+</span>
+
+<b id="mqtt">
+    متصل
+</b>
+
+</div>
+
+<div class="system-row">
+
+<span>
+    🎵 DFPlayer
+</span>
+
+<b id="dfplayer">
+    غير متصل
+</b>
+
+</div>
+
+<div class="system-row">
+
+<span>
+    🔊 الصوت
+</span>
+
+<b>
+    <span id="volume">
+        25
+    </span>
+    %
+</b>
+
+</div>
+
+</section>
+
+<!-- Controls -->
+
+<section class="card">
+
+<h2>
+التحكم
+</h2>
+
+<div class="controls">
 
 
-<script src="script.js"></script>
+<button onclick="testAzan()">
+    ▶ <span>تشغيل أذان</span>
+</button>
+
+<button onclick="location.href='audio.html'">
+
+🔊 <span>
+الصوت </span>
+
+</button>
+
+<button onclick="location.href='prayer.html'">
+
+🕌 <span>
+الصلاة </span>
+
+</button>
+
+<button onclick="location.href='network.html'">
+
+📶 <span>
+الشبكة </span>
+
+</button>
+
+<button onclick="location.href='system.html'">
+
+⚙️ <span>
+النظام </span>
+
+</button>
+
+</div>
+
+</section>
+
+</div>
+
+<script src="/web/script.js?v=10"></script>
+<script src="/web/audio.js?v=10"></script>
+
+<script>
+console.log("=== AUDIO TEST ===");
+console.log("testAzan:", typeof window.testAzan);
+</script>
 
 
 </body>
-
 </html>

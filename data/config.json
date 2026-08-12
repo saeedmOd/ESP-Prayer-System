@@ -26,27 +26,38 @@
 
 
     "audio": {
-
-    "enable":true,
-
-    "volume":5,
-
-
-    "reciter":"maher",
-
-
-     "athan": {
-       "folder":1,
-       "file":2
+        "enable": true,
+        "volume": 25,
+        "reciter": "maher",
+        "azan_enable": true,
+        "athan_folder": 1,
+        "athan_file": 1,
+        "iqama_enable": true,
+        "iqama_folder": 1,
+        "iqama_file": 1,
+        "iqama_delay": 10,
+        "morning_adhkar_enable": false,
+        "morning_adhkar_folder": 4,
+        "morning_adhkar_file": 1,
+        "morning_adhkar_hour": 6,
+        "morning_adhkar_minute": 0,
+        "morning_adhkar_volume": 1,
+        "morning_adhkar_play_folder": false,
+        "evening_adhkar_enable": false,
+        "evening_adhkar_folder": 4,
+        "evening_adhkar_file": 2,
+        "evening_adhkar_hour": 18,
+        "evening_adhkar_minute": 0,
+        "evening_adhkar_volume": 1,
+        "evening_adhkar_play_folder": false,
+        "kahf_enable": false,
+        "kahf_folder": 2,
+        "kahf_file": 5,
+        "kahf_hour": 9,
+        "kahf_minute": 0,
+        "kahf_volume": 5,
+        "kahf_play_folder": false
     },
-
-
-  "iqama": {
-    "enable": true,
-    "delay": 10,
-    "sound": "iqama"
-  }
-},
 
 
   "wifi": {

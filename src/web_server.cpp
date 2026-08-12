@@ -129,7 +129,8 @@ static void start_mdns() {
 // Web Server Init
 // =====================================
 
-void web_server_init() {
+void web_server_init()
+{
     if (webServerStarted) {
         Serial.println(F("[WEB] Already running"));
         return;
@@ -137,19 +138,29 @@ void web_server_init() {
 
     Serial.println(F("[WEB] Initializing routes..."));
 
+    // Pages FIRST
+    registerPageRoutes();
+
+    // APIs
+    registerApiRoutes();
+
+    // Other routes
     registerScanRoutes();
     registerStaticRoutes();
-    registerPageRoutes();
-    registerApiRoutes();
     registerSystemRoutes();
+
+    // 404 MUST BE LAST
     register_not_found();
 
     server.begin();
+
     start_mdns();
 
     webServerStarted = true;
+
     Serial.println(F("[WEB] Server Started successfully"));
 }
+
 
 /// =====================================
 // WiFi Scan Routes (Fixed & Non-blocking)
@@ -200,42 +211,137 @@ static void registerScanRoutes() {
 // Static Files
 // =====================================
 
+// =====================================
+// Static Files
+// =====================================
+
 static void registerStaticRoutes() {
-    server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-        send_file(request, "/web/style.css", "text/css");
+
+    // CSS
+    server.on("/web/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+
+        Serial.println(F("[WEB] CSS REQUEST -> /web/style.css"));
+
+        send_file(
+            request,
+            "/web/style.css",
+            "text/css"
+        );
     });
 
+
+    // JavaScript
+    server.on("/web/script.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+
+        Serial.println(F("[WEB] JS REQUEST -> /web/script.js"));
+
+        send_file(
+            request,
+            "/web/script.js",
+            "application/javascript"
+        );
+    });
+
+
+    // JavaScript - Audio
+    server.on("/web/audio.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+
+        Serial.println(F("[WEB] JS REQUEST -> /web/audio.js"));
+
+        send_file(
+            request,
+            "/web/audio.js",
+            "application/javascript"
+        );
+    });
+
+
+    // Compatibility paths
+    server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+
+        Serial.println(F("[WEB] CSS REQUEST -> /style.css"));
+
+        send_file(
+            request,
+            "/web/style.css",
+            "text/css"
+        );
+    });
+
+
     server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request) {
-        send_file(request, "/web/script.js", "application/javascript");
+
+        Serial.println(F("[WEB] JS REQUEST -> /script.js"));
+
+        send_file(
+            request,
+            "/web/script.js",
+            "application/javascript"
+        );
     });
 }
+
 
 // =====================================
 // HTML Pages
 // =====================================
 
 static void registerPageRoutes() {
+
+    // الصفحة الرئيسية
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-        if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+
+        if (WiFi.getMode() == WIFI_AP ||
+            WiFi.getMode() == WIFI_AP_STA) {
+
             Serial.println(F("[WEB] AP Mode active -> wifi.html"));
-            send_file(request, "/web/wifi.html", "text/html");
+
+            send_file(
+                request,
+                "/web/wifi.html",
+                "text/html"
+            );
+
         } else {
+
             Serial.println(F("[WEB] Normal Mode -> index.html"));
-            send_file(request, "/web/index.html", "text/html");
+
+            send_file(
+                request,
+                "/web/index.html",
+                "text/html"
+            );
         }
     });
+
+
+    // ⭐ إضافة مهمة
+    server.on("/index.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+
+        Serial.println(F("[WEB] INDEX REQUEST -> /index.html"));
+
+        send_file(
+            request,
+            "/web/index.html",
+            "text/html"
+        );
+    });
+
 
     server.on("/audio.html", HTTP_GET, [](AsyncWebServerRequest *request) {
         send_file(request, "/web/audio.html", "text/html");
     });
 
+
     server.on("/prayer.html", HTTP_GET, [](AsyncWebServerRequest *request) {
         send_file(request, "/web/prayer.html", "text/html");
     });
 
+
     server.on("/network.html", HTTP_GET, [](AsyncWebServerRequest *request) {
         send_file(request, "/web/network.html", "text/html");
     });
+
 
     server.on("/system.html", HTTP_GET, [](AsyncWebServerRequest *request) {
         send_file(request, "/web/system.html", "text/html");
@@ -325,134 +431,521 @@ static void registerApiRoutes() {
         }
     );
 
-    // ---------------------------------
-    // Audio Settings GET
-    // ---------------------------------
-    server.on("/api/settings/audio", HTTP_GET, [](AsyncWebServerRequest *request) {
-        JsonDocument doc;
+// ---------------------------------
+// Audio Settings GET
+// ---------------------------------
+server.on("/api/settings/audio", HTTP_GET, [](AsyncWebServerRequest *request) {
 
-        doc["volume"] = storage_get_volume(25);
-        doc["azanEnable"] = storage_get_bool("audio.azan_enable", true);
-        doc["azanFolder"] = storage_get_athan_folder(1);
-        doc["azanFile"] = storage_get_athan_file(1);
-        doc["iqamaEnable"] = storage_get_bool("audio.iqama_enable", true);
-        doc["iqamaFolder"] = storage_get_int("audio.iqama_folder", 5);
-        doc["iqamaFile"] = storage_get_int("audio.iqama_file", 1);
-        doc["iqamaDelay"] = storage_get_int("audio.iqama_delay", 10);
-        doc["surahFolder"] = storage_get_surah_folder(2);
-        doc["surahFile"] = storage_get_surah_file(1);
+    JsonDocument doc;
 
-        send_json(request, doc);
-    });
+    // =================================
+    // General
+    // =================================
 
-    // ---------------------------------
-    // Audio Settings POST
-    // ---------------------------------
-    server.on("/api/settings/audio", HTTP_POST,
-        [](AsyncWebServerRequest *request) {
-            request->send(200, "application/json", "{\"status\":\"saved\"}");
-        },
-        NULL,
-        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-            if (index == 0) {
-                audioBody = "";
-                audioBody.reserve(total);
-            }
+    doc["volume"] =
+        storage_get_volume(25);
 
-            for (size_t i = 0; i < len; i++) {
-                audioBody += (char)data[i];
-            }
 
-            if (index + len != total) return;
+    // =================================
+    // Azan
+    // =================================
 
-            Serial.println(F("[API] Audio Save received"));
+    doc["azanEnable"] =
+        storage_get_bool(
+            "audio.azan_enable",
+            true
+        );
 
-            JsonDocument doc;
-            if (deserializeJson(doc, audioBody)) {
-                Serial.println(F("[AUDIO] JSON Error"));
-                return;
-            }
+    doc["azanFolder"] =
+        storage_get_int(
+            "audio.athan_folder",
+            1
+        );
 
-            JsonDocument config;
-            if (!storage_read_json(config)) {
-                Serial.println(F("[AUDIO] Config read failed"));
-                return;
-            }
+    doc["azanFile"] =
+        storage_get_int(
+            "audio.athan_file",
+            1
+        );
 
-            JsonObject audio = config["audio"].to<JsonObject>();
 
-            if (doc["volume"].is<int>()) {
-                int vol = doc["volume"];
-                vol = constrain(vol, 0, 30);
-                audio["volume"] = vol;
-                settings.volume = vol;
-            }
+    // =================================
+    // Iqama
+    // =================================
 
-            if (doc["azanEnable"].is<bool>()) {
-                bool enable = doc["azanEnable"];
-                audio["azan_enable"] = enable;
-                settings.azanEnable = enable;
-            }
+    doc["iqamaEnable"] =
+        storage_get_bool(
+            "audio.iqama_enable",
+            true
+        );
 
-            if (doc["azanFolder"].is<int>()) {
-                int folder = doc["azanFolder"];
-                audio["athan_folder"] = folder;
-                settings.athanFolder = folder;
-            }
+    doc["iqamaFolder"] =
+        storage_get_int(
+            "audio.iqama_folder",
+            1
+        );
 
-            if (doc["azanFile"].is<int>()) {
-                int file = doc["azanFile"];
-                audio["athan_file"] = file;
-                settings.athanFile = file;
-            }
+    doc["iqamaFile"] =
+        storage_get_int(
+            "audio.iqama_file",
+            4
+        );
 
-            if (doc["iqamaEnable"].is<bool>()) {
-                bool enable = doc["iqamaEnable"];
-                audio["iqama_enable"] = enable;
-                settings.iqamaEnable = enable;
-            }
+    doc["iqamaDelay"] =
+        storage_get_int(
+            "audio.iqama_delay",
+            10
+        );
 
-            if (doc["iqamaFolder"].is<int>()) {
-                int folder = doc["iqamaFolder"];
-                audio["iqama_folder"] = folder;
-                settings.iqamaFolder = folder;
-            }
+    doc["iqamaVolume"] =
+        storage_get_int(
+            "audio.iqama_volume",
+            12
+        );
 
-            if (doc["iqamaFile"].is<int>()) {
-                int file = doc["iqamaFile"];
-                audio["iqama_file"] = file;
-                settings.iqamaFile = file;
-            }
 
-            if (doc["iqamaDelay"].is<int>()) {
-                int delayMinutes = doc["iqamaDelay"];
-                delayMinutes = constrain(delayMinutes, 0, 60);
-                audio["iqama_delay"] = delayMinutes;
-                settings.iqamaDelayMinutes = delayMinutes;
-            }
+// =================================
+// Iqama Prayers
+// =================================
 
-            if (doc["surahFolder"].is<int>()) {
-                int folder = doc["surahFolder"];
-                audio["surah_folder"] = folder;
-                settings.surahFolder = folder;
-            }
-
-            if (doc["surahFile"].is<int>()) {
-                int file = doc["surahFile"];
-                audio["surah_file"] = file;
-                settings.surahFile = file;
-            }
-
-            if (storage_write_json(config)) {
-                settings_apply();
-                Serial.println(F("[AUDIO] Settings saved successfully"));
-            } else {
-                Serial.println(F("[AUDIO] Save failed"));
-            }
-        }
+doc["iqamaFajr"] =
+    storage_get_bool(
+        "audio.iqama_fajr_enable",
+        true
     );
 
-    // ---------------------------------
+doc["iqamaDhuhr"] =
+    storage_get_bool(
+        "audio.iqama_dhuhr_enable",
+        true
+    );
+
+doc["iqamaAsr"] =
+    storage_get_bool(
+        "audio.iqama_asr_enable",
+        true
+    );
+
+doc["iqamaMaghrib"] =
+    storage_get_bool(
+        "audio.iqama_maghrib_enable",
+        true
+    );
+
+doc["iqamaIsha"] =
+    storage_get_bool(
+        "audio.iqama_isha_enable",
+        true
+    );
+
+
+    // =================================
+    // Morning Adhkar
+    // =================================
+
+    doc["morningAdhkarEnable"] =
+        storage_get_bool(
+            "audio.morning_adhkar_enable",
+            false
+        );
+
+    doc["morningAdhkarFolder"] =
+        storage_get_int(
+            "audio.morning_adhkar_folder",
+            6
+        );
+
+    doc["morningAdhkarFile"] =
+        storage_get_int(
+            "audio.morning_adhkar_file",
+            1
+        );
+
+    doc["morningAdhkarHour"] =
+        storage_get_int(
+            "audio.morning_adhkar_hour",
+            6
+        );
+
+    doc["morningAdhkarMinute"] =
+        storage_get_int(
+            "audio.morning_adhkar_minute",
+            0
+        );
+
+    doc["morningAdhkarVolume"] =
+        storage_get_int(
+            "audio.morning_adhkar_volume",
+            25
+        );
+
+
+    // =================================
+    // Evening Adhkar
+    // =================================
+
+    doc["eveningAdhkarEnable"] =
+        storage_get_bool(
+            "audio.evening_adhkar_enable",
+            false
+        );
+
+    doc["eveningAdhkarFolder"] =
+        storage_get_int(
+            "audio.evening_adhkar_folder",
+            7
+        );
+
+    doc["eveningAdhkarFile"] =
+        storage_get_int(
+            "audio.evening_adhkar_file",
+            1
+        );
+
+    doc["eveningAdhkarHour"] =
+        storage_get_int(
+            "audio.evening_adhkar_hour",
+            18
+        );
+
+    doc["eveningAdhkarMinute"] =
+        storage_get_int(
+            "audio.evening_adhkar_minute",
+            0
+        );
+
+    doc["eveningAdhkarVolume"] =
+        storage_get_int(
+            "audio.evening_adhkar_volume",
+            25
+        );
+
+
+    // =================================
+    // Kahf
+    // =================================
+
+    doc["kahfEnable"] =
+        storage_get_bool(
+            "audio.kahf_enable",
+            false
+        );
+
+    doc["kahfFolder"] =
+        storage_get_int(
+            "audio.kahf_folder",
+            8
+        );
+
+    doc["kahfFile"] =
+        storage_get_int(
+            "audio.kahf_file",
+            1
+        );
+
+    doc["kahfHour"] =
+        storage_get_int(
+            "audio.kahf_hour",
+            9
+        );
+
+    doc["kahfMinute"] =
+        storage_get_int(
+            "audio.kahf_minute",
+            0
+        );
+
+    doc["kahfVolume"] =
+        storage_get_int(
+            "audio.kahf_volume",
+            25
+        );
+
+    JsonObject quran = doc["quran"].to<JsonObject>();
+
+    JsonObject baqarah = quran["baqarah"].to<JsonObject>();
+    baqarah["enable"] = storage_get_bool("audio.quran.baqarah.enable", true);
+    baqarah["hour"] = storage_get_int("audio.quran.baqarah.hour", 0);
+    baqarah["minute"] = storage_get_int("audio.quran.baqarah.minute", 0);
+    baqarah["volume"] = storage_get_int("audio.quran.baqarah.volume", 25);
+    baqarah["folder"] = storage_get_int("audio.quran.baqarah.folder", 1);
+    baqarah["file"] = storage_get_int("audio.quran.baqarah.file", 1);
+
+    JsonObject baqarahLast = quran["baqarahLast"].to<JsonObject>();
+    baqarahLast["enable"] = storage_get_bool("audio.quran.baqarah_last.enable", true);
+    baqarahLast["hour"] = storage_get_int("audio.quran.baqarah_last.hour", 0);
+    baqarahLast["minute"] = storage_get_int("audio.quran.baqarah_last.minute", 0);
+    baqarahLast["volume"] = storage_get_int("audio.quran.baqarah_last.volume", 25);
+    baqarahLast["folder"] = storage_get_int("audio.quran.baqarah_last.folder", 1);
+    baqarahLast["file"] = storage_get_int("audio.quran.baqarah_last.file", 2);
+
+    JsonObject ayatKursi = quran["ayatKursi"].to<JsonObject>();
+    ayatKursi["enable"] = storage_get_bool("audio.quran.ayat_kursi.enable", true);
+    ayatKursi["hour"] = storage_get_int("audio.quran.ayat_kursi.hour", 0);
+    ayatKursi["minute"] = storage_get_int("audio.quran.ayat_kursi.minute", 0);
+    ayatKursi["volume"] = storage_get_int("audio.quran.ayat_kursi.volume", 25);
+    ayatKursi["folder"] = storage_get_int("audio.quran.ayat_kursi.folder", 1);
+    ayatKursi["file"] = storage_get_int("audio.quran.ayat_kursi.file", 3);
+
+    JsonObject maryam = quran["maryam"].to<JsonObject>();
+    maryam["enable"] = storage_get_bool("audio.quran.maryam.enable", true);
+    maryam["hour"] = storage_get_int("audio.quran.maryam.hour", 0);
+    maryam["minute"] = storage_get_int("audio.quran.maryam.minute", 0);
+    maryam["volume"] = storage_get_int("audio.quran.maryam.volume", 25);
+    maryam["folder"] = storage_get_int("audio.quran.maryam.folder", 1);
+    maryam["file"] = storage_get_int("audio.quran.maryam.file", 4);
+
+    send_json(
+        request,
+        doc
+    );
+
+});
+
+server.on("/api/settings/audio", HTTP_POST,
+    [](AsyncWebServerRequest *request) {
+        (void)request;
+    },
+    NULL,
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+        if (index == 0) {
+            audioBody = "";
+            audioBody.reserve(total);
+        }
+
+        for (size_t i = 0; i < len; i++) {
+            audioBody += (char)data[i];
+        }
+
+        if (index + len != total) {
+            return;
+        }
+
+        Serial.println(F("[AUDIO] Save request received"));
+        Serial.print(F("[AUDIO] Body length: "));
+        Serial.println(audioBody.length());
+        Serial.println(audioBody);
+
+        JsonDocument doc;
+        if (deserializeJson(doc, audioBody)) {
+            Serial.println(F("[AUDIO] JSON parsing error"));
+            request->send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
+            return;
+        }
+
+        Serial.println(F("[AUDIO] Save request received"));
+        Serial.print(F("[AUDIO] Body: "));
+        Serial.println(audioBody);
+
+        if (doc["volume"].is<int>()) {
+            int volume = doc["volume"].as<int>();
+            settings.volume = volume;
+            storage_set_volume(volume);
+            Serial.print(F("[AUDIO] Volume saved: "));
+            Serial.println(volume);
+        }
+
+        if (doc["azanEnable"].is<bool>()) {
+            bool value = doc["azanEnable"].as<bool>();
+            settings.azanEnable = value;
+            storage_set_bool("audio.azan_enable", value);
+        }
+
+        if (doc["azanFolder"].is<int>()) {
+            int value = doc["azanFolder"].as<int>();
+            settings.athanFolder = value;
+            storage_set_int("audio.athan_folder", value);
+        }
+
+        if (doc["azanFile"].is<int>()) {
+            int value = doc["azanFile"].as<int>();
+            settings.athanFile = value;
+            storage_set_int("audio.athan_file", value);
+        }
+
+        if (doc["iqamaEnable"].is<bool>()) {
+            bool value = doc["iqamaEnable"].as<bool>();
+            settings.iqamaEnable = value;
+            storage_set_bool("audio.iqama_enable", value);
+        }
+
+        if (doc["iqamaFolder"].is<int>()) {
+            int value = doc["iqamaFolder"].as<int>();
+            settings.iqamaFolder = value;
+            storage_set_int("audio.iqama_folder", value);
+        }
+
+        if (doc["iqamaFile"].is<int>()) {
+            int value = doc["iqamaFile"].as<int>();
+            settings.iqamaFile = value;
+            storage_set_int("audio.iqama_file", value);
+        }
+
+        if (doc["iqamaDelay"].is<int>()) {
+            int value = doc["iqamaDelay"].as<int>();
+            settings.iqamaDelayMinutes = value;
+            storage_set_int("audio.iqama_delay", value);
+        }
+
+        if (doc["iqamaVolume"].is<int>()) {
+            int value = doc["iqamaVolume"].as<int>();
+            settings.iqamaVolume = value;
+            storage_set_int("audio.iqama_volume", value);
+            Serial.print(F("[AUDIO] Iqama volume saved: "));
+            Serial.println(value);
+        }
+
+        if (doc["iqamaFajr"].is<bool>()) {
+            bool value = doc["iqamaFajr"].as<bool>();
+            settings.iqamaPrayerEnable[0] = value;
+            storage_set_bool("audio.iqama_fajr_enable", value);
+        }
+
+        if (doc["iqamaDhuhr"].is<bool>()) {
+            bool value = doc["iqamaDhuhr"].as<bool>();
+            settings.iqamaPrayerEnable[2] = value;
+            storage_set_bool("audio.iqama_dhuhr_enable", value);
+        }
+
+        if (doc["iqamaAsr"].is<bool>()) {
+            bool value = doc["iqamaAsr"].as<bool>();
+            settings.iqamaPrayerEnable[3] = value;
+            storage_set_bool("audio.iqama_asr_enable", value);
+        }
+
+        if (doc["iqamaMaghrib"].is<bool>()) {
+            bool value = doc["iqamaMaghrib"].as<bool>();
+            settings.iqamaPrayerEnable[4] = value;
+            storage_set_bool("audio.iqama_maghrib_enable", value);
+        }
+
+        if (doc["iqamaIsha"].is<bool>()) {
+            bool value = doc["iqamaIsha"].as<bool>();
+            settings.iqamaPrayerEnable[5] = value;
+            storage_set_bool("audio.iqama_isha_enable", value);
+        }
+
+        if (doc["morningAdhkarEnable"].is<bool>()) {
+            bool value = doc["morningAdhkarEnable"].as<bool>();
+            settings.morningAdhkarEnable = value;
+            storage_set_bool("audio.morning_adhkar_enable", value);
+        }
+
+        if (doc["morningAdhkarHour"].is<int>()) {
+            int value = doc["morningAdhkarHour"].as<int>();
+            settings.morningAdhkarHour = value;
+            storage_set_int("audio.morning_adhkar_hour", value);
+        }
+
+        if (doc["morningAdhkarMinute"].is<int>()) {
+            int value = doc["morningAdhkarMinute"].as<int>();
+            settings.morningAdhkarMinute = value;
+            storage_set_int("audio.morning_adhkar_minute", value);
+        }
+
+        if (doc["morningAdhkarVolume"].is<int>()) {
+            int value = doc["morningAdhkarVolume"].as<int>();
+            settings.morningAdhkarVolume = value;
+            storage_set_int("audio.morning_adhkar_volume", value);
+        }
+
+        if (doc["eveningAdhkarEnable"].is<bool>()) {
+            bool value = doc["eveningAdhkarEnable"].as<bool>();
+            settings.eveningAdhkarEnable = value;
+            storage_set_bool("audio.evening_adhkar_enable", value);
+        }
+
+        if (doc["eveningAdhkarHour"].is<int>()) {
+            int value = doc["eveningAdhkarHour"].as<int>();
+            settings.eveningAdhkarHour = value;
+            storage_set_int("audio.evening_adhkar_hour", value);
+        }
+
+        if (doc["eveningAdhkarMinute"].is<int>()) {
+            int value = doc["eveningAdhkarMinute"].as<int>();
+            settings.eveningAdhkarMinute = value;
+            storage_set_int("audio.evening_adhkar_minute", value);
+        }
+
+        if (doc["eveningAdhkarVolume"].is<int>()) {
+            int value = doc["eveningAdhkarVolume"].as<int>();
+            settings.eveningAdhkarVolume = value;
+            storage_set_int("audio.evening_adhkar_volume", value);
+        }
+
+        if (doc["kahfEnable"].is<bool>()) {
+            bool value = doc["kahfEnable"].as<bool>();
+            settings.kahfEnable = value;
+            storage_set_bool("audio.kahf_enable", value);
+        }
+
+        if (doc["kahfHour"].is<int>()) {
+            int value = doc["kahfHour"].as<int>();
+            settings.kahfHour = value;
+            storage_set_int("audio.kahf_hour", value);
+        }
+
+        if (doc["kahfMinute"].is<int>()) {
+            int value = doc["kahfMinute"].as<int>();
+            settings.kahfMinute = value;
+            storage_set_int("audio.kahf_minute", value);
+        }
+
+        if (doc["kahfVolume"].is<int>()) {
+            int value = doc["kahfVolume"].as<int>();
+            settings.kahfVolume = value;
+            storage_set_int("audio.kahf_volume", value);
+        }
+
+        if (doc["quran"].is<JsonObject>()) {
+            JsonObject quran = doc["quran"].as<JsonObject>();
+            for (JsonPair kv : quran) {
+                const char* key = kv.key().c_str();
+                if (strcmp(key, "baqarah") == 0 && kv.value().is<JsonObject>()) {
+                    JsonObject item = kv.value().as<JsonObject>();
+                    if (item["enable"].is<bool>()) storage_set_bool("audio.quran.baqarah.enable", item["enable"].as<bool>());
+                    if (item["hour"].is<int>()) storage_set_int("audio.quran.baqarah.hour", item["hour"].as<int>());
+                    if (item["minute"].is<int>()) storage_set_int("audio.quran.baqarah.minute", item["minute"].as<int>());
+                    if (item["volume"].is<int>()) storage_set_int("audio.quran.baqarah.volume", item["volume"].as<int>());
+                    if (item["folder"].is<int>()) storage_set_int("audio.quran.baqarah.folder", item["folder"].as<int>());
+                    if (item["file"].is<int>()) storage_set_int("audio.quran.baqarah.file", item["file"].as<int>());
+                } else if (strcmp(key, "baqarahLast") == 0 && kv.value().is<JsonObject>()) {
+                    JsonObject item = kv.value().as<JsonObject>();
+                    if (item["enable"].is<bool>()) storage_set_bool("audio.quran.baqarah_last.enable", item["enable"].as<bool>());
+                    if (item["hour"].is<int>()) storage_set_int("audio.quran.baqarah_last.hour", item["hour"].as<int>());
+                    if (item["minute"].is<int>()) storage_set_int("audio.quran.baqarah_last.minute", item["minute"].as<int>());
+                    if (item["volume"].is<int>()) storage_set_int("audio.quran.baqarah_last.volume", item["volume"].as<int>());
+                    if (item["folder"].is<int>()) storage_set_int("audio.quran.baqarah_last.folder", item["folder"].as<int>());
+                    if (item["file"].is<int>()) storage_set_int("audio.quran.baqarah_last.file", item["file"].as<int>());
+                } else if (strcmp(key, "ayatKursi") == 0 && kv.value().is<JsonObject>()) {
+                    JsonObject item = kv.value().as<JsonObject>();
+                    if (item["enable"].is<bool>()) storage_set_bool("audio.quran.ayat_kursi.enable", item["enable"].as<bool>());
+                    if (item["hour"].is<int>()) storage_set_int("audio.quran.ayat_kursi.hour", item["hour"].as<int>());
+                    if (item["minute"].is<int>()) storage_set_int("audio.quran.ayat_kursi.minute", item["minute"].as<int>());
+                    if (item["volume"].is<int>()) storage_set_int("audio.quran.ayat_kursi.volume", item["volume"].as<int>());
+                    if (item["folder"].is<int>()) storage_set_int("audio.quran.ayat_kursi.folder", item["folder"].as<int>());
+                    if (item["file"].is<int>()) storage_set_int("audio.quran.ayat_kursi.file", item["file"].as<int>());
+                } else if (strcmp(key, "maryam") == 0 && kv.value().is<JsonObject>()) {
+                    JsonObject item = kv.value().as<JsonObject>();
+                    if (item["enable"].is<bool>()) storage_set_bool("audio.quran.maryam.enable", item["enable"].as<bool>());
+                    if (item["hour"].is<int>()) storage_set_int("audio.quran.maryam.hour", item["hour"].as<int>());
+                    if (item["minute"].is<int>()) storage_set_int("audio.quran.maryam.minute", item["minute"].as<int>());
+                    if (item["volume"].is<int>()) storage_set_int("audio.quran.maryam.volume", item["volume"].as<int>());
+                    if (item["folder"].is<int>()) storage_set_int("audio.quran.maryam.folder", item["folder"].as<int>());
+                    if (item["file"].is<int>()) storage_set_int("audio.quran.maryam.file", item["file"].as<int>());
+                }
+            }
+        }
+
+        Serial.println(F("[AUDIO] Saving settings"));
+        settings_save();
+        Serial.println(F("[AUDIO] Settings saved"));
+        request->send(200, "application/json", "{\"status\":\"saved\"}");
+        Serial.println(F("[AUDIO] Response sent"));
+    }
+);
+
+// ---------------------------------
     // Prayer Settings GET
     // ---------------------------------
     server.on("/api/settings/prayer", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -480,9 +973,7 @@ static void registerApiRoutes() {
     // Prayer Settings POST
     // ---------------------------------
     server.on("/api/settings/prayer", HTTP_POST,
-        [](AsyncWebServerRequest *request) {
-            request->send(200, "application/json", "{\"status\":\"saved\"}");
-        },
+        [](AsyncWebServerRequest *request) {}, // لا ترسل استجابة فورية هنا
         NULL,
         [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
             if (index == 0) {
@@ -525,6 +1016,7 @@ static void registerApiRoutes() {
                 format.toUpperCase();
                 if (format == "12H" || format == "24H") {
                     config["prayer"]["time_format"] = format;
+                    settings.timeFormat = format; // 🔴 تحديث مباشر وفوري
                 }
             }
 
@@ -536,9 +1028,12 @@ static void registerApiRoutes() {
 
             if (storage_write_json(config)) {
                 Serial.println(F("[PRAYER] Saved OK"));
+                // أرسل استجابة النجاح بعد الحفظ الفعلي
+                request->send(200, "application/json", "{\"status\":\"saved\"}");
             } else {
                 Serial.println(F("[PRAYER] Save Failed"));
-                return;
+                // أرسل استجابة خطأ إذا فشل الحفظ
+                request->send(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to save settings\"}");
             }
 
             settings_load();
@@ -641,7 +1136,10 @@ static void registerSystemRoutes() {
     server.on("/api/test/iqama", HTTP_POST, [](AsyncWebServerRequest *request) {
         Serial.println(F("[SYSTEM] Test Iqama"));
 
-        play_iqama();
+        play_folder_file(
+            settings.iqamaFolder,
+            settings.iqamaFile
+        );
 
         request->send(200, "application/json", "{\"status\":\"playing\"}");
     });
@@ -656,6 +1154,523 @@ static void registerSystemRoutes() {
 
         request->send(200, "application/json", "{\"status\":\"playing\"}");
     });
+
+    // ---------------------------------
+    // Test Morning Adhkar
+    // ---------------------------------
+    server.on("/api/test/morning-adhkar", HTTP_POST, [](AsyncWebServerRequest *request) {
+        Serial.println(F("[SYSTEM] Test Morning Adhkar"));
+
+        play_folder_file_with_volume(
+            settings.morningAdhkarFolder,
+            settings.morningAdhkarFile,
+            settings.morningAdhkarVolume
+        );
+
+        request->send(200, "application/json", "{\"status\":\"playing\"}");
+    });
+
+    // ---------------------------------
+    // Test Evening Adhkar
+    // ---------------------------------
+    server.on("/api/test/evening-adhkar", HTTP_POST, [](AsyncWebServerRequest *request) {
+        Serial.println(F("[SYSTEM] Test Evening Adhkar"));
+
+        play_folder_file_with_volume(
+            settings.eveningAdhkarFolder,
+            settings.eveningAdhkarFile,
+            settings.eveningAdhkarVolume
+        );
+
+        request->send(200, "application/json", "{\"status\":\"playing\"}");
+    });
+
+    // ---------------------------------
+    // Test Surat Al-Kahf
+    // ---------------------------------
+    server.on("/api/test/kahf", HTTP_POST, [](AsyncWebServerRequest *request) {
+        Serial.println(F("[SYSTEM] Test Surat Al-Kahf"));
+
+        play_folder_file_with_volume(
+            settings.kahfFolder,
+            settings.kahfFile,
+            settings.kahfVolume
+        );
+
+        request->send(200, "application/json", "{\"status\":\"playing\"}");
+    });
+
+
+// ---------------------------------
+// Test Quran
+// ---------------------------------
+server.on(
+    "/api/test/quran",
+    HTTP_POST,
+
+    [](AsyncWebServerRequest *request) {
+        // Body handler
+    },
+
+    NULL,
+
+    [](AsyncWebServerRequest *request,
+       uint8_t *data,
+       size_t len,
+       size_t index,
+       size_t total) {
+
+        static String quranTestBody;
+
+        // =================================
+        // Start
+        // =================================
+
+        if (index == 0) {
+
+            quranTestBody = "";
+            quranTestBody.reserve(total);
+
+            Serial.println(
+                F("[SYSTEM] Test Quran")
+            );
+        }
+
+        // =================================
+        // Collect Body
+        // =================================
+
+        for (size_t i = 0; i < len; i++) {
+            quranTestBody += (char)data[i];
+        }
+
+        // لم يصل كامل الـ body
+        if (index + len != total) {
+            return;
+        }
+
+        Serial.print(
+            F("[QURAN] Body: ")
+        );
+
+        Serial.println(
+            quranTestBody
+        );
+
+        // =================================
+        // Parse JSON
+        // =================================
+
+        JsonDocument doc;
+
+        DeserializationError error =
+            deserializeJson(
+                doc,
+                quranTestBody
+            );
+
+        if (error) {
+
+            Serial.print(
+                F("[QURAN] JSON error: ")
+            );
+
+            Serial.println(
+                error.c_str()
+            );
+
+            request->send(
+                400,
+                "application/json",
+                "{\"status\":\"error\",\"message\":\"Invalid JSON\"}"
+            );
+
+            return;
+        }
+
+        // =================================
+        // Read Values
+        // =================================
+
+        uint8_t folder =
+            doc["folder"] | 1;
+
+        uint8_t file =
+            doc["file"] | 1;
+
+        uint8_t volume =
+            doc["volume"] | 25;
+
+        const char *type =
+            doc["type"] | "";
+
+        // =================================
+        // Debug
+        // =================================
+
+        Serial.println(
+            F("[QURAN] -------------------------")
+        );
+
+        Serial.print(
+            F("[QURAN] Type: ")
+        );
+
+        Serial.println(type);
+
+        Serial.print(
+            F("[QURAN] Folder: ")
+        );
+
+        Serial.println(folder);
+
+        Serial.print(
+            F("[QURAN] File: ")
+        );
+
+        Serial.println(file);
+
+        Serial.print(
+            F("[QURAN] Volume: ")
+        );
+
+        Serial.println(volume);
+
+        Serial.print(
+            F("[QURAN] DFPlayer Ready: ")
+        );
+
+        Serial.println(
+            dfplayer_ready() ? "YES" : "NO"
+        );
+
+        // =================================
+        // Validate DFPlayer
+        // =================================
+
+        if (!dfplayer_ready()) {
+
+            Serial.println(
+                F("[QURAN] DFPlayer not ready!")
+            );
+
+            request->send(
+                503,
+                "application/json",
+                "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
+            );
+
+            return;
+        }
+
+        // =================================
+        // Validate Folder / File
+        // =================================
+
+        if (folder == 0 || file == 0) {
+
+            Serial.println(
+                F("[QURAN] Invalid folder/file!")
+            );
+
+            request->send(
+                400,
+                "application/json",
+                "{\"status\":\"error\",\"message\":\"Invalid folder or file\"}"
+            );
+
+            return;
+        }
+
+        // =================================
+        // Playback
+        // =================================
+
+        Serial.println(
+            F("[QURAN] Sending playback command...")
+        );
+
+        play_folder_file_with_volume(
+            folder,
+            file,
+            volume
+        );
+
+        Serial.println(
+            F("[QURAN] Playback command sent")
+        );
+
+        // =================================
+        // Response
+        // =================================
+
+        request->send(
+            200,
+            "application/json",
+            "{\"status\":\"playing\"}"
+        );
+    }
+);
+// ---------------------------------
+// Test Folder
+// ---------------------------------
+server.on(
+    "/api/test/folder",
+    HTTP_POST,
+
+    [](AsyncWebServerRequest *request) {
+        // Response سيتم إرساله بعد استلام الـ body
+    },
+
+    NULL,
+
+    [](AsyncWebServerRequest *request,
+       uint8_t *data,
+       size_t len,
+       size_t index,
+       size_t total) {
+
+        static String folderTestBody;
+
+        if (index == 0) {
+
+            folderTestBody = "";
+            folderTestBody.reserve(total);
+
+            Serial.println(
+                F("[SYSTEM] Test Folder")
+            );
+        }
+
+        // تجميع الـ JSON
+        for (size_t i = 0; i < len; i++) {
+            folderTestBody += (char)data[i];
+        }
+
+        // لم يصل كامل الـ body
+        if (index + len != total) {
+            return;
+        }
+
+        Serial.print(
+            F("[FOLDER] Body: ")
+        );
+
+        Serial.println(
+            folderTestBody
+        );
+
+        // =================================
+        // Parse JSON
+        // =================================
+
+        JsonDocument doc;
+
+        DeserializationError error =
+            deserializeJson(
+                doc,
+                folderTestBody
+            );
+
+        if (error) {
+
+            Serial.print(
+                F("[FOLDER] JSON error: ")
+            );
+
+            Serial.println(
+                error.c_str()
+            );
+
+            request->send(
+                400,
+                "application/json",
+                "{\"status\":\"error\",\"message\":\"Invalid JSON\"}"
+            );
+
+            return;
+        }
+
+        // =================================
+        // Read Values
+        // =================================
+
+        uint8_t folder =
+            doc["folder"] | 1;
+
+        uint8_t volume =
+            doc["volume"] | 20;
+
+        // =================================
+        // Debug
+        // =================================
+
+        Serial.print(
+            F("[FOLDER] Folder: ")
+        );
+
+        Serial.println(
+            folder
+        );
+
+        Serial.print(
+            F("[FOLDER] Volume: ")
+        );
+
+        Serial.println(
+            volume
+        );
+
+        Serial.print(
+            F("[FOLDER] DFPlayer Ready: ")
+        );
+
+        Serial.println(
+            dfplayer_ready() ? "YES" : "NO"
+        );
+
+        // =================================
+        // Play
+        // =================================
+
+        if (!dfplayer_ready()) {
+
+            Serial.println(
+                F("[FOLDER] DFPlayer not ready!")
+            );
+
+            request->send(
+                503,
+                "application/json",
+                "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
+            );
+
+            return;
+        }
+
+        Serial.println(
+            F("[FOLDER] Sending playback command...")
+        );
+
+        play_folder_with_volume(
+            folder,
+            volume
+        );
+
+        Serial.println(
+            F("[FOLDER] Playback command sent")
+        );
+
+        // =================================
+        // Response
+        // =================================
+
+        request->send(
+            200,
+            "application/json",
+            "{\"status\":\"playing\"}"
+        );
+    }
+);
+
+// ---------------------------------
+// Audio Playback Controls
+// ---------------------------------
+
+// تشغيل / استئناف
+server.on("/api/audio/play", HTTP_POST, [](AsyncWebServerRequest *request) {
+
+    Serial.println(F("[AUDIO] Play / Resume"));
+
+    if (!dfplayer_ready()) {
+        request->send(
+            503,
+            "application/json",
+            "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
+        );
+        return;
+    }
+
+    play_audio();
+
+    request->send(
+        200,
+        "application/json",
+        "{\"status\":\"playing\"}"
+    );
+});
+
+
+// إيقاف مؤقت
+server.on("/api/audio/pause", HTTP_POST, [](AsyncWebServerRequest *request) {
+
+    Serial.println(F("[AUDIO] Pause"));
+
+    if (!dfplayer_ready()) {
+        request->send(
+            503,
+            "application/json",
+            "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
+        );
+        return;
+    }
+
+    pause_audio();
+
+    request->send(
+        200,
+        "application/json",
+        "{\"status\":\"paused\"}"
+    );
+});
+
+
+// إيقاف كامل
+server.on("/api/audio/stop", HTTP_POST, [](AsyncWebServerRequest *request) {
+
+    Serial.println(F("[AUDIO] Stop"));
+
+    if (!dfplayer_ready()) {
+        request->send(
+            503,
+            "application/json",
+            "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
+        );
+        return;
+    }
+
+    stop_audio();
+
+    request->send(
+        200,
+        "application/json",
+        "{\"status\":\"stopped\"}"
+    );
+});
+
+
+// خفض الصوت
+server.on("/api/audio/volume-down", HTTP_POST, [](AsyncWebServerRequest *request) {
+
+    Serial.println(F("[AUDIO] Volume Down"));
+
+    if (!dfplayer_ready()) {
+        request->send(
+            503,
+            "application/json",
+            "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
+        );
+        return;
+    }
+
+    volume_down();
+
+    request->send(
+        200,
+        "application/json",
+        "{\"status\":\"volume_down\"}"
+    );
+});
 
     // ---------------------------------
     // Restart / Reboot

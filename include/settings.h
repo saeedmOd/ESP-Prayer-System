@@ -137,6 +137,10 @@ struct SystemSettings
 
     int volume;
 
+    bool lowVolumeEnable;
+
+    int lowVolumeLevel;
+
     int athanFolder;
 
     int athanFile;
@@ -149,10 +153,58 @@ struct SystemSettings
 
     int iqamaDelayMinutes;
 
+    int iqamaVolume;
+
+    bool iqamaPrayerEnable[6];
+
+    int iqamaPrayerDelay[6];
+
 
     int surahFolder;
 
     int surahFile;
+
+    bool morningAdhkarEnable;
+
+    int morningAdhkarFolder;
+
+    int morningAdhkarFile;
+
+    int morningAdhkarHour;
+
+    int morningAdhkarMinute;
+
+    int morningAdhkarVolume;
+
+    bool morningAdhkarPlayFolder;
+
+    bool eveningAdhkarEnable;
+
+    int eveningAdhkarFolder;
+
+    int eveningAdhkarFile;
+
+    int eveningAdhkarHour;
+
+    int eveningAdhkarMinute;
+
+    int eveningAdhkarVolume;
+
+    bool eveningAdhkarPlayFolder;
+
+    bool kahfEnable;
+
+    int kahfFolder;
+
+    int kahfFile;
+
+    int kahfHour;
+
+    int kahfMinute;
+
+    int kahfVolume;
+
+    bool kahfPlayFolder;
 
 
     int shortSurahFolder;

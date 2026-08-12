@@ -1,0 +1,1943 @@
+﻿/* =========================================================
+   ESP Prayer System
+   audio.js
+
+   متوافق مع:
+   - audio.html
+   - /api/settings/audio
+   - ESP Storage API
+   ========================================================= */
+
+
+/* =========================================================
+   Constants
+   ========================================================= */
+
+const IQAMA_FOLDER = 2;
+const IQAMA_FILE   = 1;
+
+
+/* =========================================================
+   Quran Settings
+   ========================================================= */
+
+const DEFAULT_QURAN_SETTINGS = {
+
+    baqarah: {
+        enable: true,
+        hour: 0,
+        minute: 0,
+        volume: 25,
+        folder: 2,
+        file: 1
+    },
+
+    baqarahLast: {
+        enable: true,
+        hour: 0,
+        minute: 0,
+        volume: 25,
+        folder: 2,
+        file: 2
+    },
+
+    ayatKursi: {
+        enable: true,
+        hour: 0,
+        minute: 0,
+        volume: 25,
+        folder: 2,
+        file: 3
+    },
+
+    maryam: {
+        enable: true,
+        hour: 0,
+        minute: 0,
+        volume: 25,
+        folder: 2,
+        file: 4
+    }
+
+};
+
+
+let quranSettings =
+    structuredClone(DEFAULT_QURAN_SETTINGS);
+
+
+/* =========================================================
+   Save State
+   ========================================================= */
+
+let audioSaveInProgress = false;
+
+
+/* =========================================================
+   DOM Helpers
+   ========================================================= */
+
+function getElement(id) {
+
+    return document.getElementById(id);
+
+}
+
+
+/* =========================================================
+   Set Text Value
+   ========================================================= */
+
+function showValue(id, value) {
+
+    const element =
+        getElement(id);
+
+    if (!element) {
+        return;
+    }
+
+    element.textContent =
+        value ?? "";
+
+}
+
+
+/* =========================================================
+   Show Main Volume
+   ========================================================= */
+
+function showVolume(value) {
+
+    showValue(
+        "volumeValue",
+        value
+    );
+
+}
+
+
+/* =========================================================
+   Set Number Input
+   ========================================================= */
+
+function setNumber(
+    id,
+    value
+) {
+
+    const element =
+        getElement(id);
+
+    if (!element) {
+        return;
+    }
+
+    if (
+        value !== undefined &&
+        value !== null
+    ) {
+
+        element.value =
+            value;
+
+    }
+
+}
+
+
+/* =========================================================
+   Set Select
+   ========================================================= */
+
+function setSelect(
+    id,
+    value
+) {
+
+    const element =
+        getElement(id);
+
+    if (!element) {
+        return;
+    }
+
+
+    if (
+        value === true ||
+        value === false
+    ) {
+
+        element.value =
+            value
+                ? "true"
+                : "false";
+
+        return;
+
+    }
+
+
+    element.value =
+        String(
+            value ?? ""
+        );
+
+}
+
+
+/* =========================================================
+   Set Checkbox
+   ========================================================= */
+
+function setCheckbox(
+    id,
+    value
+) {
+
+    const element =
+        getElement(id);
+
+    if (!element) {
+        return;
+    }
+
+    element.checked =
+        value === true;
+
+}
+
+
+/* =========================================================
+   Read Number
+   ========================================================= */
+
+function readNumber(
+    id,
+    fallback = 0
+) {
+
+    const element =
+        getElement(id);
+
+    if (!element) {
+        return fallback;
+    }
+
+
+    const value =
+        Number(
+            element.value
+        );
+
+
+    return Number.isFinite(value)
+        ? value
+        : fallback;
+
+}
+
+
+/* =========================================================
+   Read Boolean
+   ========================================================= */
+
+function readBool(
+    id,
+    fallback = false
+) {
+
+    const element =
+        getElement(id);
+
+    if (!element) {
+        return fallback;
+    }
+
+
+    /* Checkbox */
+
+    if (
+        element.type === "checkbox"
+    ) {
+
+        return element.checked;
+
+    }
+
+
+    /* Select */
+
+    if (
+        element.value === "true"
+    ) {
+
+        return true;
+
+    }
+
+
+    if (
+        element.value === "false"
+    ) {
+
+        return false;
+
+    }
+
+
+    return fallback;
+
+}
+
+
+/* =========================================================
+   Read Checkbox
+   ========================================================= */
+
+function readCheckbox(
+    id,
+    fallback = false
+) {
+
+    const element =
+        getElement(id);
+
+    if (!element) {
+        return fallback;
+    }
+
+    return Boolean(
+        element.checked
+    );
+
+}
+
+
+/* =========================================================
+   Preset Helpers
+   ========================================================= */
+
+function splitPreset(value) {
+
+    const parts =
+        String(value)
+            .split(":");
+
+
+    return {
+
+        folder:
+            Number(parts[0]) || 0,
+
+        file:
+            Number(parts[1]) || 0
+
+    };
+
+}
+
+
+/* =========================================================
+   Find Preset From Folder/File
+   ========================================================= */
+
+function setPresetFromValues(
+    type,
+    folder,
+    file
+) {
+
+    const preset =
+        getElement(
+            type + "Preset"
+        );
+
+
+    if (!preset) {
+        return;
+    }
+
+
+    const target =
+        Number(folder) +
+        ":" +
+        Number(file);
+
+
+    const option =
+        Array.from(
+            preset.options
+        ).find(
+            item =>
+                item.value === target
+        );
+
+
+    if (option) {
+
+        preset.value =
+            target;
+
+    }
+
+}
+
+
+/* =========================================================
+   Azan Preset
+   ========================================================= */
+
+function applyPreset(type) {
+
+    const preset =
+        getElement(
+            type + "Preset"
+        );
+
+
+    if (!preset) {
+        return;
+    }
+
+
+    const selected =
+        splitPreset(
+            preset.value
+        );
+
+
+    console.log(
+        "[AUDIO] Preset:",
+        type,
+        selected.folder,
+        selected.file
+    );
+
+}
+
+
+/* =========================================================
+   Iqama Preset
+   ========================================================= */
+
+function applyIqamaPreset() {
+
+    applyPreset(
+        "iqama"
+    );
+
+}
+
+
+/* =========================================================
+   Quran
+   ========================================================= */
+
+function getSelectedQuranFile()
+{
+    const select =
+        getElement("quranType");
+
+    if (!select)
+        return null;
+
+    const option =
+        select.options[select.selectedIndex];
+
+    if (!option)
+        return null;
+
+    return {
+        type: option.value,
+        folder: Number(option.dataset.folder),
+        file: Number(option.dataset.file)
+    };
+}
+
+
+async function testQuran()
+{
+    const selected =
+        getSelectedQuranFile();
+
+    if (!selected)
+    {
+        alert("لم يتم اختيار محتوى القرآن");
+        return;
+    }
+
+    const volume =
+        readNumber(
+            "quranVolume",
+            25
+        );
+
+    console.log(
+        "[QURAN TEST]",
+        selected,
+        "Volume:",
+        volume
+    );
+
+    try
+    {
+        const response =
+            await fetch(
+                "/api/test/quran",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            type: selected.type,
+                            folder: selected.folder,
+                            file: selected.file,
+                            volume: volume
+                        })
+                }
+            );
+
+        if (!response.ok)
+        {
+            throw new Error(
+                "HTTP " + response.status
+            );
+        }
+
+        alert("تم تشغيل المحتوى المختار");
+    }
+    catch(error)
+    {
+        console.error(
+            "[QURAN TEST]",
+            error
+        );
+
+        alert(
+            "فشل تشغيل المحتوى المختار"
+        );
+    }
+}
+/* =========================================================
+   Load Selected Quran
+   ========================================================= */
+
+function loadSelectedQuran() {
+
+    const type =
+        getSelectedQuran();
+
+
+    const data =
+        quranSettings[type];
+
+
+    if (!data) {
+        return;
+    }
+
+
+    setSelect(
+        "quranEnable",
+        data.enable
+    );
+
+
+    setNumber(
+        "quranHour",
+        data.hour
+    );
+
+
+    setNumber(
+        "quranMinute",
+        data.minute
+    );
+
+
+    setNumber(
+        "quranVolume",
+        data.volume
+    );
+
+
+    showValue(
+        "quranVolumeValue",
+        data.volume
+    );
+
+}
+
+
+/* =========================================================
+   Read Current Quran
+   ========================================================= */
+
+function readCurrentQuran() {
+
+    const type =
+        getSelectedQuran();
+
+
+    if (!type) {
+        return;
+    }
+
+
+    const previous =
+        quranSettings[type] ||
+        DEFAULT_QURAN_SETTINGS[type];
+
+
+    quranSettings[type] = {
+
+        enable:
+            readBool(
+                "quranEnable",
+                previous.enable
+            ),
+
+        hour:
+            readNumber(
+                "quranHour",
+                previous.hour
+            ),
+
+        minute:
+            readNumber(
+                "quranMinute",
+                previous.minute
+            ),
+
+        volume:
+            readNumber(
+                "quranVolume",
+                previous.volume
+            ),
+
+        /*
+         * folder/file غير ظاهرين في HTML.
+         * لذلك نحافظ على القيم القادمة من ESP.
+         */
+
+        folder:
+            previous.folder,
+
+        file:
+            previous.file
+
+    };
+
+}
+
+
+/* =========================================================
+   Load Audio Settings
+   ========================================================= */
+
+async function loadAudioSettings() {
+
+    console.log(
+        "[AUDIO] Loading settings..."
+    );
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/settings/audio",
+                {
+                    method: "GET",
+                    cache: "no-store"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "[AUDIO] Settings loaded:",
+            data
+        );
+
+
+        /* =================================================
+           General Volume
+           ================================================= */
+
+        const volume =
+            data.volume ?? 15;
+
+
+        setNumber(
+            "volume",
+            volume
+        );
+
+
+        showVolume(
+            volume
+        );
+
+
+        /* =================================================
+           Azan
+           ================================================= */
+
+        setSelect(
+            "azanEnable",
+            data.azanEnable
+        );
+
+
+        if (
+            data.azanFolder !== undefined &&
+            data.azanFile !== undefined
+        ) {
+
+            setPresetFromValues(
+                "azan",
+                data.azanFolder,
+                data.azanFile
+            );
+
+        }
+
+
+        /* =================================================
+           Iqama
+           ================================================= */
+
+        setSelect(
+            "iqamaEnable",
+            data.iqamaEnable
+        );
+
+
+        setNumber(
+            "iqamaVolume",
+            data.iqamaVolume ?? 12
+        );
+
+
+        showValue(
+            "iqamaVolumeValue",
+            data.iqamaVolume ?? 12
+        );
+
+
+        setNumber(
+            "iqamaDelay",
+            data.iqamaDelay ?? 10
+        );
+
+
+        setCheckbox(
+            "iqamaFajr",
+            data.iqamaFajr
+        );
+
+
+        setCheckbox(
+            "iqamaDhuhr",
+            data.iqamaDhuhr
+        );
+
+
+        setCheckbox(
+            "iqamaAsr",
+            data.iqamaAsr
+        );
+
+
+        setCheckbox(
+            "iqamaMaghrib",
+            data.iqamaMaghrib
+        );
+
+
+        setCheckbox(
+            "iqamaIsha",
+            data.iqamaIsha
+        );
+
+
+        if (
+            data.iqamaFolder !== undefined &&
+            data.iqamaFile !== undefined
+        ) {
+
+            setPresetFromValues(
+                "iqama",
+                data.iqamaFolder,
+                data.iqamaFile
+            );
+
+        }
+
+
+        /* =================================================
+           Morning Adhkar
+           ================================================= */
+
+        setSelect(
+            "morningAdhkarEnable",
+            data.morningAdhkarEnable
+        );
+
+
+        setNumber(
+            "morningAdhkarHour",
+            data.morningAdhkarHour ?? 6
+        );
+
+
+        setNumber(
+            "morningAdhkarMinute",
+            data.morningAdhkarMinute ?? 0
+        );
+
+
+        setNumber(
+            "morningAdhkarVolume",
+            data.morningAdhkarVolume ?? 25
+        );
+
+
+        showValue(
+            "morningAdhkarVolumeValue",
+            data.morningAdhkarVolume ?? 25
+        );
+
+
+        /* =================================================
+           Evening Adhkar
+           ================================================= */
+
+        setSelect(
+            "eveningAdhkarEnable",
+            data.eveningAdhkarEnable
+        );
+
+
+        setNumber(
+            "eveningAdhkarHour",
+            data.eveningAdhkarHour ?? 18
+        );
+
+
+        setNumber(
+            "eveningAdhkarMinute",
+            data.eveningAdhkarMinute ?? 0
+        );
+
+
+        setNumber(
+            "eveningAdhkarVolume",
+            data.eveningAdhkarVolume ?? 25
+        );
+
+
+        showValue(
+            "eveningAdhkarVolumeValue",
+            data.eveningAdhkarVolume ?? 25
+        );
+
+
+        /* =================================================
+           Kahf
+           ================================================= */
+
+        setSelect(
+            "kahfEnable",
+            data.kahfEnable
+        );
+
+
+        setNumber(
+            "kahfHour",
+            data.kahfHour ?? 9
+        );
+
+
+        setNumber(
+            "kahfMinute",
+            data.kahfMinute ?? 0
+        );
+
+
+        setNumber(
+            "kahfVolume",
+            data.kahfVolume ?? 25
+        );
+
+
+        showValue(
+            "kahfVolumeValue",
+            data.kahfVolume ?? 25
+        );
+
+
+        /* =================================================
+           Quran
+           ================================================= */
+
+        if (
+            data.quran &&
+            typeof data.quran === "object"
+        ) {
+
+            Object.keys(
+                quranSettings
+            ).forEach(
+                type => {
+
+                    if (
+                        data.quran[type] &&
+                        typeof data.quran[type] === "object"
+                    ) {
+
+                        quranSettings[type] = {
+
+                            ...quranSettings[type],
+
+                            ...data.quran[type]
+
+                        };
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        loadSelectedQuran();
+
+
+        /* =================================================
+           Status
+           ================================================= */
+
+        const status =
+            getElement(
+                "status"
+            );
+
+
+        if (status) {
+
+            status.textContent =
+                "متصل";
+
+        }
+
+
+        console.log(
+            "[AUDIO] Settings loaded successfully"
+        );
+
+    }
+
+
+    catch (error) {
+
+        console.error(
+            "[AUDIO] Load error:",
+            error
+        );
+
+
+        const status =
+            getElement(
+                "status"
+            );
+
+
+        if (status) {
+
+            status.textContent =
+                "خطأ اتصال";
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   Test Endpoint
+   ========================================================= */
+
+async function testEndpoint(
+    endpoint,
+    successMessage
+) {
+
+    try {
+
+        const response =
+            await fetch(
+                endpoint,
+                {
+                    method: "POST"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
+
+        }
+
+
+        alert(
+            successMessage
+        );
+
+    }
+
+
+    catch (error) {
+
+        console.error(
+            "[AUDIO TEST]",
+            error
+        );
+
+
+        alert(
+            "فشل تشغيل الصوت"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   Test Azan
+   ========================================================= */
+
+function testAzan() {
+
+    return testEndpoint(
+        "/api/test/azan",
+        "تم تشغيل الأذان"
+    );
+
+}
+
+
+/* =========================================================
+   Test Iqama
+   ========================================================= */
+
+function testIqama() {
+
+    return testEndpoint(
+        "/api/test/iqama",
+        "تم تشغيل الإقامة"
+    );
+
+}
+
+
+/* =========================================================
+   Test Morning Adhkar
+   ========================================================= */
+
+function testMorningAdhkar() {
+
+    return testEndpoint(
+        "/api/test/morning-adhkar",
+        "تم تشغيل أذكار الصباح"
+    );
+
+}
+
+
+/* =========================================================
+   Test Evening Adhkar
+   ========================================================= */
+
+function testEveningAdhkar() {
+
+    return testEndpoint(
+        "/api/test/evening-adhkar",
+        "تم تشغيل أذكار المساء"
+    );
+
+}
+
+
+/* =========================================================
+   Test Kahf
+   ========================================================= */
+
+function testKahf() {
+
+    return testEndpoint(
+        "/api/test/kahf",
+        "تم تشغيل سورة الكهف"
+    );
+
+}
+
+
+/* =========================================================
+   Test Quran
+   ========================================================= */
+
+async function testQuran() {
+
+    /*
+     * Save current UI values first
+     */
+    readCurrentQuran();
+
+
+    const selected =
+        getSelectedQuranFile();
+
+
+    if (!selected) {
+
+        alert(
+            "لم يتم اختيار محتوى القرآن"
+        );
+
+        return;
+
+    }
+
+
+    const data =
+        quranSettings[selected.type];
+
+
+    if (!data) {
+
+        alert(
+            "إعدادات المحتوى غير موجودة"
+        );
+
+        return;
+
+    }
+
+
+    console.log(
+        "[QURAN TEST]",
+        {
+            type: selected.type,
+            folder: selected.folder,
+            file: selected.file,
+            volume: data.volume
+        }
+    );
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/test/quran",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            type:
+                                selected.type,
+
+                            folder:
+                                selected.folder,
+
+                            file:
+                                selected.file,
+
+                            volume:
+                                data.volume
+
+                        })
+
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const result =
+            await response.text();
+
+
+        console.log(
+            "[QURAN TEST] Response:",
+            result
+        );
+
+
+        alert(
+            "تم تشغيل المحتوى المختار"
+        );
+
+    }
+
+
+    catch (error) {
+
+        console.error(
+            "[QURAN TEST]",
+            error
+        );
+
+
+        alert(
+            "فشل تشغيل المحتوى المختار"
+        );
+
+    }
+
+}
+
+/* =========================================================
+   Play Folder
+   ========================================================= */
+
+async function playFolder() {
+
+    const folder =
+        readNumber(
+            "folder",
+            1
+        );
+
+
+    const volume =
+        readNumber(
+            "folderVolume",
+            20
+        );
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/test/folder",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            folder:
+                                folder,
+
+                            volume:
+                                volume
+
+                        })
+
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
+
+        }
+
+
+        alert(
+            "تم تشغيل المجلد"
+        );
+
+    }
+
+
+    catch (error) {
+
+        console.error(
+            "[FOLDER TEST]",
+            error
+        );
+
+
+        alert(
+            "فشل تشغيل المجلد"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   Build Audio Payload
+   ========================================================= */
+
+function buildAudioPayload() {
+
+    /*
+     * حفظ إعداد القرآن الحالي
+     * قبل بناء البيانات.
+     */
+
+    readCurrentQuran();
+
+
+    /* =====================================================
+       Azan
+       ===================================================== */
+
+    let azanFolder = 1;
+    let azanFile   = 1;
+
+
+    const azanPreset =
+        getElement(
+            "azanPreset"
+        );
+
+
+    if (azanPreset) {
+
+        const selected =
+            splitPreset(
+                azanPreset.value
+            );
+
+
+        azanFolder =
+            selected.folder;
+
+        azanFile =
+            selected.file;
+
+    }
+
+
+    /* =====================================================
+       Iqama
+       ===================================================== */
+
+    let iqamaFolder =
+        IQAMA_FOLDER;
+
+    let iqamaFile =
+        IQAMA_FILE;
+
+
+    const iqamaPreset =
+        getElement(
+            "iqamaPreset"
+        );
+
+
+    if (iqamaPreset) {
+
+        const selected =
+            splitPreset(
+                iqamaPreset.value
+            );
+
+
+        iqamaFolder =
+            selected.folder;
+
+        iqamaFile =
+            selected.file;
+
+    }
+
+
+    /* =====================================================
+       Payload
+       ===================================================== */
+
+    return {
+
+        /* General */
+
+        volume:
+            readNumber(
+                "volume",
+                15
+            ),
+
+
+        /* Azan */
+
+        azanEnable:
+            readBool(
+                "azanEnable",
+                true
+            ),
+
+        azanFolder:
+            azanFolder,
+
+        azanFile:
+            azanFile,
+
+
+        /* Iqama */
+
+        iqamaEnable:
+            readBool(
+                "iqamaEnable",
+                true
+            ),
+
+        iqamaFolder:
+            iqamaFolder,
+
+        iqamaFile:
+            iqamaFile,
+
+        iqamaVolume:
+            readNumber(
+                "iqamaVolume",
+                12
+            ),
+
+        iqamaDelay:
+            readNumber(
+                "iqamaDelay",
+                10
+            ),
+
+        iqamaFajr:
+            readCheckbox(
+                "iqamaFajr",
+                true
+            ),
+
+        iqamaDhuhr:
+            readCheckbox(
+                "iqamaDhuhr",
+                true
+            ),
+
+        iqamaAsr:
+            readCheckbox(
+                "iqamaAsr",
+                true
+            ),
+
+        iqamaMaghrib:
+            readCheckbox(
+                "iqamaMaghrib",
+                true
+            ),
+
+        iqamaIsha:
+            readCheckbox(
+                "iqamaIsha",
+                true
+            ),
+
+
+        /* Morning Adhkar */
+
+        morningAdhkarEnable:
+            readBool(
+                "morningAdhkarEnable",
+                false
+            ),
+
+        morningAdhkarHour:
+            readNumber(
+                "morningAdhkarHour",
+                6
+            ),
+
+        morningAdhkarMinute:
+            readNumber(
+                "morningAdhkarMinute",
+                0
+            ),
+
+        morningAdhkarVolume:
+            readNumber(
+                "morningAdhkarVolume",
+                25
+            ),
+
+
+        /* Evening Adhkar */
+
+        eveningAdhkarEnable:
+            readBool(
+                "eveningAdhkarEnable",
+                false
+            ),
+
+        eveningAdhkarHour:
+            readNumber(
+                "eveningAdhkarHour",
+                18
+            ),
+
+        eveningAdhkarMinute:
+            readNumber(
+                "eveningAdhkarMinute",
+                0
+            ),
+
+        eveningAdhkarVolume:
+            readNumber(
+                "eveningAdhkarVolume",
+                25
+            ),
+
+
+        /* Kahf */
+
+        kahfEnable:
+            readBool(
+                "kahfEnable",
+                false
+            ),
+
+        kahfHour:
+            readNumber(
+                "kahfHour",
+                9
+            ),
+
+        kahfMinute:
+            readNumber(
+                "kahfMinute",
+                0
+            ),
+
+        kahfVolume:
+            readNumber(
+                "kahfVolume",
+                25
+            ),
+
+
+        /* Quran */
+
+        quran:
+            quranSettings
+
+    };
+
+}
+
+
+/* =========================================================
+   Save Audio Settings
+   ========================================================= */
+
+async function saveAudioSettings() {
+
+    /*
+     * منع الضغط المتكرر على زر الحفظ.
+     */
+
+    if (audioSaveInProgress) {
+
+        console.warn(
+            "[AUDIO] Save already in progress"
+        );
+
+        return;
+
+    }
+
+
+    audioSaveInProgress =
+        true;
+
+
+    const status =
+        getElement(
+            "status"
+        );
+
+
+    try {
+
+        console.log(
+            "[AUDIO] Preparing settings..."
+        );
+
+
+        const data =
+            buildAudioPayload();
+
+
+        console.log(
+            "[AUDIO] Saving:",
+            data
+        );
+
+
+        if (status) {
+
+            status.textContent =
+                "جارٍ الحفظ...";
+
+        }
+
+
+        const response =
+            await fetch(
+                "/api/settings/audio",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(data)
+
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const result =
+            await response.text();
+
+
+        console.log(
+            "[AUDIO] Save response:",
+            result
+        );
+
+
+        if (status) {
+
+            status.textContent =
+                "تم الحفظ";
+
+        }
+
+
+        alert(
+            "تم حفظ إعدادات الصوت بنجاح"
+        );
+
+    }
+
+
+    catch (error) {
+
+        console.error(
+            "[AUDIO] Save error:",
+            error
+        );
+
+
+        if (status) {
+
+            status.textContent =
+                "خطأ في الحفظ";
+
+        }
+
+
+        alert(
+            "فشل حفظ إعدادات الصوت"
+        );
+
+    }
+
+
+    finally {
+
+        audioSaveInProgress =
+            false;
+
+    }
+
+}
+
+
+/* =========================================================
+   Event Bindings
+   ========================================================= */
+
+function initAudioEvents() {
+
+    /* -----------------------------------------------------
+       Quran Type
+       ----------------------------------------------------- */
+
+    const quranType =
+        getElement(
+            "quranType"
+        );
+
+
+    if (quranType) {
+
+        quranType.addEventListener(
+            "change",
+            () => {
+
+                /*
+                 * حفظ العنصر السابق أولًا.
+                 */
+
+                readCurrentQuran();
+
+                /*
+                 * ثم تحميل العنصر الجديد.
+                 */
+
+                loadSelectedQuran();
+
+            }
+        );
+
+    }
+
+
+    /* -----------------------------------------------------
+       Main Volume
+       ----------------------------------------------------- */
+
+    const volume =
+        getElement(
+            "volume"
+        );
+
+
+    if (volume) {
+
+        volume.addEventListener(
+            "input",
+            () => {
+
+                showVolume(
+                    volume.value
+                );
+
+            }
+        );
+
+    }
+
+
+    /* -----------------------------------------------------
+       Iqama Volume
+       ----------------------------------------------------- */
+
+    const iqamaVolume =
+        getElement(
+            "iqamaVolume"
+        );
+
+
+    if (iqamaVolume) {
+
+        iqamaVolume.addEventListener(
+            "input",
+            () => {
+
+                showValue(
+                    "iqamaVolumeValue",
+                    iqamaVolume.value
+                );
+
+            }
+        );
+
+    }
+
+
+    /* -----------------------------------------------------
+       Morning Adhkar Volume
+       ----------------------------------------------------- */
+
+    const morningVolume =
+        getElement(
+            "morningAdhkarVolume"
+        );
+
+
+    if (morningVolume) {
+
+        morningVolume.addEventListener(
+            "input",
+            () => {
+
+                showValue(
+                    "morningAdhkarVolumeValue",
+                    morningVolume.value
+                );
+
+            }
+        );
+
+    }
+
+
+    /* -----------------------------------------------------
+       Evening Adhkar Volume
+       ----------------------------------------------------- */
+
+    const eveningVolume =
+        getElement(
+            "eveningAdhkarVolume"
+        );
+
+
+    if (eveningVolume) {
+
+        eveningVolume.addEventListener(
+            "input",
+            () => {
+
+                showValue(
+                    "eveningAdhkarVolumeValue",
+                    eveningVolume.value
+                );
+
+            }
+        );
+
+    }
+
+
+    /* -----------------------------------------------------
+       Kahf Volume
+       ----------------------------------------------------- */
+
+    const kahfVolume =
+        getElement(
+            "kahfVolume"
+        );
+
+
+    if (kahfVolume) {
+
+        kahfVolume.addEventListener(
+            "input",
+            () => {
+
+                showValue(
+                    "kahfVolumeValue",
+                    kahfVolume.value
+                );
+
+            }
+        );
+
+    }
+
+
+    /* -----------------------------------------------------
+       Quran Volume
+       ----------------------------------------------------- */
+
+    const quranVolume =
+        getElement(
+            "quranVolume"
+        );
+
+
+    if (quranVolume) {
+
+        quranVolume.addEventListener(
+            "input",
+            () => {
+
+                showValue(
+                    "quranVolumeValue",
+                    quranVolume.value
+                );
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   Startup
+   ========================================================= */
+
+window.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        initAudioEvents();
+
+        await loadAudioSettings();
+
+    }
+);

@@ -178,6 +178,73 @@ void play_folder_file(uint8_t folder, uint8_t file)
     player.playFolder(folder, file);
 }
 
+void play_folder_file_with_volume(uint8_t folder, uint8_t file, uint8_t volume)
+{
+    if(volume > 30)
+        volume = 30;
+
+    if(settings.lowVolumeEnable && volume > settings.lowVolumeLevel)
+        volume = settings.lowVolumeLevel;
+
+    if(!playerReady)
+    {
+        Serial.println("[DFPlayer Error] Player Not Ready!");
+        return;
+    }
+
+    if(folder == 0 || file == 0)
+    {
+        Serial.printf("[DFPlayer Error] Invalid Folder (%d) or File (%d)!\n", folder, file);
+        return;
+    }
+
+    Serial.printf(
+        "[DFPlayer Command] Folder: %d File: %d Volume: %d\n",
+        folder,
+        file,
+        volume
+    );
+
+    player.volume(volume);
+
+    delay(200);
+
+    player.playFolder(folder, file);
+}
+
+void play_folder_with_volume(uint8_t folder, uint8_t volume)
+{
+    if(volume > 30)
+        volume = 30;
+
+    if(settings.lowVolumeEnable && volume > settings.lowVolumeLevel)
+        volume = settings.lowVolumeLevel;
+
+    if(!playerReady)
+    {
+        Serial.println("[DFPlayer Error] Player Not Ready!");
+        return;
+    }
+
+    if(folder == 0)
+    {
+        Serial.printf("[DFPlayer Error] Invalid Folder (%d)!\n", folder);
+        return;
+    }
+
+    Serial.printf(
+        "[DFPlayer Command] Loop Folder: %d Volume: %d\n",
+        folder,
+        volume
+    );
+
+    player.volume(volume);
+
+    delay(200);
+
+    player.loopFolder(folder);
+}
+
 // =================================
 // Athan
 // =================================
@@ -230,21 +297,6 @@ void play_iqama()
     );
 }
 
-// =================================
-// Quran
-// =================================
-
-void play_quran()
-{
-    if (!playerReady) return;
-
-    Serial.println("[Quran] Playing Quran...");
-
-    play_folder_file(
-        settings.surahFolder,
-        settings.surahFile
-    );
-}
 
 // =================================
 // Dua
@@ -311,4 +363,57 @@ void stop_audio()
 bool dfplayer_ready()
 {
     return playerReady;
+}
+
+// =================================
+// Playback Controls
+// =================================
+
+// تشغيل / استئناف
+void play_audio()
+{
+    if (!playerReady)
+        return;
+
+    player.start();
+
+    Serial.println("[DFPlayer] Audio Play / Resume");
+}
+
+
+// إيقاف مؤقت
+void pause_audio()
+{
+    Serial.println("[DFPLAYER DEBUG] pause_audio() called");
+
+    if (!playerReady)
+    {
+        Serial.println("[DFPLAYER DEBUG] Player NOT ready");
+        return;
+    }
+
+    Serial.println("[DFPLAYER DEBUG] Sending PAUSE command");
+
+    player.pause();
+
+    Serial.println("[DFPLAYER DEBUG] PAUSE command sent");
+}
+
+// خفض الصوت
+void volume_down()
+{
+    if (!playerReady)
+        return;
+
+    int volume = settings.volume;
+
+    volume -= 5;
+
+    if (volume < 0)
+        volume = 0;
+
+    set_volume(volume);
+
+    Serial.print("[DFPlayer] Volume Down -> ");
+    Serial.println(volume);
 }

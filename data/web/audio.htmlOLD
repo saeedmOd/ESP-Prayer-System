@@ -1362,23 +1362,23 @@
                             id="iqamaPreset"
                             onchange="applyIqamaPreset()">
 
-                            <option value="1:1">
+                            <option value="2:1">
                                 إقامة الحرم المكي
                             </option>
 
-                            <option value="1:2">
+                            <option value="2:2">
                                 إقامة الحرم المدني
                             </option>
 
-                            <option value="1:3">
+                            <option value="2:3">
                                 إقامة قصيرة
                             </option>
 
-                            <option value="1:4">
+                            <option value="2:4">
                                 إقامة طويلة
                             </option>
 
-                            <option value="1:5">
+                            <option value="2:5">
                                 جرس
                             </option>
 
@@ -2098,9 +2098,10 @@
             onchange="loadSelectedQuran()"
             aria-label="اختيار المحتوى القرآني">
 
+            <!-- المجلد 1 / الملف 1 -->
             <option
                 value="baqarah"
-                data-folder="2"
+                data-folder="1"
                 data-file="1">
 
                 سورة البقرة — محمد أيوب
@@ -2108,9 +2109,10 @@
             </option>
 
 
+            <!-- المجلد 1 / الملف 2 -->
             <option
                 value="baqarahLast"
-                data-folder="2"
+                data-folder="1"
                 data-file="2">
 
                 أواخر سورة البقرة — محمد أيوب
@@ -2118,9 +2120,10 @@
             </option>
 
 
+            <!-- المجلد 1 / الملف 3 -->
             <option
                 value="ayatKursi"
-                data-folder="2"
+                data-folder="1"
                 data-file="3">
 
                 آية الكرسي — محمد أيوب
@@ -2128,9 +2131,10 @@
             </option>
 
 
+            <!-- المجلد 1 / الملف 4 -->
             <option
                 value="maryam"
-                data-folder="2"
+                data-folder="1"
                 data-file="4">
 
                 سورة مريم كاملة — محمد أيوب
@@ -2587,7 +2591,7 @@ let quranSettings = {
         hour: 0,
         minute: 0,
         volume: 25,
-        folder: 2,
+        folder: 1,
         file: 1
     },
 
@@ -2596,7 +2600,7 @@ let quranSettings = {
         hour: 0,
         minute: 0,
         volume: 25,
-        folder: 2,
+        folder: 1,
         file: 2
     },
 
@@ -2605,7 +2609,7 @@ let quranSettings = {
         hour: 0,
         minute: 0,
         volume: 25,
-        folder: 2,
+        folder: 1,
         file: 3
     },
 
@@ -2614,7 +2618,7 @@ let quranSettings = {
         hour: 0,
         minute: 0,
         volume: 25,
-        folder: 2,
+        folder: 1,
         file: 4
     }
 
@@ -3491,468 +3495,88 @@ function testQuran() {
         Save Audio Settings
         ========================================================= */
 
-/* =========================================================
-   Save Audio Settings
-   ========================================================= */
+        function saveAudioSettings() {
 
-function saveAudioSettings() {
+            console.log("saveAudioSettings() called");
 
-    console.log("saveAudioSettings() called");
+            function readBool(id) {
+                const element = document.getElementById(id);
+                if (!element) return false;
+                const value = element.value;
+                if (value === true || value === false) return value;
+                if (value === "true") return true;
+                if (value === "false") return false;
+                return value === "1";
+            }
 
+            function readNumber(id, fallback = 0) {
+                const element = document.getElementById(id);
+                if (!element) return fallback;
+                const parsed = Number(element.value);
+                return Number.isFinite(parsed) ? parsed : fallback;
+            }
 
-    /* =====================================================
-       Helpers
-       ===================================================== */
+            const azanPreset = readPresetValues("azan");
+            const iqamaPreset = readPresetValues("iqama");
 
-    function readBool(id) {
-
-        const element =
-            document.getElementById(id);
-
-        if (!element) return false;
-
-        const value =
-            element.value;
-
-        if (value === true || value === false) {
-            return value;
-        }
-
-        if (value === "true") {
-            return true;
-        }
-
-        if (value === "false") {
-            return false;
-        }
-
-        return value === "1";
-    }
-
-
-    function readNumber(id, fallback = 0) {
-
-        const element =
-            document.getElementById(id);
-
-        if (!element) {
-            return fallback;
-        }
-
-        const parsed =
-            Number(element.value);
-
-        return Number.isFinite(parsed)
-            ? parsed
-            : fallback;
-    }
-
-
-    /* =====================================================
-       Read Fixed Audio File
-       From:
-       data-folder
-       data-file
-       ===================================================== */
-
-    function readAudioFile(type, fallbackFolder, fallbackFile) {
-
-        const element =
-            document.querySelector(
-                `[data-type="${type}"]`
-            );
-
-        if (!element) {
-
-            console.warn(
-                `[AUDIO] ${type} element not found`
-            );
-
-            return {
-                folder: fallbackFolder,
-                file: fallbackFile
+            const data = {
+                volume: readNumber("volume", 15),
+                azanEnable: readBool("azanEnable"),
+                azanFolder: azanPreset.folder,
+                azanFile: azanPreset.file,
+                iqamaEnable: readBool("iqamaEnable"),
+                iqamaFolder: iqamaPreset.folder,
+                iqamaFile: iqamaPreset.file,
+                iqamaVolume: readNumber("iqamaVolume", 12),
+                iqamaDelay: readNumber("iqamaDelay", 10),
+                iqamaFajr: document.getElementById("iqamaFajr").checked,
+                iqamaDhuhr: document.getElementById("iqamaDhuhr").checked,
+                iqamaAsr: document.getElementById("iqamaAsr").checked,
+                iqamaMaghrib: document.getElementById("iqamaMaghrib").checked,
+                iqamaIsha: document.getElementById("iqamaIsha").checked,
+                morningAdhkarEnable: readBool("morningAdhkarEnable"),
+                morningAdhkarHour: readNumber("morningAdhkarHour", 6),
+                morningAdhkarMinute: readNumber("morningAdhkarMinute", 0),
+                morningAdhkarVolume: readNumber("morningAdhkarVolume", 9),
+                eveningAdhkarEnable: readBool("eveningAdhkarEnable"),
+                eveningAdhkarHour: readNumber("eveningAdhkarHour", 18),
+                eveningAdhkarMinute: readNumber("eveningAdhkarMinute", 0),
+                eveningAdhkarVolume: readNumber("eveningAdhkarVolume", 9),
+                kahfEnable: readBool("kahfEnable"),
+                kahfHour: readNumber("kahfHour", 0),
+                kahfMinute: readNumber("kahfMinute", 0),
+                kahfVolume: readNumber("kahfVolume", 10),
+                quran: quranSettings
             };
-        }
 
+            console.log("Sending audio settings payload", data);
 
-        const folder =
-            Number(element.dataset.folder);
-
-        const file =
-            Number(element.dataset.file);
-
-
-        if (
-            !Number.isFinite(folder) ||
-            !Number.isFinite(file) ||
-            folder < 1 ||
-            file < 1
-        ) {
-
-            console.warn(
-                `[AUDIO] Invalid ${type} folder/file`,
-                {
-                    folder,
-                    file
+            fetch("/api/settings/audio", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                console.log("Save response status:", response.status);
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status);
                 }
-            );
+                return response.text();
+            })
+            .then(() => {
+                document.getElementById("status").textContent = "تم الحفظ";
+                alert("تم حفظ إعدادات الصوت");
+            })
+            .catch(error => {
+                console.error("Save error:", error);
+                document.getElementById("status").textContent = "خطأ في الحفظ";
+                alert("فشل حفظ الإعدادات");
+            });
 
-            return {
-                folder: fallbackFolder,
-                file: fallbackFile
-            };
         }
 
-
-        return {
-            folder,
-            file
-        };
-    }
-
-
-    /* =====================================================
-       Azan / Iqama
-       ===================================================== */
-
-    const azanPreset =
-        readPresetValues("azan");
-
-    const iqamaPreset =
-        readPresetValues("iqama");
-
-
-    /* =====================================================
-       Fixed Audio Files
-       ===================================================== */
-
-    const morningAdhkar =
-        readAudioFile(
-            "morningAdhkar",
-            4,
-            1
-        );
-
-
-    const eveningAdhkar =
-        readAudioFile(
-            "eveningAdhkar",
-            4,
-            2
-        );
-
-
-    const kahf =
-        readAudioFile(
-            "kahf",
-            4,
-            1
-        );
-
-
-    /* =====================================================
-       Build Payload
-       ===================================================== */
-
-    const data = {
-
-        /* ---------------------------------------------
-           General Audio
-           --------------------------------------------- */
-
-        volume:
-            readNumber(
-                "volume",
-                15
-            ),
-
-
-        /* ---------------------------------------------
-           Azan
-           --------------------------------------------- */
-
-        azanEnable:
-            readBool(
-                "azanEnable"
-            ),
-
-        azanFolder:
-            azanPreset.folder,
-
-        azanFile:
-            azanPreset.file,
-
-
-        /* ---------------------------------------------
-           Iqama
-           --------------------------------------------- */
-
-        iqamaEnable:
-            readBool(
-                "iqamaEnable"
-            ),
-
-        iqamaFolder:
-            iqamaPreset.folder,
-
-        iqamaFile:
-            iqamaPreset.file,
-
-        iqamaVolume:
-            readNumber(
-                "iqamaVolume",
-                12
-            ),
-
-        iqamaDelay:
-            readNumber(
-                "iqamaDelay",
-                10
-            ),
-
-
-        iqamaFajr:
-            document.getElementById(
-                "iqamaFajr"
-            )?.checked || false,
-
-        iqamaDhuhr:
-            document.getElementById(
-                "iqamaDhuhr"
-            )?.checked || false,
-
-        iqamaAsr:
-            document.getElementById(
-                "iqamaAsr"
-            )?.checked || false,
-
-        iqamaMaghrib:
-            document.getElementById(
-                "iqamaMaghrib"
-            )?.checked || false,
-
-        iqamaIsha:
-            document.getElementById(
-                "iqamaIsha"
-            )?.checked || false,
-
-
-        /* ---------------------------------------------
-           Morning Adhkar
-           --------------------------------------------- */
-
-        morningAdhkarEnable:
-            readBool(
-                "morningAdhkarEnable"
-            ),
-
-        morningAdhkarHour:
-            readNumber(
-                "morningAdhkarHour",
-                6
-            ),
-
-        morningAdhkarMinute:
-            readNumber(
-                "morningAdhkarMinute",
-                0
-            ),
-
-        morningAdhkarVolume:
-            readNumber(
-                "morningAdhkarVolume",
-                9
-            ),
-
-        morningAdhkarFolder:
-            morningAdhkar.folder,
-
-        morningAdhkarFile:
-            morningAdhkar.file,
-
-
-        /* ---------------------------------------------
-           Evening Adhkar
-           --------------------------------------------- */
-
-        eveningAdhkarEnable:
-            readBool(
-                "eveningAdhkarEnable"
-            ),
-
-        eveningAdhkarHour:
-            readNumber(
-                "eveningAdhkarHour",
-                18
-            ),
-
-        eveningAdhkarMinute:
-            readNumber(
-                "eveningAdhkarMinute",
-                0
-            ),
-
-        eveningAdhkarVolume:
-            readNumber(
-                "eveningAdhkarVolume",
-                9
-            ),
-
-        eveningAdhkarFolder:
-            eveningAdhkar.folder,
-
-        eveningAdhkarFile:
-            eveningAdhkar.file,
-
-
-        /* ---------------------------------------------
-           Surat Al-Kahf
-           --------------------------------------------- */
-
-        kahfEnable:
-            readBool(
-                "kahfEnable"
-            ),
-
-        kahfHour:
-            readNumber(
-                "kahfHour",
-                9
-            ),
-
-        kahfMinute:
-            readNumber(
-                "kahfMinute",
-                0
-            ),
-
-        kahfVolume:
-            readNumber(
-                "kahfVolume",
-                10
-            ),
-
-        kahfFolder:
-            kahf.folder,
-
-        kahfFile:
-            kahf.file,
-
-
-        /* ---------------------------------------------
-           Quran
-           --------------------------------------------- */
-
-        quran:
-            quranSettings
-
-    };
-
-
-    /* =====================================================
-       Debug
-       ===================================================== */
-
-    console.log(
-        "[AUDIO] Morning:",
-        morningAdhkar.folder,
-        morningAdhkar.file
-    );
-
-    console.log(
-        "[AUDIO] Evening:",
-        eveningAdhkar.folder,
-        eveningAdhkar.file
-    );
-
-    console.log(
-        "[AUDIO] Kahf:",
-        kahf.folder,
-        kahf.file
-    );
-
-    console.log(
-        "Sending audio settings payload",
-        data
-    );
-
-
-    /* =====================================================
-       Send To ESP
-       ===================================================== */
-
-    fetch(
-        "/api/settings/audio",
-        {
-            method: "POST",
-
-            headers: {
-                "Content-Type":
-                    "application/json"
-            },
-
-            body:
-                JSON.stringify(data)
-        }
-    )
-
-    .then(response => {
-
-        console.log(
-            "Save response status:",
-            response.status
-        );
-
-        if (!response.ok) {
-
-            throw new Error(
-                "HTTP " +
-                response.status
-            );
-        }
-
-        return response.text();
-    })
-
-    .then(() => {
-
-        const status =
-            document.getElementById(
-                "status"
-            );
-
-        if (status) {
-            status.textContent =
-                "تم الحفظ";
-        }
-
-        alert(
-            "تم حفظ إعدادات الصوت"
-        );
-    })
-
-    .catch(error => {
-
-        console.error(
-            "Save error:",
-            error
-        );
-
-        const status =
-            document.getElementById(
-                "status"
-            );
-
-        if (status) {
-            status.textContent =
-                "خطأ في الحفظ";
-        }
-
-        alert(
-            "فشل حفظ الإعدادات"
-        );
-    });
-}
 
         /* =========================================================
         Startup

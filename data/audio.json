@@ -1,5 +1,9 @@
 {
   "azan_folder": 1,
+  "iqama_folder": 1,
+  "morning_adhkar_folder": 4,
+  "evening_adhkar_folder": 4,
+  "kahf_folder": 8,
   "surah_folder": 2,
   "dua_folder": 4,
   "default_volume": 25
