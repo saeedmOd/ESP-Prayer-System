@@ -5,28 +5,48 @@
 #include "storage.h"
 
 
-// =================================
+// =========================================================
 // Global Settings Object
-// =================================
+// =========================================================
 
 SystemSettings settings;
 
 
+// =========================================================
+// Internal Helpers
+// =========================================================
 
-// =================================
+static int clampInt(
+    int value,
+    int minimum,
+    int maximum
+)
+{
+    if (value < minimum)
+        return minimum;
+
+    if (value > maximum)
+        return maximum;
+
+    return value;
+}
+
+
+// =========================================================
 // Load Settings
-// =================================
+// =========================================================
 
 void settings_load()
 {
+    Serial.println();
+    Serial.println(F("================================"));
+    Serial.println(F("Loading Settings..."));
+    Serial.println(F("================================"));
 
-    Serial.println("Loading Settings...");
 
-
-
-    // =============================
+    // =====================================================
     // Device
-    // =============================
+    // =====================================================
 
     settings.deviceName =
         storage_get_device_name(
@@ -34,10 +54,9 @@ void settings_load()
         );
 
 
-
-    // =============================
+    // =====================================================
     // WiFi
-    // =============================
+    // =====================================================
 
     settings.wifiEnable =
         storage_get_bool(
@@ -45,12 +64,15 @@ void settings_load()
             true
         );
 
+    settings.wifiSSID =
+        storage_get_wifi_ssid(
+            ""
+        );
 
-    settings.wifiSSID = storage_get_wifi_ssid("");
-
-
-    settings.wifiPassword = storage_get_wifi_password("");
-
+    settings.wifiPassword =
+        storage_get_wifi_password(
+            ""
+        );
 
     settings.wifiAutoReconnect =
         storage_get_bool(
@@ -59,11 +81,9 @@ void settings_load()
         );
 
 
-
-
-    // =============================
+    // =====================================================
     // MQTT
-    // =============================
+    // =====================================================
 
     settings.mqttEnable =
         storage_get_bool(
@@ -71,20 +91,17 @@ void settings_load()
             false
         );
 
-
     settings.mqttServer =
         storage_get_string(
             "mqtt.server",
-            ""
+            MQTT_SERVER
         );
-
 
     settings.mqttPort =
         storage_get_int(
             "mqtt.port",
-            1883
+            MQTT_PORT
         );
-
 
     settings.mqttUser =
         storage_get_string(
@@ -92,13 +109,11 @@ void settings_load()
             ""
         );
 
-
     settings.mqttPassword =
         storage_get_string(
             "mqtt.password",
             ""
         );
-
 
     settings.mqttTopic =
         storage_get_string(
@@ -107,11 +122,9 @@ void settings_load()
         );
 
 
-
-
-    // =============================
+    // =====================================================
     // OTA
-    // =============================
+    // =====================================================
 
     settings.otaEnable =
         storage_get_bool(
@@ -119,13 +132,11 @@ void settings_load()
             true
         );
 
-
     settings.otaHostname =
         storage_get_string(
             "ota.hostname",
-            DEVICE_NAME_DEFAULT
+            OTA_HOSTNAME
         );
-
 
     settings.otaPassword =
         storage_get_string(
@@ -134,35 +145,29 @@ void settings_load()
         );
 
 
-
-
-    // =============================
+    // =====================================================
     // Location
-    // =============================
+    // =====================================================
 
     settings.city =
         storage_get_city(
             DEFAULT_CITY
         );
 
-
     settings.country =
         storage_get_country(
             DEFAULT_COUNTRY
         );
-
 
     settings.latitude =
         storage_get_latitude(
             DEFAULT_LATITUDE
         );
 
-
     settings.longitude =
         storage_get_longitude(
             DEFAULT_LONGITUDE
         );
-
 
     settings.timezone =
         storage_get_int(
@@ -171,18 +176,14 @@ void settings_load()
         );
 
 
-
-
-
-    // =============================
+    // =====================================================
     // Prayer
-    // =============================
+    // =====================================================
 
     settings.calculationMethod =
         storage_get_calculation_method(
             "UmmAlQura"
         );
-
 
     settings.asrMethod =
         storage_get_string(
@@ -190,46 +191,46 @@ void settings_load()
             "Standard"
         );
 
-
     settings.highLatitudeRule =
         storage_get_string(
             "prayer.high_latitude_rule",
             "None"
         );
 
-
-
     settings.timeFormat =
         storage_get_time_format(
             DEFAULT_TIME_FORMAT
         );
 
-
     settings.fajrOffset =
-        storage_get_fajr_offset(0);
-
+        storage_get_fajr_offset(
+            0
+        );
 
     settings.dhuhrOffset =
-        storage_get_dhuhr_offset(0);
-
+        storage_get_dhuhr_offset(
+            0
+        );
 
     settings.asrOffset =
-        storage_get_asr_offset(0);
-
+        storage_get_asr_offset(
+            0
+        );
 
     settings.maghribOffset =
-        storage_get_maghrib_offset(0);
-
+        storage_get_maghrib_offset(
+            0
+        );
 
     settings.ishaOffset =
-        storage_get_isha_offset(0);
+        storage_get_isha_offset(
+            0
+        );
 
 
-
-
-    // =============================
-    // Audio
-    // =============================
+    // =====================================================
+    // Audio - General
+    // =====================================================
 
     settings.audioEnable =
         storage_get_bool(
@@ -242,7 +243,6 @@ void settings_load()
             "audio.azan_enable",
             true
         );
-
 
     settings.volume =
         storage_get_volume(
@@ -262,23 +262,37 @@ void settings_load()
         );
 
 
-    settings.athanFolder =
-        storage_get_athan_folder(1);
+    // =====================================================
+    // Azan
+    // =====================================================
+
+    settings.azanFolder =
+        storage_get_int(
+            "audio.azan_folder",
+            1
+        );
+
+    settings.azanFile =
+        storage_get_int(
+            "audio.azan_file",
+            1
+        );
 
 
-    settings.athanFile =
-        storage_get_athan_file(1);
+    // =====================================================
+    // Iqama
+    // =====================================================
 
     settings.iqamaEnable =
         storage_get_bool(
             "audio.iqama_enable",
-            true
+            false
         );
 
     settings.iqamaFolder =
         storage_get_int(
             "audio.iqama_folder",
-            5
+            1
         );
 
     settings.iqamaFile =
@@ -296,30 +310,151 @@ void settings_load()
     settings.iqamaVolume =
         storage_get_int(
             "audio.iqama_volume",
-            12
+            DEFAULT_VOLUME
         );
 
-    settings.iqamaPrayerEnable[0] = storage_get_bool("audio.iqama_fajr_enable", true);
-    settings.iqamaPrayerEnable[1] = false;
-    settings.iqamaPrayerEnable[2] = storage_get_bool("audio.iqama_dhuhr_enable", true);
-    settings.iqamaPrayerEnable[3] = storage_get_bool("audio.iqama_asr_enable", true);
-    settings.iqamaPrayerEnable[4] = storage_get_bool("audio.iqama_maghrib_enable", true);
-    settings.iqamaPrayerEnable[5] = storage_get_bool("audio.iqama_isha_enable", true);
 
-    settings.iqamaPrayerDelay[0] = storage_get_int("audio.iqama_fajr_delay", 20);
-    settings.iqamaPrayerDelay[1] = 0;
-    settings.iqamaPrayerDelay[2] = storage_get_int("audio.iqama_dhuhr_delay", 10);
-    settings.iqamaPrayerDelay[3] = storage_get_int("audio.iqama_asr_delay", 10);
-    settings.iqamaPrayerDelay[4] = storage_get_int("audio.iqama_maghrib_delay", 5);
-    settings.iqamaPrayerDelay[5] = storage_get_int("audio.iqama_isha_delay", 10);
+    // -----------------------------------------------------
+    // Iqama Prayer Enable
+    //
+    // 0 = Fajr
+    // 1 = Sunrise (not used)
+    // 2 = Dhuhr
+    // 3 = Asr
+    // 4 = Maghrib
+    // 5 = Isha
+    // -----------------------------------------------------
+
+    settings.iqamaPrayerEnable[0] =
+        storage_get_bool(
+            "audio.iqama_fajr_enable",
+            false
+        );
+
+    settings.iqamaPrayerEnable[1] =
+        false;
+
+    settings.iqamaPrayerEnable[2] =
+        storage_get_bool(
+            "audio.iqama_dhuhr_enable",
+            false
+        );
+
+    settings.iqamaPrayerEnable[3] =
+        storage_get_bool(
+            "audio.iqama_asr_enable",
+            false
+        );
+
+    settings.iqamaPrayerEnable[4] =
+        storage_get_bool(
+            "audio.iqama_maghrib_enable",
+            false
+        );
+
+    settings.iqamaPrayerEnable[5] =
+        storage_get_bool(
+            "audio.iqama_isha_enable",
+            false
+        );
 
 
-    settings.surahFolder =
-        storage_get_surah_folder(2);
+    // -----------------------------------------------------
+    // Iqama Prayer Delays
+    // -----------------------------------------------------
+
+    settings.iqamaPrayerDelay[0] =
+        storage_get_int(
+            "audio.iqama_fajr_delay",
+            20
+        );
+
+    settings.iqamaPrayerDelay[1] =
+        0;
+
+    settings.iqamaPrayerDelay[2] =
+        storage_get_int(
+            "audio.iqama_dhuhr_delay",
+            10
+        );
+
+    settings.iqamaPrayerDelay[3] =
+        storage_get_int(
+            "audio.iqama_asr_delay",
+            10
+        );
+
+    settings.iqamaPrayerDelay[4] =
+        storage_get_int(
+            "audio.iqama_maghrib_delay",
+            5
+        );
+
+    settings.iqamaPrayerDelay[5] =
+        storage_get_int(
+            "audio.iqama_isha_delay",
+            10
+        );
 
 
-    settings.surahFile =
-        storage_get_surah_file(1);
+    // =====================================================
+    // Quran
+    // =====================================================
+
+    settings.quranEnable =
+        storage_get_bool(
+            "audio.quran_enable",
+            false
+        );
+
+    settings.quranHour =
+        storage_get_int(
+            "audio.quran_hour",
+            0
+        );
+
+    settings.quranMinute =
+        storage_get_int(
+            "audio.quran_minute",
+            0
+        );
+
+    settings.quranVolume =
+        storage_get_int(
+            "audio.quran_volume",
+            DEFAULT_VOLUME
+        );
+
+    settings.quranSelected =
+        storage_get_string(
+            "audio.quran_selected",
+            "baqarah"
+        );
+
+
+    // -----------------------------------------------------
+    // Quran selected -> folder/file
+    //
+    // These values are kept in C++ for direct DFPlayer use.
+    // The selected name remains the source of truth.
+    // -----------------------------------------------------
+
+    settings.quranFolder =
+        storage_get_int(
+            "audio.quran_folder",
+            2
+        );
+
+    settings.quranFile =
+        storage_get_int(
+            "audio.quran_file",
+            1
+        );
+
+
+    // =====================================================
+    // Morning Adhkar
+    // =====================================================
 
     settings.morningAdhkarEnable =
         storage_get_bool(
@@ -363,6 +498,11 @@ void settings_load()
             false
         );
 
+
+    // =====================================================
+    // Evening Adhkar
+    // =====================================================
+
     settings.eveningAdhkarEnable =
         storage_get_bool(
             "audio.evening_adhkar_enable",
@@ -405,6 +545,11 @@ void settings_load()
             false
         );
 
+
+    // =====================================================
+    // Surah Al-Kahf
+    // =====================================================
+
     settings.kahfEnable =
         storage_get_bool(
             "audio.kahf_enable",
@@ -420,7 +565,7 @@ void settings_load()
     settings.kahfFile =
         storage_get_int(
             "audio.kahf_file",
-            5
+            1
         );
 
     settings.kahfHour =
@@ -448,12 +593,15 @@ void settings_load()
         );
 
 
+    // =====================================================
+    // Other Audio
+    // =====================================================
+
     settings.shortSurahFolder =
         storage_get_int(
             "audio.short_surah_folder",
             3
         );
-
 
     settings.duaFolder =
         storage_get_int(
@@ -462,12 +610,9 @@ void settings_load()
         );
 
 
-
-
-
-    // =============================
+    // =====================================================
     // Display
-    // =============================
+    // =====================================================
 
     settings.displayEnable =
         storage_get_bool(
@@ -475,20 +620,17 @@ void settings_load()
             true
         );
 
-
     settings.brightness =
         storage_get_int(
             "display.brightness",
             100
         );
 
-
     settings.showDate =
         storage_get_bool(
             "display.show_date",
             true
         );
-
 
     settings.showTemperature =
         storage_get_bool(
@@ -497,291 +639,562 @@ void settings_load()
         );
 
 
+    // =====================================================
+    // Validate
+    // =====================================================
 
     settings_apply();
 
 
-
-    Serial.println("Settings Loaded");
-
+    Serial.println(F("Settings Loaded"));
 }
 
 
-
-// =================================
-// Validate Settings
-// =================================
+// =========================================================
+// Validate / Normalize Settings
+// =========================================================
 
 void settings_apply()
 {
+    // =====================================================
+    // Device
+    // =====================================================
 
-    // Volume
-
-    if(settings.volume < 0)
-        settings.volume = 0;
-
-
-    if(settings.volume > 30)
-        settings.volume = 30;
-
-    settings.lowVolumeLevel = constrain(settings.lowVolumeLevel, 0, 30);
-
-    if(settings.athanFolder < 1)
-        settings.athanFolder = 1;
-
-    if(settings.athanFile < 1)
-        settings.athanFile = 1;
-
-    if(settings.iqamaFolder < 1)
-        settings.iqamaFolder = 5;
-
-    if(settings.iqamaFile < 1)
-        settings.iqamaFile = 1;
-
-    if(settings.iqamaDelayMinutes < 0)
-        settings.iqamaDelayMinutes = 0;
-
-    if(settings.iqamaDelayMinutes > 60)
-        settings.iqamaDelayMinutes = 60;
-
-    for(int i = 0; i < 6; i++)
+    if (settings.deviceName.length() == 0)
     {
-        settings.iqamaPrayerDelay[i] = constrain(settings.iqamaPrayerDelay[i], 0, 60);
+        settings.deviceName =
+            DEVICE_NAME_DEFAULT;
     }
 
-    if(settings.morningAdhkarFolder < 4)
-        settings.morningAdhkarFolder = 4;
 
-    if(settings.morningAdhkarFile < 1)
-        settings.morningAdhkarFile = 1;
+    // =====================================================
+    // WiFi
+    // =====================================================
 
-    if(settings.eveningAdhkarFolder < 1)
-        settings.eveningAdhkarFolder = 7;
-
-    if(settings.eveningAdhkarFile < 1)
-        settings.eveningAdhkarFile = 1;
-
-    if(settings.kahfFolder < 1)
-        settings.kahfFolder = 8;
-
-    if(settings.kahfFile < 1)
-        settings.kahfFile = 1;
-
-    settings.morningAdhkarHour = constrain(settings.morningAdhkarHour, 0, 23);
-    settings.morningAdhkarMinute = constrain(settings.morningAdhkarMinute, 0, 59);
-    settings.morningAdhkarVolume = constrain(settings.morningAdhkarVolume, 0, 30);
-
-    settings.eveningAdhkarHour = constrain(settings.eveningAdhkarHour, 0, 23);
-    settings.eveningAdhkarMinute = constrain(settings.eveningAdhkarMinute, 0, 59);
-    settings.eveningAdhkarVolume = constrain(settings.eveningAdhkarVolume, 0, 30);
-
-    settings.kahfHour = constrain(settings.kahfHour, 0, 23);
-    settings.kahfMinute = constrain(settings.kahfMinute, 0, 59);
-    settings.kahfVolume = constrain(settings.kahfVolume, 0, 30);
+    // Nothing required here.
+    // Empty SSID is allowed because it activates AP mode.
 
 
+    // =====================================================
+    // MQTT
+    // =====================================================
 
-    // Time format
+    if (settings.mqttPort <= 0 ||
+        settings.mqttPort > 65535)
+    {
+        settings.mqttPort =
+            MQTT_PORT;
+    }
 
-    if(
+
+    // =====================================================
+    // Location
+    // =====================================================
+
+    if (!isfinite(settings.latitude))
+        settings.latitude = DEFAULT_LATITUDE;
+
+    if (!isfinite(settings.longitude))
+        settings.longitude = DEFAULT_LONGITUDE;
+
+
+    if (settings.timezone < -12 ||
+        settings.timezone > 14)
+    {
+        settings.timezone =
+            DEFAULT_TIMEZONE;
+    }
+
+
+    // =====================================================
+    // Prayer
+    // =====================================================
+
+    if (
         settings.timeFormat != "12H" &&
         settings.timeFormat != "24H"
     )
     {
-        settings.timeFormat = "24H";
+        settings.timeFormat =
+            DEFAULT_TIME_FORMAT;
     }
 
 
+    // =====================================================
+    // General Audio
+    // =====================================================
 
-    // MQTT Port
+    settings.volume =
+        clampInt(
+            settings.volume,
+            AUDIO_VOLUME_MIN,
+            AUDIO_VOLUME_MAX
+        );
 
-    if(settings.mqttPort <= 0)
-        settings.mqttPort = 1883;
-
-
-
-    // Brightness
-
-    if(settings.brightness < 0)
-        settings.brightness = 0;
-
-
-    if(settings.brightness > 100)
-        settings.brightness = 100;
+    settings.lowVolumeLevel =
+        clampInt(
+            settings.lowVolumeLevel,
+            AUDIO_VOLUME_MIN,
+            AUDIO_VOLUME_MAX
+        );
 
 
+    // =====================================================
+    // Azan
+    // =====================================================
+
+    if (settings.azanFolder < AUDIO_FOLDER_MIN)
+        settings.azanFolder = 1;
+
+    if (settings.azanFile < AUDIO_FILE_MIN)
+        settings.azanFile = 1;
+
+
+    // =====================================================
+    // Iqama
+    // =====================================================
+
+    if (settings.iqamaFolder < AUDIO_FOLDER_MIN)
+        settings.iqamaFolder = 1;
+
+    if (settings.iqamaFile < AUDIO_FILE_MIN)
+        settings.iqamaFile = 1;
+
+    settings.iqamaDelayMinutes =
+        clampInt(
+            settings.iqamaDelayMinutes,
+            IQAMA_DELAY_MIN,
+            IQAMA_DELAY_MAX
+        );
+
+    settings.iqamaVolume =
+        clampInt(
+            settings.iqamaVolume,
+            AUDIO_VOLUME_MIN,
+            AUDIO_VOLUME_MAX
+        );
+
+
+    // Sunrise must never have Iqama
+    settings.iqamaPrayerEnable[1] = false;
+    settings.iqamaPrayerDelay[1] = 0;
+
+
+    for (int i = 0; i < 6; i++)
+    {
+        settings.iqamaPrayerDelay[i] =
+            clampInt(
+                settings.iqamaPrayerDelay[i],
+                0,
+                60
+            );
+    }
+
+
+    // =====================================================
+    // Quran
+    // =====================================================
+
+    settings.quranHour =
+        clampInt(
+            settings.quranHour,
+            0,
+            23
+        );
+
+    settings.quranMinute =
+        clampInt(
+            settings.quranMinute,
+            0,
+            59
+        );
+
+    settings.quranVolume =
+        clampInt(
+            settings.quranVolume,
+            AUDIO_VOLUME_MIN,
+            AUDIO_VOLUME_MAX
+        );
+
+    if (settings.quranSelected.length() == 0)
+    {
+        settings.quranSelected =
+            "baqarah";
+    }
+
+    if (settings.quranFolder < AUDIO_FOLDER_MIN)
+        settings.quranFolder = 2;
+
+    if (settings.quranFile < AUDIO_FILE_MIN)
+        settings.quranFile = 1;
+
+
+    // =====================================================
+    // Morning Adhkar
+    // =====================================================
+
+    if (settings.morningAdhkarFolder < 1)
+        settings.morningAdhkarFolder = 4;
+
+    if (settings.morningAdhkarFile < 1)
+        settings.morningAdhkarFile = 1;
+
+    settings.morningAdhkarHour =
+        clampInt(
+            settings.morningAdhkarHour,
+            0,
+            23
+        );
+
+    settings.morningAdhkarMinute =
+        clampInt(
+            settings.morningAdhkarMinute,
+            0,
+            59
+        );
+
+    settings.morningAdhkarVolume =
+        clampInt(
+            settings.morningAdhkarVolume,
+            0,
+            30
+        );
+
+
+    // =====================================================
+    // Evening Adhkar
+    // =====================================================
+
+    if (settings.eveningAdhkarFolder < 1)
+        settings.eveningAdhkarFolder = 4;
+
+    if (settings.eveningAdhkarFile < 1)
+        settings.eveningAdhkarFile = 1;
+
+    settings.eveningAdhkarHour =
+        clampInt(
+            settings.eveningAdhkarHour,
+            0,
+            23
+        );
+
+    settings.eveningAdhkarMinute =
+        clampInt(
+            settings.eveningAdhkarMinute,
+            0,
+            59
+        );
+
+    settings.eveningAdhkarVolume =
+        clampInt(
+            settings.eveningAdhkarVolume,
+            0,
+            30
+        );
+
+
+    // =====================================================
+    // Kahf
+    // =====================================================
+
+    if (settings.kahfFolder < 1)
+        settings.kahfFolder = 2;
+
+    if (settings.kahfFile < 1)
+        settings.kahfFile = 1;
+
+    settings.kahfHour =
+        clampInt(
+            settings.kahfHour,
+            0,
+            23
+        );
+
+    settings.kahfMinute =
+        clampInt(
+            settings.kahfMinute,
+            0,
+            59
+        );
+
+    settings.kahfVolume =
+        clampInt(
+            settings.kahfVolume,
+            0,
+            30
+        );
+
+
+    // =====================================================
+    // Other Audio
+    // =====================================================
+
+    if (settings.shortSurahFolder < 1)
+        settings.shortSurahFolder = 3;
+
+    if (settings.duaFolder < 1)
+        settings.duaFolder = 4;
+
+
+    // =====================================================
+    // Display
+    // =====================================================
+
+    settings.brightness =
+        clampInt(
+            settings.brightness,
+            0,
+            100
+        );
 }
 
-// =================================
+
+// =========================================================
 // Init
-// =================================
+// =========================================================
 
 void settings_init()
 {
-
     Serial.println(
-        "Initializing Settings"
+        F("Initializing Settings")
     );
-
 
     settings_load();
 
-
     Serial.println(
-        "Settings Ready"
+        F("Settings Ready")
     );
-
 }
 
 
-
-
-// =================================
+// =========================================================
 // Save All Settings
-// =================================
+// =========================================================
 
 void settings_save()
 {
-
-    Serial.println(
-        "Saving Settings..."
-    );
-
-
-    Serial.println("SAVE DEBUG");
-
-    Serial.println(settings.deviceName);
-    Serial.println(settings.city);
-    Serial.println(settings.country);
-    Serial.println(settings.timeFormat);
-    Serial.println(settings.wifiSSID);
-
-    Serial.println("END DEBUG");
+    Serial.println();
+    Serial.println(F("================================"));
+    Serial.println(F("Saving Settings..."));
+    Serial.println(F("================================"));
 
 
+    // =====================================================
+    // Validate before saving
+    // =====================================================
 
     settings_apply();
 
 
+    // =====================================================
+    // Device
+    // =====================================================
 
     storage_set_device_name(
         settings.deviceName
     );
 
-storage_set_bool(
-    "wifi.enable",
-    settings.wifiEnable
-);
 
-storage_set_bool(
-    "wifi.auto_reconnect",
-    settings.wifiAutoReconnect
-);
+    // =====================================================
+    // WiFi
+    // =====================================================
 
+    storage_set_bool(
+        "wifi.enable",
+        settings.wifiEnable
+    );
 
-Serial.println();
-Serial.println("========== WIFI SAVE ==========");
-
-Serial.print("SSID RAM: ");
-Serial.println(settings.wifiSSID);
-
-Serial.print("Password RAM: ");
-Serial.println(settings.wifiPassword);
+    storage_set_bool(
+        "wifi.auto_reconnect",
+        settings.wifiAutoReconnect
+    );
 
 
-bool wifiSaved = storage_set_wifi(
-    settings.wifiSSID,
-    settings.wifiPassword
-);
+    bool wifiSaved =
+        storage_set_wifi(
+            settings.wifiSSID,
+            settings.wifiPassword
+        );
+
+    Serial.print(
+        F("WiFi settings: ")
+    );
+
+    Serial.println(
+        wifiSaved
+            ? F("SAVED")
+            : F("FAILED")
+    );
 
 
-Serial.print("storage_set_wifi(): ");
-Serial.println(
-    wifiSaved ? "SUCCESS" : "FAILED"
-);
+    // =====================================================
+    // MQTT
+    // =====================================================
 
-
-Serial.print("SSID STORAGE: ");
-Serial.println(
-    storage_get_wifi_ssid("EMPTY")
-);
-
-
-Serial.print("Password STORAGE: ");
-Serial.println(
-    storage_get_wifi_password("EMPTY")
-);
-
-
-Serial.println("===============================");
-
-
-        
     storage_set_bool(
         "mqtt.enable",
         settings.mqttEnable
     );
-
 
     storage_set_string(
         "mqtt.server",
         settings.mqttServer
     );
 
-
     storage_set_int(
         "mqtt.port",
         settings.mqttPort
     );
 
+    storage_set_string(
+        "mqtt.user",
+        settings.mqttUser
+    );
 
+    storage_set_string(
+        "mqtt.password",
+        settings.mqttPassword
+    );
+
+    storage_set_string(
+        "mqtt.topic_prefix",
+        settings.mqttTopic
+    );
+
+
+    // =====================================================
+    // OTA
+    // =====================================================
+
+    storage_set_bool(
+        "ota.enable",
+        settings.otaEnable
+    );
+
+    storage_set_string(
+        "ota.hostname",
+        settings.otaHostname
+    );
+
+    storage_set_string(
+        "ota.password",
+        settings.otaPassword
+    );
+
+
+    // =====================================================
+    // Location
+    // =====================================================
 
     storage_set_location(
         settings.latitude,
         settings.longitude
     );
 
-
-
     storage_set_city(
         settings.city
     );
-
 
     storage_set_country(
         settings.country
     );
 
+    storage_set_int(
+        "location.timezone",
+        settings.timezone
+    );
 
+
+    // =====================================================
+    // Prayer
+    // =====================================================
 
     storage_set_time_format(
         settings.timeFormat
     );
 
-
-
     storage_set_calculation_method(
         settings.calculationMethod
     );
 
+    storage_set_string(
+        "prayer.asr_method",
+        settings.asrMethod
+    );
 
+    storage_set_string(
+        "prayer.high_latitude_rule",
+        settings.highLatitudeRule
+    );
+
+    storage_set_fajr_offset(
+        settings.fajrOffset
+    );
+
+    storage_set_dhuhr_offset(
+        settings.dhuhrOffset
+    );
+
+    storage_set_asr_offset(
+        settings.asrOffset
+    );
+
+    storage_set_maghrib_offset(
+        settings.maghribOffset
+    );
+
+    storage_set_isha_offset(
+        settings.ishaOffset
+    );
+
+
+    // =====================================================
+    // Audio - General
+    // =====================================================
+
+    storage_set_bool(
+        "audio.enable",
+        settings.audioEnable
+    );
+
+    storage_set_bool(
+        "audio.azan_enable",
+        settings.azanEnable
+    );
 
     storage_set_volume(
         settings.volume
     );
 
-    storage_set_bool("audio.low_volume_enable", settings.lowVolumeEnable);
-    storage_set_int("audio.low_volume_level", settings.lowVolumeLevel);
+    storage_set_bool(
+        "audio.low_volume_enable",
+        settings.lowVolumeEnable
+    );
 
-
-    storage_set_athan_folder(
-        settings.athanFolder
+    storage_set_int(
+        "audio.low_volume_level",
+        settings.lowVolumeLevel
     );
 
 
-    storage_set_athan_file(
-        settings.athanFile
+    // =====================================================
+    // Azan
+    // =====================================================
+
+    storage_set_int(
+        "audio.azan_folder",
+        settings.azanFolder
     );
+
+    storage_set_int(
+        "audio.azan_file",
+        settings.azanFile
+    );
+
+
+    // =====================================================
+    // Iqama
+    // =====================================================
 
     storage_set_bool(
         "audio.iqama_enable",
@@ -808,113 +1221,291 @@ Serial.println("===============================");
         settings.iqamaVolume
     );
 
-    storage_set_bool("audio.iqama_fajr_enable", settings.iqamaPrayerEnable[0]);
-    storage_set_bool("audio.iqama_dhuhr_enable", settings.iqamaPrayerEnable[2]);
-    storage_set_bool("audio.iqama_asr_enable", settings.iqamaPrayerEnable[3]);
-    storage_set_bool("audio.iqama_maghrib_enable", settings.iqamaPrayerEnable[4]);
-    storage_set_bool("audio.iqama_isha_enable", settings.iqamaPrayerEnable[5]);
 
-    storage_set_int("audio.iqama_fajr_delay", settings.iqamaPrayerDelay[0]);
-    storage_set_int("audio.iqama_dhuhr_delay", settings.iqamaPrayerDelay[2]);
-    storage_set_int("audio.iqama_asr_delay", settings.iqamaPrayerDelay[3]);
-    storage_set_int("audio.iqama_maghrib_delay", settings.iqamaPrayerDelay[4]);
-    storage_set_int("audio.iqama_isha_delay", settings.iqamaPrayerDelay[5]);
+    storage_set_bool(
+        "audio.iqama_fajr_enable",
+        settings.iqamaPrayerEnable[0]
+    );
 
+    storage_set_bool(
+        "audio.iqama_dhuhr_enable",
+        settings.iqamaPrayerEnable[2]
+    );
 
-    storage_set_surah_folder(
-        settings.surahFolder
+    storage_set_bool(
+        "audio.iqama_asr_enable",
+        settings.iqamaPrayerEnable[3]
+    );
+
+    storage_set_bool(
+        "audio.iqama_maghrib_enable",
+        settings.iqamaPrayerEnable[4]
+    );
+
+    storage_set_bool(
+        "audio.iqama_isha_enable",
+        settings.iqamaPrayerEnable[5]
     );
 
 
-    storage_set_surah_file(
-        settings.surahFile
+    storage_set_int(
+        "audio.iqama_fajr_delay",
+        settings.iqamaPrayerDelay[0]
     );
 
-    storage_set_bool("audio.morning_adhkar_enable", settings.morningAdhkarEnable);
-    storage_set_int("audio.morning_adhkar_folder", settings.morningAdhkarFolder);
-    storage_set_int("audio.morning_adhkar_file", settings.morningAdhkarFile);
-    storage_set_int("audio.morning_adhkar_hour", settings.morningAdhkarHour);
-    storage_set_int("audio.morning_adhkar_minute", settings.morningAdhkarMinute);
-    storage_set_int("audio.morning_adhkar_volume", settings.morningAdhkarVolume);
-    storage_set_bool("audio.morning_adhkar_play_folder", settings.morningAdhkarPlayFolder);
+    storage_set_int(
+        "audio.iqama_dhuhr_delay",
+        settings.iqamaPrayerDelay[2]
+    );
 
-    storage_set_bool("audio.evening_adhkar_enable", settings.eveningAdhkarEnable);
-    storage_set_int("audio.evening_adhkar_folder", settings.eveningAdhkarFolder);
-    storage_set_int("audio.evening_adhkar_file", settings.eveningAdhkarFile);
-    storage_set_int("audio.evening_adhkar_hour", settings.eveningAdhkarHour);
-    storage_set_int("audio.evening_adhkar_minute", settings.eveningAdhkarMinute);
-    storage_set_int("audio.evening_adhkar_volume", settings.eveningAdhkarVolume);
-    storage_set_bool("audio.evening_adhkar_play_folder", settings.eveningAdhkarPlayFolder);
+    storage_set_int(
+        "audio.iqama_asr_delay",
+        settings.iqamaPrayerDelay[3]
+    );
 
-    storage_set_bool("audio.kahf_enable", settings.kahfEnable);
-    storage_set_int("audio.kahf_folder", settings.kahfFolder);
-    storage_set_int("audio.kahf_file", settings.kahfFile);
-    storage_set_int("audio.kahf_hour", settings.kahfHour);
-    storage_set_int("audio.kahf_minute", settings.kahfMinute);
-    storage_set_int("audio.kahf_volume", settings.kahfVolume);
-    storage_set_bool("audio.kahf_play_folder", settings.kahfPlayFolder);
+    storage_set_int(
+        "audio.iqama_maghrib_delay",
+        settings.iqamaPrayerDelay[4]
+    );
 
-
-
-    storage_set_fajr_offset(
-        settings.fajrOffset
+    storage_set_int(
+        "audio.iqama_isha_delay",
+        settings.iqamaPrayerDelay[5]
     );
 
 
-    storage_set_dhuhr_offset(
-        settings.dhuhrOffset
+    // =====================================================
+    // Quran
+    // =====================================================
+
+    storage_set_bool(
+        "audio.quran_enable",
+        settings.quranEnable
+    );
+
+    storage_set_int(
+        "audio.quran_hour",
+        settings.quranHour
+    );
+
+    storage_set_int(
+        "audio.quran_minute",
+        settings.quranMinute
+    );
+
+    storage_set_int(
+        "audio.quran_volume",
+        settings.quranVolume
+    );
+
+    storage_set_string(
+        "audio.quran_selected",
+        settings.quranSelected
+    );
+
+    storage_set_int(
+        "audio.quran_folder",
+        settings.quranFolder
+    );
+
+    storage_set_int(
+        "audio.quran_file",
+        settings.quranFile
     );
 
 
-    storage_set_asr_offset(
-        settings.asrOffset
+    // =====================================================
+    // Morning Adhkar
+    // =====================================================
+
+    storage_set_bool(
+        "audio.morning_adhkar_enable",
+        settings.morningAdhkarEnable
+    );
+
+    storage_set_int(
+        "audio.morning_adhkar_folder",
+        settings.morningAdhkarFolder
+    );
+
+    storage_set_int(
+        "audio.morning_adhkar_file",
+        settings.morningAdhkarFile
+    );
+
+    storage_set_int(
+        "audio.morning_adhkar_hour",
+        settings.morningAdhkarHour
+    );
+
+    storage_set_int(
+        "audio.morning_adhkar_minute",
+        settings.morningAdhkarMinute
+    );
+
+    storage_set_int(
+        "audio.morning_adhkar_volume",
+        settings.morningAdhkarVolume
+    );
+
+    storage_set_bool(
+        "audio.morning_adhkar_play_folder",
+        settings.morningAdhkarPlayFolder
     );
 
 
-    storage_set_maghrib_offset(
-        settings.maghribOffset
+    // =====================================================
+    // Evening Adhkar
+    // =====================================================
+
+    storage_set_bool(
+        "audio.evening_adhkar_enable",
+        settings.eveningAdhkarEnable
+    );
+
+    storage_set_int(
+        "audio.evening_adhkar_folder",
+        settings.eveningAdhkarFolder
+    );
+
+    storage_set_int(
+        "audio.evening_adhkar_file",
+        settings.eveningAdhkarFile
+    );
+
+    storage_set_int(
+        "audio.evening_adhkar_hour",
+        settings.eveningAdhkarHour
+    );
+
+    storage_set_int(
+        "audio.evening_adhkar_minute",
+        settings.eveningAdhkarMinute
+    );
+
+    storage_set_int(
+        "audio.evening_adhkar_volume",
+        settings.eveningAdhkarVolume
+    );
+
+    storage_set_bool(
+        "audio.evening_adhkar_play_folder",
+        settings.eveningAdhkarPlayFolder
     );
 
 
-    storage_set_isha_offset(
-        settings.ishaOffset
+    // =====================================================
+    // Kahf
+    // =====================================================
+
+    storage_set_bool(
+        "audio.kahf_enable",
+        settings.kahfEnable
+    );
+
+    storage_set_int(
+        "audio.kahf_folder",
+        settings.kahfFolder
+    );
+
+    storage_set_int(
+        "audio.kahf_file",
+        settings.kahfFile
+    );
+
+    storage_set_int(
+        "audio.kahf_hour",
+        settings.kahfHour
+    );
+
+    storage_set_int(
+        "audio.kahf_minute",
+        settings.kahfMinute
+    );
+
+    storage_set_int(
+        "audio.kahf_volume",
+        settings.kahfVolume
+    );
+
+    storage_set_bool(
+        "audio.kahf_play_folder",
+        settings.kahfPlayFolder
     );
 
 
+    // =====================================================
+    // Other Audio
+    // =====================================================
+
+    storage_set_int(
+        "audio.short_surah_folder",
+        settings.shortSurahFolder
+    );
+
+    storage_set_int(
+        "audio.dua_folder",
+        settings.duaFolder
+    );
+
+
+    // =====================================================
+    // Display
+    // =====================================================
+
+    storage_set_bool(
+        "display.enable",
+        settings.displayEnable
+    );
+
+    storage_set_int(
+        "display.brightness",
+        settings.brightness
+    );
+
+    storage_set_bool(
+        "display.show_date",
+        settings.showDate
+    );
+
+    storage_set_bool(
+        "display.show_temperature",
+        settings.showTemperature
+    );
+
+
+    // =====================================================
+    // Done
+    // =====================================================
 
     Serial.println(
-        "Settings Saved"
+        F("Settings Saved")
     );
-
 }
 
 
-
-
-
-// =================================
+// =========================================================
 // Reset
-// =================================
+// =========================================================
 
 void settings_reset()
 {
+    Serial.println(
+        F("Resetting Settings...")
+    );
 
     storage_reset();
-
 }
 
 
-
-
-// =================================
+// =========================================================
 // Getters
-// =================================
+// =========================================================
 
 String get_device_name()
 {
     return settings.deviceName;
 }
-
 
 
 String get_time_format()
@@ -923,12 +1514,10 @@ String get_time_format()
 }
 
 
-
 int get_volume()
 {
     return settings.volume;
 }
-
 
 
 bool wifi_is_enabled()
@@ -937,12 +1526,10 @@ bool wifi_is_enabled()
 }
 
 
-
 bool mqtt_is_enabled()
 {
     return settings.mqttEnable;
 }
-
 
 
 bool audio_is_enabled()
@@ -951,12 +1538,10 @@ bool audio_is_enabled()
 }
 
 
-
 String get_city()
 {
     return settings.city;
 }
-
 
 
 String get_country()
@@ -965,12 +1550,10 @@ String get_country()
 }
 
 
-
 float get_latitude()
 {
     return settings.latitude;
 }
-
 
 
 float get_longitude()
@@ -979,12 +1562,10 @@ float get_longitude()
 }
 
 
-
 int get_timezone()
 {
     return settings.timezone;
 }
-
 
 
 String get_calculation_method()
@@ -993,8 +1574,19 @@ String get_calculation_method()
 }
 
 
-
 String get_asr_method()
 {
     return settings.asrMethod;
+}
+
+
+String get_high_latitude_rule()
+{
+    return settings.highLatitudeRule;
+}
+
+
+int get_fajr_offset()
+{
+    return settings.fajrOffset;
 }

@@ -1,6 +1,7 @@
 #include "ota_manager.h"
 
 #include <Arduino.h>
+#include <ESP8266WiFi.h>
 #include <ArduinoOTA.h>
 
 #include "settings.h"

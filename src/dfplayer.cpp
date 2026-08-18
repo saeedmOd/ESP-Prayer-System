@@ -6,307 +6,727 @@
 
 #include "settings.h"
 
-// =================================
+// =================================================
 // Serial Pins
-// =================================
+// =================================================
+//
+// ESP8266 D6 (GPIO12) <-- DFPlayer TX
+// ESP8266 D5 (GPIO14) --> DFPlayer RX
+//
+// =================================================
 
-SoftwareSerial dfSerial(
-    D6,   // RX ESP8266 <-- من TX DFPlayer
-    D5    // TX ESP8266 --> إلى RX DFPlayer
+static constexpr uint8_t DFPLAYER_RX_PIN = D6;
+static constexpr uint8_t DFPLAYER_TX_PIN = D5;
+
+// =================================================
+// DFPlayer Limits
+// =================================================
+
+static constexpr uint8_t DFPLAYER_MIN_VOLUME = 0;
+static constexpr uint8_t DFPLAYER_MAX_VOLUME = 30;
+static constexpr uint8_t VOLUME_STEP = 5;
+
+// =================================================
+// Timing
+// =================================================
+
+static constexpr uint32_t DFPLAYER_SERIAL_BAUD = 9600;
+static constexpr uint32_t DFPLAYER_START_DELAY = 1500;
+static constexpr uint32_t DFPLAYER_COMMAND_DELAY = 100;
+
+// =================================================
+// Serial / Player
+// =================================================
+
+static SoftwareSerial dfSerial(
+    DFPLAYER_RX_PIN,
+    DFPLAYER_TX_PIN
 );
 
-// =================================
-// DFPlayer Object
-// =================================
+static DFRobotDFPlayerMini player;
 
-DFRobotDFPlayerMini player;
-
-// =================================
+// =================================================
 // Status
-// =================================
+// =================================================
 
-bool playerReady = false;
+static bool playerReady = false;
 
-// =================================
-// Init
-// =================================
+// =================================================
+// Internal Helpers
+// =================================================
+
+static uint8_t clampVolume(
+    int volume
+)
+{
+    if (volume < DFPLAYER_MIN_VOLUME)
+        return DFPLAYER_MIN_VOLUME;
+
+    if (volume > DFPLAYER_MAX_VOLUME)
+        return DFPLAYER_MAX_VOLUME;
+
+    return static_cast<uint8_t>(volume);
+}
+
+
+// =================================================
+// Initialize DFPlayer
+// =================================================
 
 void dfplayer_init()
 {
     Serial.println();
-    Serial.println("==============================");
-    Serial.println("Initializing DFPlayer...");
-    Serial.println("==============================");
+    Serial.println(F("=============================="));
+    Serial.println(F("Initializing DFPlayer..."));
+    Serial.println(F("=============================="));
 
-    // =============================
-    // Audio Enable Check
-    // =============================
+    playerReady = false;
 
-    if(!settings.audioEnable)
+    // -------------------------------------------------
+    // Audio Enable
+    // -------------------------------------------------
+
+    if (!settings.audioEnable)
     {
-        Serial.println("[DFPlayer] Audio Disabled in settings - Skip");
-        playerReady = false;
+        Serial.println(
+            F("[DFPlayer] Audio disabled in settings")
+        );
+
         return;
     }
 
-    // =============================
-    // Start Serial
-    // =============================
+    // -------------------------------------------------
+    // Start SoftwareSerial
+    // -------------------------------------------------
 
-    dfSerial.begin(9600);
-    delay(2000); // Wait for DFPlayer to initialize
+    dfSerial.begin(
+        DFPLAYER_SERIAL_BAUD
+    );
 
-    // =============================
-    // Connect (with retry loop)
-    // =============================
+    delay(
+        DFPLAYER_START_DELAY
+    );
 
-    Serial.println("[DFPlayer] Connecting...");
+    // -------------------------------------------------
+    // Connect
+    // -------------------------------------------------
 
     bool connected = false;
-    for (int retry = 0; retry < 5; retry++) {
-        if (player.begin(dfSerial, true, 2500)) {
+
+    for (
+        uint8_t retry = 0;
+        retry < 5;
+        retry++
+    )
+    {
+        Serial.printf(
+            "[DFPlayer] Connection attempt %u/5...\n",
+            retry + 1
+        );
+
+        if (
+            player.begin(
+                dfSerial,
+                false,
+                2500
+            )
+        )
+        {
             connected = true;
             break;
         }
-        Serial.print(".");
+
         delay(500);
     }
 
-    if(!connected) {
-        Serial.println();
-        Serial.println(F("Unable to begin:"));
-        Serial.println(F("1. Please recheck the connection (D5/D6)!"));
-        Serial.println(F("2. Please insert the SD card formatted as FAT32!"));
-        Serial.println(F("3. Please check the power supply (use external 5V and common GND)."));
+    // -------------------------------------------------
+    // Connection Failed
+    // -------------------------------------------------
 
-        Serial.println("[DFPlayer] Initialization Failed!");
+    if (!connected)
+    {
+        Serial.println();
+        Serial.println(
+            F("[DFPlayer] Initialization failed")
+        );
+
+        Serial.println(
+            F("[DFPlayer] Check:")
+        );
+
+        Serial.println(
+            F("  1. D5/D6 wiring")
+        );
+
+        Serial.println(
+            F("  2. FAT32 SD card")
+        );
+
+        Serial.println(
+            F("  3. External 5V power")
+        );
+
+        Serial.println(
+            F("  4. Common GND")
+        );
+
         playerReady = false;
+
         return;
     }
 
-    // =============================
-    // Ready
-    // =============================
+    // -------------------------------------------------
+    // Connected
+    // -------------------------------------------------
 
     playerReady = true;
 
-    Serial.println("[DFPlayer] Connected Successfully!");
+    Serial.println(
+        F("[DFPlayer] Connected successfully")
+    );
 
-    // =============================
+    // -------------------------------------------------
+    // Output Device
+    // -------------------------------------------------
+
+    player.outputDevice(
+        DFPLAYER_DEVICE_SD
+    );
+
+    delay(
+        DFPLAYER_COMMAND_DELAY
+    );
+
+    // -------------------------------------------------
+    // EQ
+    // -------------------------------------------------
+
+    player.EQ(
+        DFPLAYER_EQ_NORMAL
+    );
+
+    delay(
+        DFPLAYER_COMMAND_DELAY
+    );
+
+    // -------------------------------------------------
     // Volume
-    // =============================
+    // -------------------------------------------------
+    //
+    // IMPORTANT:
+    // Do NOT silently convert a saved volume such as
+    // 1 into 15.
+    //
+    // The configured value is respected.
+    // -------------------------------------------------
 
-    uint8_t vol = settings.volume;
+    uint8_t volume =
+        clampVolume(
+            settings.volume
+        );
 
-    if(vol > 30)
-        vol = 30;
+    settings.volume =
+        volume;
 
-    player.volume(vol);
-
-    Serial.print("[DFPlayer] Volume Set To: ");
-    Serial.println(vol);
-
-    // =============================
-    // Audio Settings
-    // =============================
-
-    player.EQ(DFPLAYER_EQ_NORMAL);
-    player.outputDevice(DFPLAYER_DEVICE_SD);
-
-    Serial.println("[DFPlayer] Initialized OK");
-}
-
-// =================================
-// Volume
-// =================================
-
-void set_volume(uint8_t volume)
-{
-    if(!playerReady)
-        return;
-
-    if(volume > 30)
-        volume = 30;
-
-    player.volume(volume);
-
-    settings.volume = volume;
-
-    Serial.print("[DFPlayer] Volume Changed: ");
-    Serial.println(volume);
-}
-
-// =================================
-// Play Folder/File
-// =================================
-
-void play_folder_file(uint8_t folder, uint8_t file)
-{
-    if(!playerReady)
-    {
-        Serial.println("[DFPlayer Error] Player Not Ready!");
-        return;
-    }
-
-    if(folder == 0 || file == 0)
-    {
-        Serial.printf("[DFPlayer Error] Invalid Folder (%d) or File (%d)!\n", folder, file);
-        return;
-    }
-
-
-    uint8_t vol = settings.volume;
-
-    if(vol > 30)
-        vol = 30;
-
-
-    Serial.printf(
-        "[DFPlayer Command] Folder: %d File: %d Volume: %d\n",
-        folder,
-        file,
-        vol
-    );
-
-
-    // تطبيق الصوت قبل كل تشغيل
-    player.volume(vol);
-
-    delay(200);
-
-
-    player.playFolder(folder, file);
-}
-
-void play_folder_file_with_volume(uint8_t folder, uint8_t file, uint8_t volume)
-{
-    if(volume > 30)
-        volume = 30;
-
-    if(settings.lowVolumeEnable && volume > settings.lowVolumeLevel)
-        volume = settings.lowVolumeLevel;
-
-    if(!playerReady)
-    {
-        Serial.println("[DFPlayer Error] Player Not Ready!");
-        return;
-    }
-
-    if(folder == 0 || file == 0)
-    {
-        Serial.printf("[DFPlayer Error] Invalid Folder (%d) or File (%d)!\n", folder, file);
-        return;
-    }
-
-    Serial.printf(
-        "[DFPlayer Command] Folder: %d File: %d Volume: %d\n",
-        folder,
-        file,
+    player.volume(
         volume
     );
 
-    player.volume(volume);
+    Serial.print(
+        F("[DFPlayer] Volume: ")
+    );
 
-    delay(200);
-
-    player.playFolder(folder, file);
-}
-
-void play_folder_with_volume(uint8_t folder, uint8_t volume)
-{
-    if(volume > 30)
-        volume = 30;
-
-    if(settings.lowVolumeEnable && volume > settings.lowVolumeLevel)
-        volume = settings.lowVolumeLevel;
-
-    if(!playerReady)
-    {
-        Serial.println("[DFPlayer Error] Player Not Ready!");
-        return;
-    }
-
-    if(folder == 0)
-    {
-        Serial.printf("[DFPlayer Error] Invalid Folder (%d)!\n", folder);
-        return;
-    }
-
-    Serial.printf(
-        "[DFPlayer Command] Loop Folder: %d Volume: %d\n",
-        folder,
+    Serial.println(
         volume
     );
 
-    player.volume(volume);
-
-    delay(200);
-
-    player.loopFolder(folder);
+    Serial.println(
+        F("[DFPlayer] Initialized OK")
+    );
 }
 
-// =================================
-// Athan
-// =================================
 
-void play_athan()
+// =================================================
+// Set Global Volume
+// =================================================
+
+void set_volume(
+    uint8_t volume
+)
 {
     if (!playerReady)
     {
-        Serial.println("[Athan] DFPlayer not ready, cannot play athan.");
+        Serial.println(
+            F("[DFPlayer] Volume ignored - player not ready")
+        );
+
         return;
     }
 
-    if(!settings.azanEnable)
-    {
-        Serial.println("[Athan] Azan is disabled in settings.");
-        return;
-    }
+    volume =
+        clampVolume(
+            volume
+        );
 
-    Serial.println("[Athan] Playing Athan...");
+    player.volume(
+        volume
+    );
 
-    play_folder_file(
-        settings.athanFolder,
-        settings.athanFile
+    settings.volume =
+        volume;
+
+    Serial.print(
+        F("[DFPlayer] Global volume = ")
+    );
+
+    Serial.println(
+        volume
     );
 }
 
-// =================================
+
+// =================================================
+// Volume Up
+// =================================================
+
+void volume_up()
+{
+    if (!playerReady)
+    {
+        Serial.println(
+            F("[DFPlayer] Volume up ignored - player not ready")
+        );
+
+        return;
+    }
+
+    int volume =
+        settings.volume;
+
+    volume +=
+        VOLUME_STEP;
+
+    if (
+        volume >
+        DFPLAYER_MAX_VOLUME
+    )
+    {
+        volume =
+            DFPLAYER_MAX_VOLUME;
+    }
+
+    set_volume(
+        static_cast<uint8_t>(
+            volume
+        )
+    );
+}
+
+
+// =================================================
+// Volume Down
+// =================================================
+
+void volume_down()
+{
+    if (!playerReady)
+    {
+        Serial.println(
+            F("[DFPlayer] Volume down ignored - player not ready")
+        );
+
+        return;
+    }
+
+    int volume =
+        settings.volume;
+
+    volume -=
+        VOLUME_STEP;
+
+    if (
+        volume <
+        DFPLAYER_MIN_VOLUME
+    )
+    {
+        volume =
+            DFPLAYER_MIN_VOLUME;
+    }
+
+    set_volume(
+        static_cast<uint8_t>(
+            volume
+        )
+    );
+}
+
+
+// =================================================
+// Play Folder / File
+// =================================================
+
+void play_folder_file(
+    uint8_t folder,
+    uint8_t file
+)
+{
+    if (!playerReady)
+    {
+        Serial.println(
+            F("[DFPlayer] Play ignored - player not ready")
+        );
+
+        return;
+    }
+
+    if (
+        folder == 0 ||
+        file == 0
+    )
+    {
+        Serial.printf(
+            "[DFPlayer] Invalid folder/file: %u/%u\n",
+            folder,
+            file
+        );
+
+        return;
+    }
+
+    const uint8_t volume =
+        clampVolume(
+            settings.volume
+        );
+
+    Serial.printf(
+        "[DFPlayer] Play Folder=%u File=%u Volume=%u\n",
+        folder,
+        file,
+        volume
+    );
+
+    // Apply current global volume.
+    player.volume(
+        volume
+    );
+
+    delay(
+        DFPLAYER_COMMAND_DELAY
+    );
+
+    player.playFolder(
+        folder,
+        file
+    );
+
+    Serial.println(
+        F("[DFPlayer] Play command sent")
+    );
+}
+
+
+// =================================================
+// Play Folder / File With Temporary Volume
+// =================================================
+//
+// IMPORTANT:
+// This function does NOT modify settings.volume.
+//
+// Example:
+//
+// Global volume = 20
+// Quran volume = 10
+//
+// Quran plays at 10.
+// Global volume remains 20.
+//
+// =================================================
+
+void play_folder_file_with_volume(
+    uint8_t folder,
+    uint8_t file,
+    uint8_t volume
+)
+{
+    if (!playerReady)
+    {
+        Serial.println(
+            F("[DFPlayer] Play ignored - player not ready")
+        );
+
+        return;
+    }
+
+    if (
+        folder == 0 ||
+        file == 0
+    )
+    {
+        Serial.printf(
+            "[DFPlayer] Invalid folder/file: %u/%u\n",
+            folder,
+            file
+        );
+
+        return;
+    }
+
+    volume =
+        clampVolume(
+            volume
+        );
+
+    // -------------------------------------------------
+    // Low Volume Mode
+    // -------------------------------------------------
+
+    if (
+        settings.lowVolumeEnable &&
+        volume > settings.lowVolumeLevel
+    )
+    {
+        volume =
+            settings.lowVolumeLevel;
+
+        volume =
+            clampVolume(
+                volume
+            );
+    }
+
+    Serial.printf(
+        "[DFPlayer] Temporary volume play: "
+        "Folder=%u File=%u Volume=%u\n",
+        folder,
+        file,
+        volume
+    );
+
+    // Do NOT modify settings.volume.
+    player.volume(
+        volume
+    );
+
+    delay(
+        DFPLAYER_COMMAND_DELAY
+    );
+
+    player.playFolder(
+        folder,
+        file
+    );
+
+    Serial.println(
+        F("[DFPlayer] Temporary-volume play command sent")
+    );
+}
+
+
+// =================================================
+// Play Folder With Temporary Volume
+// =================================================
+//
+// Does NOT modify settings.volume.
+//
+// =================================================
+
+void play_folder_with_volume(
+    uint8_t folder,
+    uint8_t volume
+)
+{
+    if (!playerReady)
+    {
+        Serial.println(
+            F("[DFPlayer] Loop folder ignored - player not ready")
+        );
+
+        return;
+    }
+
+    if (folder == 0)
+    {
+        Serial.println(
+            F("[DFPlayer] Invalid folder")
+        );
+
+        return;
+    }
+
+    volume =
+        clampVolume(
+            volume
+        );
+
+    // -------------------------------------------------
+    // Low Volume Mode
+    // -------------------------------------------------
+
+    if (
+        settings.lowVolumeEnable &&
+        volume > settings.lowVolumeLevel
+    )
+    {
+        volume =
+            clampVolume(
+                settings.lowVolumeLevel
+            );
+    }
+
+    Serial.printf(
+        "[DFPlayer] Loop Folder=%u Volume=%u\n",
+        folder,
+        volume
+    );
+
+    // Temporary volume.
+    // settings.volume remains unchanged.
+    player.volume(
+        volume
+    );
+
+    delay(
+        DFPLAYER_COMMAND_DELAY
+    );
+
+    player.loopFolder(
+        folder
+    );
+
+    Serial.println(
+        F("[DFPlayer] Loop folder command sent")
+    );
+}
+
+
+// =================================================
+// Azan
+// =================================================
+
+void play_azan()
+{
+    if (!playerReady)
+    {
+        Serial.println(
+            F("[Azan] DFPlayer not ready")
+        );
+
+        return;
+    }
+
+    if (!settings.azanEnable)
+    {
+        Serial.println(
+            F("[Azan] Azan disabled")
+        );
+
+        return;
+    }
+
+    Serial.println(
+        F("[Azan] Playing Azan...")
+    );
+
+    play_folder_file(
+        settings.azanFolder,
+        settings.azanFile
+    );
+}
+
+
+// =================================================
 // Iqama
-// =================================
+// =================================================
 
 void play_iqama()
 {
     if (!playerReady)
     {
-        Serial.println("[Iqama] DFPlayer not ready, cannot play iqama.");
+        Serial.println(
+            F("[Iqama] DFPlayer not ready")
+        );
+
         return;
     }
 
-    if(!settings.iqamaEnable)
+    if (!settings.iqamaEnable)
     {
-        Serial.println("[Iqama] Iqama is disabled in settings.");
+        Serial.println(
+            F("[Iqama] Iqama disabled")
+        );
+
         return;
     }
 
-    Serial.println("[Iqama] Playing Iqama...");
+    Serial.println(
+        F("[Iqama] Playing Iqama...")
+    );
 
-    play_folder_file(
+    play_folder_file_with_volume(
         settings.iqamaFolder,
-        settings.iqamaFile
+        settings.iqamaFile,
+        settings.iqamaVolume
     );
 }
 
 
-// =================================
+// =================================================
+// Quran
+// =================================================
+//
+// Uses the Quran settings already stored in settings.
+//
+// NOTE:
+// This assumes the current settings structure contains:
+//   quranFolder
+//   quranFile
+//
+// If your settings structure uses a different Quran
+// representation, we will align it when reviewing
+// settings.cpp / settings.h.
+// =================================================
+
+void play_quran()
+{
+    if (!playerReady)
+    {
+        Serial.println(
+            F("[Quran] DFPlayer not ready")
+        );
+
+        return;
+    }
+
+    Serial.println(
+        F("[Quran] Playing Quran...")
+    );
+
+    play_folder_file_with_volume(
+        settings.quranFolder,
+        settings.quranFile,
+        settings.quranVolume
+    );
+}
+
+
+// =================================================
 // Dua
-// =================================
+// =================================================
 
 void play_dua()
 {
-    if (!playerReady) return;
+    if (!playerReady)
+    {
+        Serial.println(
+            F("[Dua] DFPlayer not ready")
+        );
 
-    Serial.println("[Dua] Playing Dua...");
+        return;
+    }
+
+    Serial.println(
+        F("[Dua] Playing Dua...")
+    );
 
     play_folder_file(
         settings.duaFolder,
@@ -314,106 +734,130 @@ void play_dua()
     );
 }
 
-// =================================
-// Test Audio
-// =================================
+
+// =================================================
+// Manual Test
+// =================================================
 
 void play_test()
 {
-    Serial.println("==========================================");
-    Serial.println(">>> 🔊 Manual Audio Test Triggered <<<");
+    Serial.println();
+    Serial.println(
+        F("==========================================")
+    );
+
+    Serial.println(
+        F(">>> Manual Audio Test Triggered <<<")
+    );
 
     if (!playerReady)
     {
-        Serial.println("[Test Failed] DFPlayer is NOT ready!");
-        Serial.println("==========================================");
+        Serial.println(
+            F("[Test Failed] DFPlayer is NOT ready!")
+        );
+
+        Serial.println(
+            F("==========================================")
+        );
+
         return;
     }
 
-    // جلب الإعدادات الحالية أو استخدام القيم الافتراضية إذا كانت 0
-    uint8_t targetFolder = (settings.athanFolder > 0) ? settings.athanFolder : 1;
-    uint8_t targetFile   = (settings.athanFile > 0)   ? settings.athanFile   : 1;
+    uint8_t folder =
+        settings.azanFolder;
 
-    Serial.printf("[Test Info] Force playing Folder: %d, File: %d\n", targetFolder, targetFile);
+    uint8_t file =
+        settings.azanFile;
 
-    // تشغيل مباشر لتجاوز شرط settings.azanEnable
-    play_folder_file(targetFolder, targetFile);
+    if (folder == 0)
+        folder = 1;
 
-    Serial.println("==========================================");
+    if (file == 0)
+        file = 1;
+
+    Serial.printf(
+        "[Test] Folder=%u File=%u\n",
+        folder,
+        file
+    );
+
+    play_folder_file(
+        folder,
+        file
+    );
+
+    Serial.println(
+        F("==========================================")
+    );
 }
 
-// =================================
+
+// =================================================
 // Stop
-// =================================
+// =================================================
 
 void stop_audio()
 {
-    if(!playerReady)
+    if (!playerReady)
+    {
         return;
+    }
 
     player.stop();
 
-    Serial.println("[DFPlayer] Audio Stopped");
+    Serial.println(
+        F("[DFPlayer] Audio stopped")
+    );
 }
 
-// =================================
+
+// =================================================
+// Play / Resume
+// =================================================
+
+void play_audio()
+{
+    if (!playerReady)
+    {
+        return;
+    }
+
+    player.start();
+
+    Serial.println(
+        F("[DFPlayer] Audio play/resume")
+    );
+}
+
+
+// =================================================
+// Pause
+// =================================================
+
+void pause_audio()
+{
+    if (!playerReady)
+    {
+        Serial.println(
+            F("[DFPlayer] Pause ignored - player not ready")
+        );
+
+        return;
+    }
+
+    player.pause();
+
+    Serial.println(
+        F("[DFPlayer] Audio paused")
+    );
+}
+
+
+// =================================================
 // Status
-// =================================
+// =================================================
 
 bool dfplayer_ready()
 {
     return playerReady;
-}
-
-// =================================
-// Playback Controls
-// =================================
-
-// تشغيل / استئناف
-void play_audio()
-{
-    if (!playerReady)
-        return;
-
-    player.start();
-
-    Serial.println("[DFPlayer] Audio Play / Resume");
-}
-
-
-// إيقاف مؤقت
-void pause_audio()
-{
-    Serial.println("[DFPLAYER DEBUG] pause_audio() called");
-
-    if (!playerReady)
-    {
-        Serial.println("[DFPLAYER DEBUG] Player NOT ready");
-        return;
-    }
-
-    Serial.println("[DFPLAYER DEBUG] Sending PAUSE command");
-
-    player.pause();
-
-    Serial.println("[DFPLAYER DEBUG] PAUSE command sent");
-}
-
-// خفض الصوت
-void volume_down()
-{
-    if (!playerReady)
-        return;
-
-    int volume = settings.volume;
-
-    volume -= 5;
-
-    if (volume < 0)
-        volume = 0;
-
-    set_volume(volume);
-
-    Serial.print("[DFPlayer] Volume Down -> ");
-    Serial.println(volume);
 }

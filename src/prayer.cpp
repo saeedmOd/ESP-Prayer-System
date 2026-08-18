@@ -373,7 +373,7 @@ void prayer_loop()
 
 
     if(
-        millis() - lastCheck < 30000
+        millis() - lastCheck < 1000
     )
     {
         return;
@@ -540,8 +540,8 @@ if(settings.azanEnable)
 {
 
     play_folder_file(
-        settings.athanFolder,
-        settings.athanFile
+        settings.azanFolder,
+        settings.azanFile
     );
 
 

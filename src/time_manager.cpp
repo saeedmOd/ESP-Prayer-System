@@ -60,7 +60,7 @@ void time_init()
     while(
         !getLocalTime(&timeinfo)
         &&
-        retry < 30
+        retry < 30 // محاولة لمدة 15 ثانية كحد أقصى
     )
     {
 
@@ -93,9 +93,6 @@ void time_init()
             get_current_time()
         );
 
-
-        // الآن بعد أن أصبح الوقت متزامناً، يمكننا تهيئة مواقيت الصلاة
-        prayer_init();
     }
     else
     {

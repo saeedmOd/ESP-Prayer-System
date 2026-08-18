@@ -27,11 +27,11 @@
 
     "audio": {
         "enable": true,
-        "volume": 25,
+        "volume": 1,
         "reciter": "maher",
         "azan_enable": true,
-        "athan_folder": 1,
-        "athan_file": 1,
+        "azan_folder": 1,
+        "azan_file": 1,
         "iqama_enable": true,
         "iqama_folder": 1,
         "iqama_file": 1,
@@ -55,7 +55,7 @@
         "kahf_file": 5,
         "kahf_hour": 9,
         "kahf_minute": 0,
-        "kahf_volume": 5,
+        "kahf_volume": 1,
         "kahf_play_folder": false
     },
 

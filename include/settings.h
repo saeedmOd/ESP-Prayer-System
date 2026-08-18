@@ -13,19 +13,61 @@
 #define DEFAULT_CITY "Al Ain"
 #define DEFAULT_COUNTRY "UAE"
 
-#define DEFAULT_LATITUDE 24.2075
-#define DEFAULT_LONGITUDE 55.7447
-
+#define DEFAULT_LATITUDE 24.2075f
+#define DEFAULT_LONGITUDE 55.7447f
 #define DEFAULT_TIMEZONE 4
 
-#define DEFAULT_VOLUME 25
-
+#define DEFAULT_VOLUME 1
 #define DEFAULT_TIME_FORMAT "24H"
 
 #define OTA_HOSTNAME "ESP-Prayer-System"
 
 #define MQTT_SERVER "192.168.0.100"
 #define MQTT_PORT 1883
+#define MQTT_TOPIC "ESP-Prayer-System"
+
+#define DEFAULT_CALCULATION_METHOD "UmmAlQura"
+#define DEFAULT_ASR_METHOD "Shafii"
+#define DEFAULT_HIGH_LATITUDE_RULE "AngleBased"
+
+// =================================
+// Prayer Offsets
+// =================================
+
+#define DEFAULT_FAJR_OFFSET 0
+#define DEFAULT_DHUHR_OFFSET 0
+#define DEFAULT_ASR_OFFSET 0
+#define DEFAULT_MAGHRIB_OFFSET 0
+#define DEFAULT_ISHA_OFFSET 0
+
+// =================================
+// Display
+// =================================
+
+#define DEFAULT_BRIGHTNESS 100
+#define DEFAULT_SHOW_DATE true
+#define DEFAULT_SHOW_TEMPERATURE true
+
+
+
+
+// =================================
+// Audio Limits
+// =================================
+
+#define AUDIO_VOLUME_MIN 0
+#define AUDIO_VOLUME_MAX 30
+
+#define AUDIO_FOLDER_MIN 1
+#define AUDIO_FOLDER_MAX 99
+
+#define AUDIO_FILE_MIN 1
+#define AUDIO_FILE_MAX 255
+
+#define IQAMA_DELAY_MIN 0
+#define IQAMA_DELAY_MAX 60
+
+
 
 // =================================
 // System Settings Structure
@@ -127,89 +169,137 @@ struct SystemSettings
 
 
 
-    // =========================
-    // Audio
-    // =========================
+// =========================
+// Audio
+// =========================
 
-    bool audioEnable;
+bool audioEnable;
 
-    bool azanEnable;
+bool azanEnable;
 
-    int volume;
+int volume;
 
-    bool lowVolumeEnable;
+bool lowVolumeEnable;
 
-    int lowVolumeLevel;
-
-    int athanFolder;
-
-    int athanFile;
-
-    bool iqamaEnable;
-
-    int iqamaFolder;
-
-    int iqamaFile;
-
-    int iqamaDelayMinutes;
-
-    int iqamaVolume;
-
-    bool iqamaPrayerEnable[6];
-
-    int iqamaPrayerDelay[6];
+int lowVolumeLevel;
 
 
-    int surahFolder;
+// =========================
+// Azan
+// =========================
 
-    int surahFile;
+int azanFolder;
 
-    bool morningAdhkarEnable;
-
-    int morningAdhkarFolder;
-
-    int morningAdhkarFile;
-
-    int morningAdhkarHour;
-
-    int morningAdhkarMinute;
-
-    int morningAdhkarVolume;
-
-    bool morningAdhkarPlayFolder;
-
-    bool eveningAdhkarEnable;
-
-    int eveningAdhkarFolder;
-
-    int eveningAdhkarFile;
-
-    int eveningAdhkarHour;
-
-    int eveningAdhkarMinute;
-
-    int eveningAdhkarVolume;
-
-    bool eveningAdhkarPlayFolder;
-
-    bool kahfEnable;
-
-    int kahfFolder;
-
-    int kahfFile;
-
-    int kahfHour;
-
-    int kahfMinute;
-
-    int kahfVolume;
-
-    bool kahfPlayFolder;
+int azanFile;
 
 
-    int shortSurahFolder;
+// =========================
+// Iqama
+// =========================
 
-    int duaFolder;
+bool iqamaEnable;
+
+int iqamaFolder;
+
+int iqamaFile;
+
+int iqamaDelayMinutes;
+
+int iqamaVolume;
+
+bool iqamaPrayerEnable[6];
+
+int iqamaPrayerDelay[6];
+
+
+// =========================
+// Quran
+// =========================
+
+bool quranEnable;
+
+int quranHour;
+
+int quranMinute;
+
+int quranVolume;
+
+String quranSelected;
+
+int quranFolder;
+
+int quranFile;
+
+
+// =========================
+// Morning Adhkar
+// =========================
+
+bool morningAdhkarEnable;
+
+int morningAdhkarFolder;
+
+int morningAdhkarFile;
+
+int morningAdhkarHour;
+
+int morningAdhkarMinute;
+
+int morningAdhkarVolume;
+
+bool morningAdhkarPlayFolder;
+
+
+// =========================
+// Evening Adhkar
+// =========================
+
+bool eveningAdhkarEnable;
+
+int eveningAdhkarFolder;
+
+int eveningAdhkarFile;
+
+int eveningAdhkarHour;
+
+int eveningAdhkarMinute;
+
+int eveningAdhkarVolume;
+
+bool eveningAdhkarPlayFolder;
+
+
+// =========================
+// Kahf
+// =========================
+
+bool kahfEnable;
+
+int kahfFolder;
+
+int kahfFile;
+
+int kahfHour;
+
+int kahfMinute;
+
+int kahfVolume;
+
+bool kahfPlayFolder;
+
+
+// =========================
+// Short Surah
+// =========================
+
+int shortSurahFolder;
+
+
+// =========================
+// Dua
+// =========================
+
+int duaFolder;
 
 
 

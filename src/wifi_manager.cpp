@@ -1,325 +1,416 @@
-    #include "wifi_manager.h"
+#include "wifi_manager.h"
 
-    #include <Arduino.h>
-    #include <ESP8266WiFi.h>
+#include <Arduino.h>
+#include <ESP8266WiFi.h>
 
-    #include "settings.h"
-    #include "storage.h"
+#include "settings.h"
+#include "storage.h"
 
+// =================================================
+// WiFi State
+// =================================================
 
-    // =================================
-    // WiFi Status
-    // =================================
+static bool wifiStatus = false;
+bool apMode = false;
 
-    static bool wifiStatus = false;
+static unsigned long connectStartTime = 0;
+static unsigned long lastReconnect = 0;
+static unsigned long lastDotPrint = 0;
 
-   // static bool apMode = false;
-    
-    bool apMode = false;
+static constexpr unsigned long WIFI_CONNECT_TIMEOUT = 20000;
+static constexpr unsigned long WIFI_RECONNECT_INTERVAL = 30000;
 
-    static unsigned long lastReconnect = 0;
+// =================================================
+// Forward Declarations
+// =================================================
 
+static void startAP();
+static void stopAP();
+static void startSTA();
+static void startConnection();
 
+// =================================================
+// Start STA Mode
+// =================================================
 
-// =================================
-// Start Access Point (Fixed & Reliable)
-// =================================
+static void startSTA()
+{
+    Serial.println();
+    Serial.println(F("[WIFI] Starting STA mode..."));
+
+    // Make absolutely sure AP is disabled
+    WiFi.softAPdisconnect(true);
+    delay(100);
+
+    apMode = false;
+
+    // STA only
+    WiFi.mode(WIFI_STA);
+    delay(100);
+
+    // Do not store credentials automatically
+    WiFi.persistent(false);
+
+    Serial.print(F("[WIFI] Connecting to: "));
+    Serial.println(settings.wifiSSID);
+
+    connectStartTime = millis();
+
+    WiFi.begin(
+        settings.wifiSSID.c_str(),
+        settings.wifiPassword.c_str()
+    );
+}
+
+// =================================================
+// Start Access Point
+// =================================================
 
 static void startAP()
 {
     Serial.println();
-    Serial.println(F("Starting WiFi AP Mode..."));
+    Serial.println(F("=============================="));
+    Serial.println(F("Starting WiFi AP Mode"));
+    Serial.println(F("=============================="));
 
-    // 1. إيقاف أي عمليات اتصال سابقة وتفريغ الإعدادات المؤقتة
-    WiFi.persistent(false);
-    WiFi.disconnect(true); // فصل الـ STA لكي لا يعلق المعالج في تجربة الاتصال
-    delay(100);
+    wifiStatus = false;
 
-    // 2. تفعيل وضع AP + STA
-    WiFi.mode(WIFI_AP_STA);
-    delay(100);
+    // Stop STA completely
+    WiFi.disconnect(true);
+    delay(200);
 
-    // 3. ضبط عنوان الـ IP
-    WiFi.softAPConfig(
-        IPAddress(192, 168, 4, 1),
-        IPAddress(192, 168, 4, 1),
-        IPAddress(255, 255, 255, 0)
-    );
+    // AP ONLY
+    WiFi.mode(WIFI_AP);
+    delay(200);
 
-    // 4. تشغيل نقطة الوصول مع تحديد القناة (Channel 1) وعدد المتصلين (Max 4)
-    // تحديد القناة رقم 1 يضمن عدم تعارض المسح بين القنوات
-    bool result = WiFi.softAP("ESP-Prayer-Setup", NULL, 1, 0, 4);
+    // Fixed AP address
+    IPAddress apIP(192, 168, 4, 1);
+    IPAddress gateway(192, 168, 4, 1);
+    IPAddress subnet(255, 255, 255, 0);
+
+    if (!WiFi.softAPConfig(
+            apIP,
+            gateway,
+            subnet
+        ))
+    {
+        Serial.println(
+            F("[WIFI] softAPConfig failed")
+        );
+    }
+
+    bool result =
+        WiFi.softAP(
+            "ESP-Prayer-Setup"
+        );
 
     if (result)
     {
         apMode = true;
-        Serial.println(F("AP Started Successfully"));
-        Serial.print(F("AP IP: "));
-        Serial.println(WiFi.softAPIP());
+
+        Serial.println(
+            F("[WIFI] AP Started Successfully")
+        );
+
+        Serial.print(
+            F("[WIFI] AP IP: ")
+        );
+
+        Serial.println(
+            WiFi.softAPIP()
+        );
     }
     else
     {
         apMode = false;
-        Serial.println(F("AP Failed to Start"));
+
+        Serial.println(
+            F("[WIFI] AP FAILED")
+        );
     }
+
+    // No STA connection attempt while AP is active
+    connectStartTime = 0;
 }
 
-    // =================================
-    // Initialize WiFi
-    // =================================
+// =================================================
+// Stop Access Point
+// =================================================
 
-    void wifi_init()
-    {
-
-        Serial.println();
-
-        Serial.println(
-            "Initializing WiFi..."
-        );
-
-
-
-        if(!settings.wifiEnable)
-        {
-
-            Serial.println(
-                "WiFi Disabled"
-            );
-
-
-            wifiStatus = false;
-
-
-            return;
-
-        }
-
-
-
-
-
-        // =================================
-        // No Saved Network
-        // =================================
-
-        if(
-            settings.wifiSSID.length() == 0
-        )
-        {
-
-            Serial.println(
-                "No WiFi Credentials"
-            );
-
-
-            startAP();
-
-
-            return;
-
-        }
-
-
-
-
-
-        WiFi.mode(
-            WIFI_AP_STA
-        );
-
-
-
-        delay(100);
-
-
-
-        Serial.print(
-            "Connecting to "
-        );
-
-
-        Serial.println(
-            settings.wifiSSID
-        );
-
-
-
-        WiFi.begin(
-            settings.wifiSSID.c_str(),
-            settings.wifiPassword.c_str()
-        );
-
-
-
-
-        int retry = 0;
-
-
-
-        while(
-            WiFi.status() != WL_CONNECTED &&
-            retry < 40
-        )
-        {
-
-            delay(250);
-
-
-            Serial.print(
-                "."
-            );
-
-
-            retry++;
-
-        }
-
-
-
-
-if(
-    WiFi.status() == WL_CONNECTED
-)
+static void stopAP()
 {
+    if (!apMode)
+        return;
 
-    wifiStatus = true;
+    Serial.println(
+        F("[WIFI] Stopping AP...")
+    );
 
-
-    apMode = false;
-
-
-    // إيقاف شبكة الإعداد بعد الاتصال
     WiFi.softAPdisconnect(true);
 
+    delay(100);
 
-    Serial.println();
-
-
-    Serial.println(
-        "WiFi Connected"
-    );
-
-
-    Serial.print(
-        "IP Address: "
-    );
-
-
-    Serial.println(
-        WiFi.localIP()
-    );
-
+    apMode = false;
 }
-    
-        else
-        {
 
-            wifiStatus = false;
+// =================================================
+// Start Connection
+// =================================================
 
-            Serial.println();
-            Serial.println(
-                "WiFi Connection Failed"
-            );
-
-            startAP();
-
-        }
-
-    } 
-
-
-
-
-    // =================================
-    // WiFi Loop
-    // =================================
-
-    void wifi_loop()
+static void startConnection()
+{
+    if (
+        settings.wifiSSID.length() == 0
+    )
     {
+        Serial.println(
+            F("[WIFI] No WiFi credentials")
+        );
 
+        startAP();
+        return;
+    }
 
-        if(
-            !settings.wifiEnable
-        )
+    startSTA();
+}
+
+// =================================================
+// Initialize WiFi
+// =================================================
+
+void wifi_init()
+{
+    Serial.println();
+    Serial.println(
+        F("Initializing WiFi...")
+    );
+
+    wifiStatus = false;
+    apMode = false;
+
+    connectStartTime = 0;
+    lastReconnect = 0;
+    lastDotPrint = 0;
+
+    // =================================================
+    // WiFi Disabled
+    // =================================================
+
+    if (!settings.wifiEnable)
+    {
+        Serial.println(
+            F("[WIFI] WiFi Disabled")
+        );
+
+        WiFi.mode(WIFI_OFF);
+
+        return;
+    }
+
+    // =================================================
+    // No Credentials
+    // =================================================
+
+    if (
+        settings.wifiSSID.length() == 0
+    )
+    {
+        Serial.println(
+            F("[WIFI] No WiFi Credentials")
+        );
+
+        startAP();
+
+        return;
+    }
+
+    // =================================================
+    // Connect
+    // =================================================
+
+    startConnection();
+}
+
+// =================================================
+// WiFi Loop
+// =================================================
+
+void wifi_loop()
+{
+    // =================================================
+    // WiFi Disabled
+    // =================================================
+
+    if (!settings.wifiEnable)
+    {
+        if (wifiStatus)
         {
-
-            return;
-
+            WiFi.disconnect(true);
         }
-
-
-
-
-        if(
-            WiFi.status() == WL_CONNECTED
-        )
-        {
-
-            wifiStatus = true;
-
-
-            return;
-
-        }
-
-
-
 
         wifiStatus = false;
 
-
-
-        if(apMode)
-        {
-
-            return;
-
-        }
-
-
-
-
-        if(
-            millis() - lastReconnect < 10000
-        )
-        {
-
-            return;
-
-        }
-
-
-
-
-        lastReconnect =
-            millis();
-
-
-
-
-        Serial.println(
-            "Trying WiFi reconnect..."
-        );
-
-
-
-        WiFi.reconnect();
-
-
+        return;
     }
 
+    // =================================================
+    // AP Mode
+    // =================================================
 
+    if (apMode)
+    {
+        // AP mode is intentionally isolated.
+        //
+        // Do NOT call WiFi.begin() here.
+        // Do NOT switch to STA here.
 
+        wifiStatus = false;
 
-// =================================
+        return;
+    }
+
+    // =================================================
+    // Connected
+    // =================================================
+
+    if (
+        WiFi.status() == WL_CONNECTED
+    )
+    {
+        if (!wifiStatus)
+        {
+            wifiStatus = true;
+
+            Serial.println();
+            Serial.println(
+                F("==============================")
+            );
+
+            Serial.println(
+                F("WiFi Connected")
+            );
+
+            Serial.print(
+                F("SSID: ")
+            );
+
+            Serial.println(
+                WiFi.SSID()
+            );
+
+            Serial.print(
+                F("IP Address: ")
+            );
+
+            Serial.println(
+                WiFi.localIP()
+            );
+
+            Serial.print(
+                F("RSSI: ")
+            );
+
+            Serial.println(
+                WiFi.RSSI()
+            );
+
+            Serial.println(
+                F("==============================")
+            );
+        }
+
+        return;
+    }
+
+    // =================================================
+    // Not Connected
+    // =================================================
+
+    if (wifiStatus)
+    {
+        wifiStatus = false;
+
+        Serial.println();
+        Serial.println(
+            F("[WIFI] Connection lost")
+        );
+    }
+
+    // =================================================
+    // Initial Connection Timeout
+    // =================================================
+
+    if (
+        connectStartTime != 0
+    )
+    {
+        unsigned long elapsed =
+            millis() - connectStartTime;
+
+        if (
+            elapsed >= WIFI_CONNECT_TIMEOUT
+        )
+        {
+            Serial.println();
+            Serial.println(
+                F("[WIFI] Connection timeout")
+            );
+
+            connectStartTime = 0;
+
+            // Failed STA -> AP
+            startAP();
+
+            return;
+        }
+
+        // Connection still in progress
+        if (
+            millis() - lastDotPrint >= 1000
+        )
+        {
+            Serial.print(".");
+            lastDotPrint = millis();
+        }
+
+        return;
+    }
+
+    // =================================================
+    // Automatic Reconnect
+    // =================================================
+
+    if (
+        settings.wifiAutoReconnect &&
+        millis() - lastReconnect >=
+            WIFI_RECONNECT_INTERVAL
+    )
+    {
+        lastReconnect = millis();
+
+        Serial.println();
+        Serial.println(
+            F("[WIFI] Attempting reconnect...")
+        );
+
+        startSTA();
+
+        return;
+    }
+}
+
+// =================================================
 // Status
-// =================================
+// =================================================
 
 bool wifi_connected()
 {
     return wifiStatus;
 }
 
+// =================================================
+// AP Status
+// =================================================
 
 bool wifi_is_ap_mode()
 {

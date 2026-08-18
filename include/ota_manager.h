@@ -10,6 +10,9 @@ public:
     void begin();
     void handle();
 
+private:
+
+    bool initialized = false;
 };
 
 

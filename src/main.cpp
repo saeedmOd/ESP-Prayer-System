@@ -1,272 +1,366 @@
 #include <Arduino.h>
+#include <ESP8266WiFi.h>
 
-#include "ota_manager.h"
-#include "settings.h"
 #include "version.h"
-
 #include "storage.h"
+#include "settings.h"
 
 #include "wifi_manager.h"
 #include "time_manager.h"
-
 #include "ota_manager.h"
 
 #include "mqtt_manager.h"
 #include "command_handler.h"
 
 #include "web_server.h"
-#include <ESPAsyncWebServer.h>
+
 #include "dfplayer.h"
 #include "display.h"
 #include "prayer.h"
 
 
+// =================================
+// Network Services State
+// =================================
 
+static bool networkServicesInitialized = false;
+
+
+// =================================
+// Initialize Network Services
+// =================================
+
+static void initialize_network_services()
+{
+    if (networkServicesInitialized)
+    {
+        return;
+    }
+
+    if (!wifi_connected())
+    {
+        return;
+    }
+
+
+    Serial.println();
+    Serial.println("==============================");
+    Serial.println(" Initializing Network Services");
+    Serial.println("==============================");
+
+
+    // ---------------------------------
+    // OTA
+    // ---------------------------------
+
+    Serial.println("[INIT] OTA");
+
+    OTA.begin();
+
+
+    // ---------------------------------
+    // Time / NTP
+    // ---------------------------------
+
+    Serial.println("[INIT] Time");
+
+    time_init();
+
+
+    // ---------------------------------
+    // Check Time
+    // ---------------------------------
+
+    if (!time_is_ready())
+    {
+        Serial.println(
+            "[TIME] NTP synchronization failed"
+        );
+
+        Serial.println(
+            "[TIME] Services will retry later"
+        );
+
+        return;
+    }
+
+
+    // ---------------------------------
+    // MQTT
+    // ---------------------------------
+
+    Serial.println("[INIT] MQTT");
+
+    mqtt_init();
+
+
+    // ---------------------------------
+    // DFPlayer
+    // ---------------------------------
+
+    Serial.println("[INIT] DFPlayer");
+
+    dfplayer_init();
+
+
+    // ---------------------------------
+    // Prayer
+    // ---------------------------------
+
+    Serial.println("[INIT] Prayer");
+
+    prayer_init();
+
+
+    // ---------------------------------
+    // Display
+    // ---------------------------------
+
+    Serial.println("[INIT] Display");
+
+    display_init();
+
+
+    // ---------------------------------
+    // Mark Initialized
+    // ---------------------------------
+
+    networkServicesInitialized = true;
+
+
+    Serial.println();
+    Serial.println("==============================");
+    Serial.println(" Network Services Ready");
+    Serial.println("==============================");
+
+    Serial.println("OTA: READY");
+    Serial.println("Time: READY");
+    Serial.println("Prayer: READY");
+    Serial.println("MQTT: INITIALIZED");
+    Serial.println("DFPlayer: INITIALIZED");
+    Serial.println("Display: INITIALIZED");
+
+    Serial.println("==============================");
+}
 
 
 // =================================
 // Setup
 // =================================
 
-void setup() {
+void setup()
+{
+    // ---------------------------------
+    // Serial
+    // ---------------------------------
+
     Serial.begin(115200);
+    delay(100);
 
-    // 1. إعداد الـ Access Point والواي فاي كالمعتاد
-    WiFi.mode(WIFI_AP_STA);
-    WiFi.softAP("ESP_Config_AP");
+    Serial.println();
+    Serial.println();
 
-    // ==============================
+    Serial.println("==============================");
+    Serial.println(" ESP Prayer System");
+    Serial.println(" Starting...");
+    Serial.println("==============================");
+
+
+    // ---------------------------------
     // System Information
-    // ==============================
+    // ---------------------------------
 
     print_version();
 
 
+    // ---------------------------------
+    // Storage
+    // ---------------------------------
 
-
-
-
-    // ==============================
-    // Storage & Settings
-    // ==============================
+    Serial.println();
+    Serial.println("[INIT] Storage");
 
     storage_init();
 
 
+    // ---------------------------------
+    // Settings
+    // ---------------------------------
+
+    Serial.println("[INIT] Settings");
+
     settings_init();
 
 
+    // ---------------------------------
+    // WiFi
+    // ---------------------------------
 
+    Serial.println("[INIT] WiFi");
 
+    wifi_init();
 
-
-// ==============================
-// WiFi
-// ==============================
-
-wifi_init();
-
-Serial.print("AP MODE STATUS: ");
-Serial.println(wifi_is_ap_mode());
-
-// ==============================
-// Web Server
-// ==============================
-
-web_server_init();
-
-
-
-// ==============================
-// Start System Services
-// Only when WiFi Connected
-// ==============================
-
-if(wifi_connected())
-{
-
-    OTA.begin();
-
-    mqtt_init();
-
-    dfplayer_init();
-
-    prayer_init();
-
-    display_init();
-
-}
-else
-{
-
+    Serial.print("WiFi connected: ");
     Serial.println(
-        "Waiting for WiFi Setup..."
+        wifi_connected()
+            ? "YES"
+            : "NO"
     );
 
-}
+    Serial.print("AP mode: ");
+    Serial.println(
+        wifi_is_ap_mode()
+            ? "YES"
+            : "NO"
+    );
 
 
+    // ---------------------------------
+    // Web Server
+    // ---------------------------------
+
+    Serial.println("[INIT] Web Server");
+
+    web_server_init();
 
 
+    // ---------------------------------
+    // Try Network Services
+    // ---------------------------------
 
-    // ==============================
-    // Time System
-    // ==============================
-
-    if(
-        wifi_connected()
-    )
-    {
-
-        time_init();
-
-    }
-    else
-    {
-
-        Serial.println(
-            "WiFi not connected - Skip NTP"
-        );
-
-    }
+    initialize_network_services();
 
 
+    // ---------------------------------
+    // Command Handler
+    // ---------------------------------
 
-
-
-
-
-    // ==============================
-    // OTA Update
-    // ==============================
-
-    OTA.begin();
-
-
-
-
-
-
-
-    // ==============================
-    // MQTT
-    // ==============================
-
-    mqtt_init();
-
+    Serial.println("[INIT] Command Handler");
 
     command_init();
 
 
-
-
-
-
-// ==============================
-// Hardware
-// ==============================
-
-//if(wifi_connected())
-//{
-
-//    dfplayer_init();
-
- //   display_init();
-
-//}
-
-
-
-
-
-    // ==============================
-    // Prayer System
-    // ==============================
-    
-    Serial.println(
-        "Prayer system will initialize after time sync."
-    );
-
-
-
-
+    // ---------------------------------
+    // System Ready
+    // ---------------------------------
 
     Serial.println();
-
-    Serial.println(
-        "=============================="
-    );
-
-    Serial.println(
-        " System Ready "
-    );
-
-    Serial.println(
-        "=============================="
-    );
+    Serial.println("==============================");
+    Serial.println(" System Ready");
+    Serial.println("==============================");
 
 
+    if (wifi_connected())
+    {
+        Serial.print("IP Address: ");
+        Serial.println(
+            WiFi.localIP()
+        );
+
+        if (networkServicesInitialized)
+        {
+            Serial.println("Network Services: READY");
+        }
+        else
+        {
+            Serial.println(
+                "Network Services: WAITING"
+            );
+        }
+    }
+    else
+    {
+        Serial.println(
+            "Network services waiting for WiFi."
+        );
+    }
+
+
+    Serial.println("==============================");
+    Serial.println();
 }
 
 
-
-
-
-
-
+// =================================
+// Main Loop
+// =================================
 
 void loop()
 {
-
-    // ==============================
+    // ---------------------------------
     // WiFi
-    // ==============================
+    // ---------------------------------
 
     wifi_loop();
 
 
-    // ==============================
-    // OTA
-    // ==============================
+    // ---------------------------------
+    // Detect WiFi Connection
+    // ---------------------------------
 
-    OTA.handle();
-
-
-    // ==============================
-    // MQTT
-    // ==============================
-
-    mqtt_loop();
-
-
-    // ==============================
-    // Time Update
-    // ==============================
-
-    if(wifi_connected())
+    if (wifi_connected())
     {
-        time_update();
+        // ---------------------------------
+        // Initialize Services After WiFi
+        // ---------------------------------
+
+        initialize_network_services();
+
+
+        // ---------------------------------
+        // OTA
+        // ---------------------------------
+
+        if (networkServicesInitialized)
+        {
+            OTA.handle();
+        }
+
+
+        // ---------------------------------
+        // MQTT
+        // ---------------------------------
+
+        if (networkServicesInitialized)
+        {
+            mqtt_loop();
+        }
+
+
+        // ---------------------------------
+        // Time
+        // ---------------------------------
+
+        if (networkServicesInitialized)
+        {
+            time_update();
+        }
     }
 
 
-    // ==============================
+    // ---------------------------------
     // Prayer
-    // ==============================
+    // ---------------------------------
 
-    prayer_loop();
+    if (networkServicesInitialized)
+    {
+        prayer_loop();
+    }
 
 
-    // ==============================
+    // ---------------------------------
     // Display
-    // ==============================
+    // ---------------------------------
 
-    display_loop();
+    if (networkServicesInitialized)
+    {
+        display_loop();
+    }
 
 
-    // ==============================
+    // ---------------------------------
     // Web Server
-    // ==============================
+    // ---------------------------------
 
     web_server_loop();
-
 }
