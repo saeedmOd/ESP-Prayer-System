@@ -20,6 +20,16 @@
 #define DEFAULT_VOLUME 1
 #define DEFAULT_TIME_FORMAT "24H"
 
+#define DEFAULT_ALARM_TONE_TYPE 0
+
+#define ALARM_TONE_MIN 0
+#define ALARM_TONE_MAX 3
+
+#define ALARM_TONE_CLASSIC 0
+#define ALARM_TONE_HIGH    1
+#define ALARM_TONE_WARNING 2
+#define ALARM_TONE_MELODY  3
+
 #define OTA_HOSTNAME "ESP-Prayer-System"
 
 #define MQTT_SERVER "192.168.0.100"
@@ -182,6 +192,8 @@ int volume;
 bool lowVolumeEnable;
 
 int lowVolumeLevel;
+
+uint8_t alarmToneType;
 
 
 // =========================

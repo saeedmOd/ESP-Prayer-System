@@ -231,27 +231,55 @@ method:"POST"
 function resetSettings()
 {
 
-    if(confirm("سيتم حذف جميع الإعدادات، هل أنت متأكد؟"))
+    // Step 1: First confirmation
+    if(!confirm("⚠️ تحذير: سيتم مسح جميع الإعدادات والعودة للوضع الافتراضي.\n\nهل أنت متأكد؟"))
     {
-
-        fetch("/api/system/reset",
-        {
-            method:"POST"
-        })
-
-        .then(response => response.text())
-
-        .then(data =>
-        {
-            alert(data);
-        })
-
-        .catch(error =>
-        {
-            alert("خطأ: " + error);
-        });
-
+        return;
     }
+
+    // Step 2: Second confirmation (destructive action)
+    if(!confirm("❌تأكيد نهائي: لن تتمكن من استرجاع الإعدادات!\n\nاكتب OK في الخطوة القادمة"))
+    {
+        return;
+    }
+
+    // Step 3: Text confirmation
+    let confirmText = prompt("اكتب (مسح) للتأكيد:");
+
+    if(confirmText !== "مسح")
+    {
+        alert("تم الإلغاء - يجب كتابة (مسح) بالضبط");
+        return;
+    }
+
+    let resetBtn = document.querySelector('[onclick="resetSettings()"]');
+    if(resetBtn)
+    {
+        resetBtn.disabled = true;
+        resetBtn.innerText = "جاري المسح...";
+    }
+
+    fetch("/api/system/reset",
+    {
+        method:"POST"
+    })
+
+    .then(response => response.text())
+
+    .then(data =>
+    {
+        alert(data + "\n\nسيتم إعادة تشغيل الجهاز...");
+    })
+
+    .catch(error =>
+    {
+        alert("خطأ: " + error);
+        if(resetBtn)
+        {
+            resetBtn.disabled = false;
+            resetBtn.innerText = "⚠️ مسح الإعدادات";
+        }
+    });
 
 }
 

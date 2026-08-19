@@ -83,7 +83,9 @@ const AUDIO_DEFAULTS = {
     kahfMinute: 0,
     kahfVolume: 1,
     kahfFolder: 2,
-    kahfFile: 1
+    kahfFile: 1,
+
+    alarmToneType: 0
 };
 
 
@@ -1314,6 +1316,13 @@ function buildAudioPayload() {
             ),
 
 
+        alarmToneType:
+            readNumber(
+                "alarmToneType",
+                AUDIO_DEFAULTS.alarmToneType
+            ),
+
+
         quran: {
             ...quranSettings
         }
@@ -1574,6 +1583,17 @@ async function loadAudioSettings() {
             "kahfVolumeValue",
             data.kahfVolume ??
             AUDIO_DEFAULTS.kahfVolume
+        );
+
+
+        /* =================================================
+           ALARM TONE TYPE
+           ================================================= */
+
+        setNumber(
+            "alarmToneType",
+            data.alarmToneType ??
+            AUDIO_DEFAULTS.alarmToneType
         );
 
 

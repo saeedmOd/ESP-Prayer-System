@@ -261,6 +261,12 @@ void settings_load()
             8
         );
 
+    settings.alarmToneType =
+        storage_get_int(
+            "audio.alarm_tone_type",
+            DEFAULT_ALARM_TONE_TYPE
+        );
+
 
     // =====================================================
     // Azan
@@ -738,6 +744,13 @@ void settings_apply()
             AUDIO_VOLUME_MAX
         );
 
+    if (settings.alarmToneType < ALARM_TONE_MIN ||
+        settings.alarmToneType > ALARM_TONE_MAX)
+    {
+        settings.alarmToneType =
+            DEFAULT_ALARM_TONE_TYPE;
+    }
+
 
     // =====================================================
     // Azan
@@ -1174,6 +1187,11 @@ void settings_save()
     storage_set_int(
         "audio.low_volume_level",
         settings.lowVolumeLevel
+    );
+
+    storage_set_int(
+        "audio.alarm_tone_type",
+        settings.alarmToneType
     );
 
 

@@ -5,6 +5,7 @@
 #include <DFRobotDFPlayerMini.h>
 
 #include "settings.h"
+#include "hardware.h"
 
 // =================================================
 // Serial Pins
@@ -171,6 +172,8 @@ void dfplayer_init()
         );
 
         playerReady = false;
+
+        buzzer_error_tone();
 
         return;
     }

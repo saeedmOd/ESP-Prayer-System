@@ -6,6 +6,7 @@
 #include "display.h"
 #include "storage.h"
 #include "version.h"
+#include "hardware.h"
 
 
 
@@ -105,8 +106,14 @@ void command_restart()
 
     Serial.println("Restarting Device...");
 
+    buzzer_power_off_tone();
 
-    delay(1000);
+    while (buzzer_is_active())
+    {
+        delay(10);
+    }
+
+    delay(500);
 
 
     ESP.restart();

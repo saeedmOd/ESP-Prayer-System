@@ -16,6 +16,7 @@
 #include "prayer.h"
 #include "time_manager.h"
 #include "dfplayer.h"
+#include "hardware.h"
 
 // ============================================================
 // Web Server
@@ -997,6 +998,13 @@ static void registerApiRoutes()
                 );
 
 
+            doc["alarmToneType"] =
+                storage_get_int(
+                    "audio.alarm_tone_type",
+                    DEFAULT_ALARM_TONE_TYPE
+                );
+
+
             // ------------------------------------------------
             // Iqama
             // ------------------------------------------------
@@ -1497,6 +1505,24 @@ static void registerApiRoutes()
 
                 storage_set_int(
                     "audio.azan_file",
+                    value
+                );
+            }
+
+            if (doc["alarmToneType"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["alarmToneType"].as<int>(),
+                        ALARM_TONE_MIN,
+                        ALARM_TONE_MAX
+                    );
+
+                settings.alarmToneType =
+                    value;
+
+                storage_set_int(
+                    "audio.alarm_tone_type",
                     value
                 );
             }
@@ -2267,6 +2293,8 @@ static void registerApiRoutes()
 
             if (!storage_save())
             {
+                buzzer_error_tone();
+
                 Serial.println(
                     F("[AUDIO] ERROR: storage_save() failed")
                 );
@@ -2281,6 +2309,8 @@ static void registerApiRoutes()
             }
 
             settings_apply();
+
+            buzzer_settings_saved_tone();
 
             Serial.println(
                 F("[AUDIO] Settings saved successfully")
@@ -2768,6 +2798,28 @@ static void registerSystemRoutes()
 
             command_process(
                 "test_azan"
+            );
+
+            send_json_message(
+                request,
+                200,
+                "{\"status\":\"playing\"}"
+            );
+        }
+    );
+
+
+    // ========================================================
+    // Test Buzzer Alarm
+    // ========================================================
+
+    server.on(
+        "/api/test/buzzer-alarm",
+        HTTP_POST,
+        [](AsyncWebServerRequest *request)
+        {
+            buzzer_play_alarm(
+                settings.alarmToneType
             );
 
             send_json_message(

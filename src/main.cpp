@@ -17,6 +17,7 @@
 #include "dfplayer.h"
 #include "display.h"
 #include "prayer.h"
+#include "hardware.h"
 
 
 // =================================
@@ -241,6 +242,22 @@ void setup()
 
 
     // ---------------------------------
+    // Hardware (Rotary / Stop / Buzzer)
+    // ---------------------------------
+
+    Serial.println("[INIT] Hardware");
+
+    hardware_init();
+
+    // Play WiFi connected tone after hardware init
+    // (startup tone plays first from hardware_init)
+    if (wifi_connected())
+    {
+        buzzer_wifi_connected_tone();
+    }
+
+
+    // ---------------------------------
     // System Ready
     // ---------------------------------
 
@@ -287,6 +304,13 @@ void setup()
 
 void loop()
 {
+    // ---------------------------------
+    // Hardware (Rotary / Stop / Buzzer)
+    // ---------------------------------
+
+    hardware_loop();
+
+
     // ---------------------------------
     // WiFi
     // ---------------------------------

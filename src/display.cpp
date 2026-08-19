@@ -11,7 +11,8 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 void display_init()
 {
-    Wire.begin(4, 5);
+    Wire.begin(4, 5); // SDA=D2(GPIO4), SCL=D1(GPIO5)
+    //==Wire.begin(16, 5); // SDA=D0(GPIO16), SCL=D1(GPIO5)
 
     lcd.init();
     lcd.backlight();
@@ -63,9 +64,9 @@ void display_loop()
         return;
     }
 
-    // ===== الوقت بصيغة 12 ساعة =====
+    // ===== الوقت بصيغة 24 ساعة =====
     char timeStr[9];
-    strftime(timeStr, sizeof(timeStr), "%I:%M:%S", &timeinfo);
+    strftime(timeStr, sizeof(timeStr), "%H:%M:%S", &timeinfo);
 
     // ===== آخر جزء من IP =====
     String ipPart = "--";
@@ -96,7 +97,7 @@ void display_loop()
     int hours = totalMinutes / 60;
     int minutes = totalMinutes % 60;
 
-    char remaining[8];
+    char remaining[12];
 
     if (hours > 0)
         snprintf(remaining, sizeof(remaining), "%dh%02dm", hours, minutes);

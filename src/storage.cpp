@@ -1358,6 +1358,9 @@ void storage_create_defaults()
     doc["audio"]["low_volume_level"] =
         8;
 
+    doc["audio"]["alarm_tone_type"] =
+        DEFAULT_ALARM_TONE_TYPE;
+
     // ========================================================
     // Azan
     // ========================================================

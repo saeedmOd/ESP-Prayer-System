@@ -1413,6 +1413,64 @@
 
 
 
+            <!-- BUZZER ALARM -->
+
+            <section class="card">
+
+                <div class="card-header">
+
+                    <h2>
+                        🔔 صوت المنبه (البازر)
+                    </h2>
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label>
+                        نوع صوت المنبه
+                    </label>
+
+
+                    <select
+                        id="alarmToneType">
+
+                        <option value="0">
+                            كلاسيكي (تقليدي)
+                        </option>
+
+                        <option value="1">
+                            عالي الصوت
+                        </option>
+
+                        <option value="2">
+                            تحذير
+                        </option>
+
+                        <option value="3">
+                            ميلودي
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="btn-test"
+                    data-test-endpoint="/api/test/buzzer-alarm"
+                    data-test-message="تم تشغيل المنبه">
+
+                    ▶️ تجربة المنبه
+
+                </button>
+
+            </section>
+
+
+
             <!-- IQAMA -->
 
             <section
@@ -2398,6 +2456,8 @@ const DEFAULTS = {
         folder: 2,
         file: 3
     },
+
+    alarmToneType: 0,
 
     quran: {
 
@@ -3535,6 +3595,24 @@ async function loadAudioSettings() {
 
 
         /* =================================================
+           ALARM TONE TYPE
+        ================================================= */
+
+        audioSettings.alarmToneType =
+            clamp(
+                data.alarmToneType ??
+                DEFAULTS.alarmToneType,
+                0,
+                3
+            );
+
+        setNumber(
+            "alarmToneType",
+            audioSettings.alarmToneType
+        );
+
+
+        /* =================================================
            QURAN
         ================================================= */
 
@@ -4600,6 +4678,21 @@ function collectAudioSettings() {
 
         kahfFile:
             kahf.file,
+
+
+        /* -------------------------------------------------
+           ALARM TONE TYPE
+           ------------------------------------------------- */
+
+        alarmToneType:
+            clamp(
+                readNumber(
+                    "alarmToneType",
+                    DEFAULTS.alarmToneType
+                ),
+                0,
+                3
+            ),
 
 
         /* -------------------------------------------------

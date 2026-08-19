@@ -7,6 +7,7 @@
 #include "storage.h"
 #include "time_manager.h"
 #include "dfplayer.h"
+#include "hardware.h"
 
 
 // =====================================
@@ -558,8 +559,11 @@ if(settings.azanEnable)
 else
 {
 
+    // Buzzer alarm when DFPlayer audio is disabled
+    buzzer_play_alarm(settings.alarmToneType);
+
     Serial.print(
-        "Azan Disabled: "
+        "Buzzer Alarm: "
     );
 
 
@@ -647,6 +651,7 @@ if(
 {
     iqamaPlayed[i] = true;
 
+    buzzer_iqama_reminder_tone();
 
     play_folder_file_with_volume(
         settings.iqamaFolder,
