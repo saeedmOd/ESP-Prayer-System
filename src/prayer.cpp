@@ -48,6 +48,12 @@ static bool eveningAdhkarPlayed = false;
 
 static bool kahfPlayed = false;
 
+static bool customAlertPlayed = false;
+
+static int customAlertRepeatDone = 0;
+
+static unsigned long customAlertLastRepeatMs = 0;
+
 
 
 static const char* prayerNames[6] =
@@ -352,6 +358,9 @@ void prayer_reload()
     morningAdhkarPlayed = false;
     eveningAdhkarPlayed = false;
     kahfPlayed = false;
+    customAlertPlayed = false;
+    customAlertRepeatDone = 0;
+    customAlertLastRepeatMs = 0;
 
 
 
@@ -501,8 +510,81 @@ void prayer_loop()
     }
 
 
+// ==========================
+// Custom Alert
+// ==========================
 
+if(
+    settings.customAlertEnable
+    &&
+    getLocalTime(&timeinfo)
+)
+{
+    int todayBit = 1 << timeinfo.tm_wday;
 
+    bool dayMatch =
+        (settings.customAlertDays & todayBit) != 0;
+
+    int customAlertNow =
+        settings.customAlertHour * 60 +
+        settings.customAlertMinute;
+
+    if(
+        dayMatch
+        &&
+        now == customAlertNow
+        &&
+        !customAlertPlayed
+    )
+    {
+        customAlertPlayed = true;
+        customAlertRepeatDone = 0;
+        customAlertLastRepeatMs = millis();
+
+        if(settings.customAlertSource == 1)
+        {
+            play_folder_file_with_volume(
+                5,
+                settings.customAlertFile,
+                settings.customAlertVolume
+            );
+        }
+        else
+        {
+            buzzer_play_alarm(settings.alarmToneType);
+        }
+
+        Serial.println("Custom Alert: triggered");
+    }
+    else if(
+        customAlertPlayed
+        &&
+        customAlertRepeatDone < settings.customAlertRepeat
+        &&
+        (millis() - customAlertLastRepeatMs)
+            >= (unsigned long)settings.customAlertInterval * 60000UL
+    )
+    {
+        customAlertRepeatDone++;
+        customAlertLastRepeatMs = millis();
+
+        if(settings.customAlertSource == 1)
+        {
+            play_folder_file_with_volume(
+                5,
+                settings.customAlertFile,
+                settings.customAlertVolume
+            );
+        }
+        else
+        {
+            buzzer_play_alarm(settings.alarmToneType);
+        }
+
+        Serial.print("Custom Alert: repeat ");
+        Serial.println(customAlertRepeatDone);
+    }
+}
 
 
     for(int i = 0; i < 6; i++)

@@ -155,6 +155,38 @@ static const ToneStep powerOffSteps[] = {
     { 800,  300 }
 };
 
+// 13. Gentle: 600->800->1000->1200 (slow ascending)
+static const ToneStep gentleSteps[] = {
+    { 600,  300 },
+    { 800,  300 },
+    { 1000, 300 },
+    { 1200, 400 }
+};
+
+// 14. Alarm Clock: 2000x3 fast beeps x5
+static const ToneStep alarmClkSteps[] = {
+    { 2000, 80  },
+    { 0,    80  },
+    { 2000, 80  },
+    { 0,    80  },
+    { 2000, 200 }
+};
+
+// 15. Urgent: 3000->1500 fast alternating x10
+static const ToneStep urgentSteps[] = {
+    { 3000, 100 },
+    { 1500, 100 }
+};
+
+// 16. Chime: 1000->1500->2000->1500->1000
+static const ToneStep chimeSteps[] = {
+    { 1000, 150 },
+    { 1500, 150 },
+    { 2000, 200 },
+    { 1500, 150 },
+    { 1000, 300 }
+};
+
 // =================================================
 // Tone Sequence Constants
 // =================================================
@@ -205,6 +237,22 @@ static const ToneSequence seqButtonReject = {
 
 static const ToneSequence seqPowerOff = {
     powerOffSteps, 4, 0, 1
+};
+
+static const ToneSequence seqGentle = {
+    gentleSteps, 4, 0, 1
+};
+
+static const ToneSequence seqAlarmClk = {
+    alarmClkSteps, 5, 0, 5
+};
+
+static const ToneSequence seqUrgent = {
+    urgentSteps, 2, 0, 10
+};
+
+static const ToneSequence seqChime = {
+    chimeSteps, 5, 0, 1
 };
 
 // =================================================
@@ -626,6 +674,22 @@ void buzzer_play_alarm(uint8_t alarmType)
 
         case ALARM_TONE_MELODY:
             buzzer_play_tone(&seqNotification);
+            break;
+
+        case ALARM_TONE_GENTLE:
+            buzzer_play_tone(&seqGentle);
+            break;
+
+        case ALARM_TONE_ALARM_CLK:
+            buzzer_play_tone(&seqAlarmClk);
+            break;
+
+        case ALARM_TONE_URGENT:
+            buzzer_play_tone(&seqUrgent);
+            break;
+
+        case ALARM_TONE_CHIME:
+            buzzer_play_tone(&seqChime);
             break;
 
         case ALARM_TONE_CLASSIC:

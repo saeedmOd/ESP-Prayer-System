@@ -23,12 +23,18 @@
 #define DEFAULT_ALARM_TONE_TYPE 0
 
 #define ALARM_TONE_MIN 0
-#define ALARM_TONE_MAX 3
+#define ALARM_TONE_MAX 7
 
-#define ALARM_TONE_CLASSIC 0
-#define ALARM_TONE_HIGH    1
-#define ALARM_TONE_WARNING 2
-#define ALARM_TONE_MELODY  3
+#define ALARM_TONE_CLASSIC     0
+#define ALARM_TONE_HIGH        1
+#define ALARM_TONE_WARNING     2
+#define ALARM_TONE_MELODY      3
+#define ALARM_TONE_GENTLE      4
+#define ALARM_TONE_ALARM_CLK   5
+#define ALARM_TONE_URGENT      6
+#define ALARM_TONE_CHIME       7
+
+#define DEFAULT_CUSTOM_ALERT_DAYS 127
 
 #define OTA_HOSTNAME "ESP-Prayer-System"
 
@@ -194,6 +200,29 @@ bool lowVolumeEnable;
 int lowVolumeLevel;
 
 uint8_t alarmToneType;
+
+
+// =========================
+// Custom Alert
+// =========================
+
+bool customAlertEnable;
+
+int customAlertSource;  // 0=Buzzer, 1=File
+
+int customAlertHour;
+
+int customAlertMinute;
+
+int customAlertDays;    // bitmask: bit0=Sun ... bit6=Sat
+
+int customAlertRepeat;  // 0=off, 1-4
+
+int customAlertInterval; // minutes between repeats (1-60)
+
+int customAlertFile;    // DFPlayer file (1-11)
+
+int customAlertVolume;  // DFPlayer volume (0-30)
 
 
 // =========================

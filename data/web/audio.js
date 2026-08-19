@@ -85,7 +85,19 @@ const AUDIO_DEFAULTS = {
     kahfFolder: 2,
     kahfFile: 1,
 
-    alarmToneType: 0
+    alarmToneType: 0,
+
+    customAlert: {
+        enable: false,
+        source: 0,
+        hour: 0,
+        minute: 0,
+        days: 127,
+        repeat: 0,
+        interval: 1,
+        file: 1,
+        volume: 15
+    }
 };
 
 
@@ -1323,6 +1335,61 @@ function buildAudioPayload() {
             ),
 
 
+        customAlertEnable:
+            readBool(
+                "customAlertEnable",
+                AUDIO_DEFAULTS.customAlert.enable
+            ),
+
+        customAlertSource:
+            readNumber(
+                "customAlertSource",
+                AUDIO_DEFAULTS.customAlert.source
+            ),
+
+        customAlertHour:
+            readNumber(
+                "customAlertHour",
+                AUDIO_DEFAULTS.customAlert.hour
+            ),
+
+        customAlertMinute:
+            readNumber(
+                "customAlertMinute",
+                AUDIO_DEFAULTS.customAlert.minute
+            ),
+
+        customAlertDays:
+            readNumber(
+                "customAlertDays",
+                AUDIO_DEFAULTS.customAlert.days
+            ),
+
+        customAlertRepeat:
+            readNumber(
+                "customAlertRepeat",
+                AUDIO_DEFAULTS.customAlert.repeat
+            ),
+
+        customAlertInterval:
+            readNumber(
+                "customAlertInterval",
+                AUDIO_DEFAULTS.customAlert.interval
+            ),
+
+        customAlertFile:
+            readNumber(
+                "customAlertFile",
+                AUDIO_DEFAULTS.customAlert.file
+            ),
+
+        customAlertVolume:
+            readNumber(
+                "customAlertVolume",
+                AUDIO_DEFAULTS.customAlert.volume
+            ),
+
+
         quran: {
             ...quranSettings
         }
@@ -1595,6 +1662,91 @@ async function loadAudioSettings() {
             data.alarmToneType ??
             AUDIO_DEFAULTS.alarmToneType
         );
+
+
+        /* =================================================
+           CUSTOM ALERT
+           ================================================= */
+
+        if (data.customAlertEnable !== undefined) {
+
+            setSelect(
+                "customAlertEnable",
+                data.customAlertEnable ??
+                AUDIO_DEFAULTS.customAlert.enable
+            );
+
+        }
+
+        if (data.customAlertSource !== undefined) {
+
+            setSelect(
+                "customAlertSource",
+                data.customAlertSource ??
+                AUDIO_DEFAULTS.customAlert.source
+            );
+
+        }
+
+        if (data.customAlertHour !== undefined) {
+
+            setNumber(
+                "customAlertHour",
+                data.customAlertHour ??
+                AUDIO_DEFAULTS.customAlert.hour
+            );
+
+        }
+
+        if (data.customAlertMinute !== undefined) {
+
+            setNumber(
+                "customAlertMinute",
+                data.customAlertMinute ??
+                AUDIO_DEFAULTS.customAlert.minute
+            );
+
+        }
+
+        if (data.customAlertRepeat !== undefined) {
+
+            setSelect(
+                "customAlertRepeat",
+                data.customAlertRepeat ??
+                AUDIO_DEFAULTS.customAlert.repeat
+            );
+
+        }
+
+        if (data.customAlertInterval !== undefined) {
+
+            setNumber(
+                "customAlertInterval",
+                data.customAlertInterval ??
+                AUDIO_DEFAULTS.customAlert.interval
+            );
+
+        }
+
+        if (data.customAlertFile !== undefined) {
+
+            setSelect(
+                "customAlertFile",
+                data.customAlertFile ??
+                AUDIO_DEFAULTS.customAlert.file
+            );
+
+        }
+
+        if (data.customAlertVolume !== undefined) {
+
+            setNumber(
+                "customAlertVolume",
+                data.customAlertVolume ??
+                AUDIO_DEFAULTS.customAlert.volume
+            );
+
+        }
 
 
         /* =================================================

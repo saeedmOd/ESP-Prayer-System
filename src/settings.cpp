@@ -269,6 +269,65 @@ void settings_load()
 
 
     // =====================================================
+    // Custom Alert
+    // =====================================================
+
+    settings.customAlertEnable =
+        storage_get_bool(
+            "audio.custom_alert_enable",
+            false
+        );
+
+    settings.customAlertSource =
+        storage_get_int(
+            "audio.custom_alert_source",
+            0
+        );
+
+    settings.customAlertHour =
+        storage_get_int(
+            "audio.custom_alert_hour",
+            0
+        );
+
+    settings.customAlertMinute =
+        storage_get_int(
+            "audio.custom_alert_minute",
+            0
+        );
+
+    settings.customAlertDays =
+        storage_get_int(
+            "audio.custom_alert_days",
+            DEFAULT_CUSTOM_ALERT_DAYS
+        );
+
+    settings.customAlertRepeat =
+        storage_get_int(
+            "audio.custom_alert_repeat",
+            0
+        );
+
+    settings.customAlertInterval =
+        storage_get_int(
+            "audio.custom_alert_interval",
+            1
+        );
+
+    settings.customAlertFile =
+        storage_get_int(
+            "audio.custom_alert_file",
+            1
+        );
+
+    settings.customAlertVolume =
+        storage_get_int(
+            "audio.custom_alert_volume",
+            DEFAULT_VOLUME
+        );
+
+
+    // =====================================================
     // Azan
     // =====================================================
 
@@ -753,6 +812,67 @@ void settings_apply()
 
 
     // =====================================================
+    // Custom Alert
+    // =====================================================
+
+    settings.customAlertSource =
+        constrain(
+            settings.customAlertSource,
+            0,
+            1
+        );
+
+    settings.customAlertHour =
+        clampInt(
+            settings.customAlertHour,
+            0,
+            23
+        );
+
+    settings.customAlertMinute =
+        clampInt(
+            settings.customAlertMinute,
+            0,
+            59
+        );
+
+    settings.customAlertDays =
+        constrain(
+            settings.customAlertDays,
+            0,
+            127
+        );
+
+    settings.customAlertRepeat =
+        constrain(
+            settings.customAlertRepeat,
+            0,
+            4
+        );
+
+    settings.customAlertInterval =
+        clampInt(
+            settings.customAlertInterval,
+            1,
+            60
+        );
+
+    settings.customAlertFile =
+        clampInt(
+            settings.customAlertFile,
+            1,
+            11
+        );
+
+    settings.customAlertVolume =
+        clampInt(
+            settings.customAlertVolume,
+            AUDIO_VOLUME_MIN,
+            AUDIO_VOLUME_MAX
+        );
+
+
+    // =====================================================
     // Azan
     // =====================================================
 
@@ -1192,6 +1312,56 @@ void settings_save()
     storage_set_int(
         "audio.alarm_tone_type",
         settings.alarmToneType
+    );
+
+
+    // =====================================================
+    // Custom Alert
+    // =====================================================
+
+    storage_set_bool(
+        "audio.custom_alert_enable",
+        settings.customAlertEnable
+    );
+
+    storage_set_int(
+        "audio.custom_alert_source",
+        settings.customAlertSource
+    );
+
+    storage_set_int(
+        "audio.custom_alert_hour",
+        settings.customAlertHour
+    );
+
+    storage_set_int(
+        "audio.custom_alert_minute",
+        settings.customAlertMinute
+    );
+
+    storage_set_int(
+        "audio.custom_alert_days",
+        settings.customAlertDays
+    );
+
+    storage_set_int(
+        "audio.custom_alert_repeat",
+        settings.customAlertRepeat
+    );
+
+    storage_set_int(
+        "audio.custom_alert_interval",
+        settings.customAlertInterval
+    );
+
+    storage_set_int(
+        "audio.custom_alert_file",
+        settings.customAlertFile
+    );
+
+    storage_set_int(
+        "audio.custom_alert_volume",
+        settings.customAlertVolume
     );
 
 

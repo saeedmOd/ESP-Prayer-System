@@ -1006,6 +1006,65 @@ static void registerApiRoutes()
 
 
             // ------------------------------------------------
+            // Custom Alert
+            // ------------------------------------------------
+
+            doc["customAlertEnable"] =
+                storage_get_bool(
+                    "audio.custom_alert_enable",
+                    false
+                );
+
+            doc["customAlertSource"] =
+                storage_get_int(
+                    "audio.custom_alert_source",
+                    0
+                );
+
+            doc["customAlertHour"] =
+                storage_get_int(
+                    "audio.custom_alert_hour",
+                    0
+                );
+
+            doc["customAlertMinute"] =
+                storage_get_int(
+                    "audio.custom_alert_minute",
+                    0
+                );
+
+            doc["customAlertDays"] =
+                storage_get_int(
+                    "audio.custom_alert_days",
+                    DEFAULT_CUSTOM_ALERT_DAYS
+                );
+
+            doc["customAlertRepeat"] =
+                storage_get_int(
+                    "audio.custom_alert_repeat",
+                    0
+                );
+
+            doc["customAlertInterval"] =
+                storage_get_int(
+                    "audio.custom_alert_interval",
+                    1
+                );
+
+            doc["customAlertFile"] =
+                storage_get_int(
+                    "audio.custom_alert_file",
+                    1
+                );
+
+            doc["customAlertVolume"] =
+                storage_get_int(
+                    "audio.custom_alert_volume",
+                    DEFAULT_VOLUME
+                );
+
+
+            // ------------------------------------------------
             // Iqama
             // ------------------------------------------------
 
@@ -1523,6 +1582,169 @@ static void registerApiRoutes()
 
                 storage_set_int(
                     "audio.alarm_tone_type",
+                    value
+                );
+            }
+
+
+            // ------------------------------------------------
+            // Custom Alert
+            // ------------------------------------------------
+
+            if (doc["customAlertEnable"].is<bool>())
+            {
+                bool value =
+                    doc["customAlertEnable"].as<bool>();
+
+                settings.customAlertEnable =
+                    value;
+
+                storage_set_bool(
+                    "audio.custom_alert_enable",
+                    value
+                );
+            }
+
+            if (doc["customAlertSource"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["customAlertSource"].as<int>(),
+                        0,
+                        1
+                    );
+
+                settings.customAlertSource =
+                    value;
+
+                storage_set_int(
+                    "audio.custom_alert_source",
+                    value
+                );
+            }
+
+            if (doc["customAlertHour"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["customAlertHour"].as<int>(),
+                        0,
+                        23
+                    );
+
+                settings.customAlertHour =
+                    value;
+
+                storage_set_int(
+                    "audio.custom_alert_hour",
+                    value
+                );
+            }
+
+            if (doc["customAlertMinute"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["customAlertMinute"].as<int>(),
+                        0,
+                        59
+                    );
+
+                settings.customAlertMinute =
+                    value;
+
+                storage_set_int(
+                    "audio.custom_alert_minute",
+                    value
+                );
+            }
+
+            if (doc["customAlertDays"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["customAlertDays"].as<int>(),
+                        0,
+                        127
+                    );
+
+                settings.customAlertDays =
+                    value;
+
+                storage_set_int(
+                    "audio.custom_alert_days",
+                    value
+                );
+            }
+
+            if (doc["customAlertRepeat"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["customAlertRepeat"].as<int>(),
+                        0,
+                        4
+                    );
+
+                settings.customAlertRepeat =
+                    value;
+
+                storage_set_int(
+                    "audio.custom_alert_repeat",
+                    value
+                );
+            }
+
+            if (doc["customAlertInterval"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["customAlertInterval"].as<int>(),
+                        1,
+                        60
+                    );
+
+                settings.customAlertInterval =
+                    value;
+
+                storage_set_int(
+                    "audio.custom_alert_interval",
+                    value
+                );
+            }
+
+            if (doc["customAlertFile"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["customAlertFile"].as<int>(),
+                        1,
+                        11
+                    );
+
+                settings.customAlertFile =
+                    value;
+
+                storage_set_int(
+                    "audio.custom_alert_file",
+                    value
+                );
+            }
+
+            if (doc["customAlertVolume"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["customAlertVolume"].as<int>(),
+                        AUDIO_VOLUME_MIN,
+                        AUDIO_VOLUME_MAX
+                    );
+
+                settings.customAlertVolume =
+                    value;
+
+                storage_set_int(
+                    "audio.custom_alert_volume",
                     value
                 );
             }
@@ -2820,6 +3042,41 @@ static void registerSystemRoutes()
         {
             buzzer_play_alarm(
                 settings.alarmToneType
+            );
+
+            send_json_message(
+                request,
+                200,
+                "{\"status\":\"playing\"}"
+            );
+        }
+    );
+
+
+    // ========================================================
+    // Test Custom Alert File
+    // ========================================================
+
+    server.on(
+        "/api/test/custom-alert-file",
+        HTTP_POST,
+        [](AsyncWebServerRequest *request)
+        {
+            if (!dfplayer_ready())
+            {
+                send_json_message(
+                    request,
+                    503,
+                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
+                );
+
+                return;
+            }
+
+            play_folder_file_with_volume(
+                5,
+                settings.customAlertFile,
+                settings.customAlertVolume
             );
 
             send_json_message(

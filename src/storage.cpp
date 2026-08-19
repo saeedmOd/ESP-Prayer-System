@@ -17,7 +17,7 @@
 // Config Version
 // ============================================================
 
-#define CONFIG_VERSION 3
+#define CONFIG_VERSION 4
 
 // ============================================================
 // Global State
@@ -866,6 +866,73 @@ bool storage_migrate_config(
     }
 
     // ========================================================
+    // V3 -> V4
+    // ========================================================
+
+    if (version < 4)
+    {
+        Serial.println(
+            F("[STORAGE] Migrating config V3 -> V4")
+        );
+
+        if (doc["audio"]["custom_alert_enable"].isNull())
+        {
+            doc["audio"]["custom_alert_enable"] = false;
+            changed = true;
+        }
+
+        if (doc["audio"]["custom_alert_source"].isNull())
+        {
+            doc["audio"]["custom_alert_source"] = 0;
+            changed = true;
+        }
+
+        if (doc["audio"]["custom_alert_hour"].isNull())
+        {
+            doc["audio"]["custom_alert_hour"] = 0;
+            changed = true;
+        }
+
+        if (doc["audio"]["custom_alert_minute"].isNull())
+        {
+            doc["audio"]["custom_alert_minute"] = 0;
+            changed = true;
+        }
+
+        if (doc["audio"]["custom_alert_days"].isNull())
+        {
+            doc["audio"]["custom_alert_days"] = DEFAULT_CUSTOM_ALERT_DAYS;
+            changed = true;
+        }
+
+        if (doc["audio"]["custom_alert_repeat"].isNull())
+        {
+            doc["audio"]["custom_alert_repeat"] = 0;
+            changed = true;
+        }
+
+        if (doc["audio"]["custom_alert_interval"].isNull())
+        {
+            doc["audio"]["custom_alert_interval"] = 1;
+            changed = true;
+        }
+
+        if (doc["audio"]["custom_alert_file"].isNull())
+        {
+            doc["audio"]["custom_alert_file"] = 1;
+            changed = true;
+        }
+
+        if (doc["audio"]["custom_alert_volume"].isNull())
+        {
+            doc["audio"]["custom_alert_volume"] = DEFAULT_VOLUME;
+            changed = true;
+        }
+
+        version = 4;
+    }
+
+    // ========================================================
     // Normalize Version
     // ========================================================
 
@@ -1360,6 +1427,37 @@ void storage_create_defaults()
 
     doc["audio"]["alarm_tone_type"] =
         DEFAULT_ALARM_TONE_TYPE;
+
+    // ========================================================
+    // Custom Alert
+    // ========================================================
+
+    doc["audio"]["custom_alert_enable"] =
+        false;
+
+    doc["audio"]["custom_alert_source"] =
+        0;
+
+    doc["audio"]["custom_alert_hour"] =
+        0;
+
+    doc["audio"]["custom_alert_minute"] =
+        0;
+
+    doc["audio"]["custom_alert_days"] =
+        DEFAULT_CUSTOM_ALERT_DAYS;
+
+    doc["audio"]["custom_alert_repeat"] =
+        0;
+
+    doc["audio"]["custom_alert_interval"] =
+        1;
+
+    doc["audio"]["custom_alert_file"] =
+        1;
+
+    doc["audio"]["custom_alert_volume"] =
+        DEFAULT_VOLUME;
 
     // ========================================================
     // Azan

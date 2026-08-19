@@ -1452,6 +1452,22 @@
                             ميلودي
                         </option>
 
+                        <option value="4">
+                            هادئ
+                        </option>
+
+                        <option value="5">
+                            منبه سريع
+                        </option>
+
+                        <option value="6">
+                            عاجل
+                        </option>
+
+                        <option value="7">
+                            جرس
+                        </option>
+
                     </select>
 
                 </div>
@@ -1466,6 +1482,307 @@
                     ▶️ تجربة المنبه
 
                 </button>
+
+            </section>
+
+
+
+            <!-- CUSTOM ALERT -->
+
+            <section
+                id="customAlertCard"
+                class="card">
+
+                <div class="card-header">
+
+                    <h2>
+                        ⏰ تنبيه مخصص
+                    </h2>
+
+
+                    <select
+                        id="customAlertEnable"
+                        class="compact-select">
+
+                        <option value="true">
+                            مفعل
+                        </option>
+
+                        <option value="false">
+                            معطل
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label>
+                        المصدر
+                    </label>
+
+                    <select
+                        id="customAlertSource">
+
+                        <option value="0">
+                            بازر (Buzzer)
+                        </option>
+
+                        <option value="1">
+                            فايل DFPlayer (F)
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label>
+                        الوقت
+                    </label>
+
+                    <div class="time-row">
+
+                        <input
+                            type="number"
+                            id="customAlertHour"
+                            min="0"
+                            max="23"
+                            value="0">
+
+                        <span class="time-sep">:</span>
+
+                        <input
+                            type="number"
+                            id="customAlertMinute"
+                            min="0"
+                            max="59"
+                            value="0">
+
+                    </div>
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label>
+                        أيام العمل
+                    </label>
+
+                    <div class="days-grid">
+
+                        <label class="day-check">
+                            <input
+                                type="checkbox"
+                                id="customAlertDays0"
+                                value="1">
+                            أحد
+                        </label>
+
+                        <label class="day-check">
+                            <input
+                                type="checkbox"
+                                id="customAlertDays1"
+                                value="2">
+                            اثنين
+                        </label>
+
+                        <label class="day-check">
+                            <input
+                                type="checkbox"
+                                id="customAlertDays2"
+                                value="4">
+                            ثلاثاء
+                        </label>
+
+                        <label class="day-check">
+                            <input
+                                type="checkbox"
+                                id="customAlertDays3"
+                                value="8">
+                            أربعاء
+                        </label>
+
+                        <label class="day-check">
+                            <input
+                                type="checkbox"
+                                id="customAlertDays4"
+                                value="16">
+                            خميس
+                        </label>
+
+                        <label class="day-check">
+                            <input
+                                type="checkbox"
+                                id="customAlertDays5"
+                                value="32">
+                            جمعة
+                        </label>
+
+                        <label class="day-check">
+                            <input
+                                type="checkbox"
+                                id="customAlertDays6"
+                                value="64">
+                            سبت
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label>
+                        التكرار
+                    </label>
+
+                    <div class="repeat-row">
+
+                        <select
+                            id="customAlertRepeat">
+
+                            <option value="0">
+                                بدون تكرار
+                            </option>
+
+                            <option value="1">
+                                مرة
+                            </option>
+
+                            <option value="2">
+                                مرتين
+                            </option>
+
+                            <option value="3">
+                                3 مرات
+                            </option>
+
+                            <option value="4">
+                                4 مرات
+                            </option>
+
+                        </select>
+
+
+                        <div
+                            id="customAlertIntervalGroup"
+                            style="display:none;">
+
+                            كل
+
+                            <input
+                                type="number"
+                                id="customAlertInterval"
+                                min="1"
+                                max="60"
+                                value="1">
+
+                            دقيقة
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- BUZZER SOURCE (B) -->
+
+                <div id="customAlertBuzzerSection">
+
+                    <div class="field-group">
+
+                        <p style="color: var(--muted); font-size: 0.85em; margin: 8px 0;">
+                            الصوت يُستخدم من إعدادات "صوت المنبه" أعلاه
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="btn-test"
+                        data-test-endpoint="/api/test/buzzer-alarm"
+                        data-test-message="تم تشغيل الصوت">
+
+                        ▶️ تجربة الصوت
+
+                    </button>
+
+                </div>
+
+
+                <!-- FILE SOURCE (F) -->
+
+                <div id="customAlertFileSection"
+                    style="display:none;">
+
+                    <div class="field-group">
+
+                        <label>
+                            الملف
+                        </label>
+
+                        <select
+                            id="customAlertFile">
+
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            🔊 مستوى الصوت
+                        </label>
+
+                        <input
+                            type="range"
+                            id="customAlertVolume"
+                            min="0"
+                            max="30"
+                            value="15">
+
+                        <span
+                            id="customAlertVolumeValue">
+                            15
+                        </span>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="btn-test"
+                        data-test-endpoint="/api/test/custom-alert-file"
+                        data-test-message="تم تشغيل الملف">
+
+                        ▶️ تجربة الملف
+
+                    </button>
+
+                </div>
+
 
             </section>
 
@@ -2459,6 +2776,18 @@ const DEFAULTS = {
 
     alarmToneType: 0,
 
+    customAlert: {
+        enable: false,
+        source: 0,
+        hour: 0,
+        minute: 0,
+        days: 127,
+        repeat: 0,
+        interval: 1,
+        file: 1,
+        volume: 15
+    },
+
     quran: {
 
         baqarah: {
@@ -2626,6 +2955,126 @@ function readBool(
 }
 
 
+function readSelect(
+    id,
+    fallback = 0
+) {
+
+    const element =
+        getElement(id);
+
+    if (!element) {
+        return fallback;
+    }
+
+
+    const value =
+        Number(element.value);
+
+
+    return Number.isFinite(value)
+        ? value
+        : fallback;
+
+}
+
+
+function collectCustomAlertDays() {
+
+    let days = 0;
+
+    for (let i = 0; i < 7; i++) {
+
+        const cb =
+            getElement(
+                "customAlertDays" + i
+            );
+
+        if (cb && cb.checked) {
+
+            days |=
+                parseInt(cb.value);
+
+        }
+
+    }
+
+    return days;
+
+}
+
+
+function updateCustomAlertDays(days) {
+
+    for (let i = 0; i < 7; i++) {
+
+        const cb =
+            getElement(
+                "customAlertDays" + i
+            );
+
+        if (cb) {
+
+            cb.checked =
+                (days & parseInt(cb.value))
+                !== 0;
+
+        }
+
+    }
+
+}
+
+
+function updateCustomAlertSourceUI(source) {
+
+    const isBuzzer =
+        source === 0;
+
+    const buzzerSection =
+        getElement(
+            "customAlertBuzzerSection"
+        );
+
+    const fileSection =
+        getElement(
+            "customAlertFileSection"
+        );
+
+    if (buzzerSection) {
+
+        buzzerSection.style.display =
+            isBuzzer ? "" : "none";
+
+    }
+
+    if (fileSection) {
+
+        fileSection.style.display =
+            isBuzzer ? "none" : "";
+
+    }
+
+}
+
+
+function updateCustomAlertRepeatUI(repeat) {
+
+    const group =
+        getElement(
+            "customAlertIntervalGroup"
+        );
+
+    if (group) {
+
+        group.style.display =
+            repeat > 0 ? "" : "none";
+
+    }
+
+}
+
+
 function clamp(
     value,
     min,
@@ -2718,6 +3167,11 @@ function updateVolumeDisplays() {
         [
             "quranVolume",
             "quranVolumeValue"
+        ],
+
+        [
+            "customAlertVolume",
+            "customAlertVolumeValue"
         ]
 
     ];
@@ -3603,12 +4057,137 @@ async function loadAudioSettings() {
                 data.alarmToneType ??
                 DEFAULTS.alarmToneType,
                 0,
-                3
+                7
             );
 
-        setNumber(
+        setSelect(
             "alarmToneType",
             audioSettings.alarmToneType
+        );
+
+
+        /* =================================================
+           CUSTOM ALERT
+        ================================================= */
+
+        audioSettings.customAlert.enable =
+            data.customAlertEnable ??
+            DEFAULTS.customAlert.enable;
+
+        audioSettings.customAlert.source =
+            clamp(
+                data.customAlertSource ??
+                DEFAULTS.customAlert.source,
+                0,
+                1
+            );
+
+        audioSettings.customAlert.hour =
+            clamp(
+                data.customAlertHour ??
+                DEFAULTS.customAlert.hour,
+                0,
+                23
+            );
+
+        audioSettings.customAlert.minute =
+            clamp(
+                data.customAlertMinute ??
+                DEFAULTS.customAlert.minute,
+                0,
+                59
+            );
+
+        audioSettings.customAlert.days =
+            clamp(
+                data.customAlertDays ??
+                DEFAULTS.customAlert.days,
+                0,
+                127
+            );
+
+        audioSettings.customAlert.repeat =
+            clamp(
+                data.customAlertRepeat ??
+                DEFAULTS.customAlert.repeat,
+                0,
+                4
+            );
+
+        audioSettings.customAlert.interval =
+            clamp(
+                data.customAlertInterval ??
+                DEFAULTS.customAlert.interval,
+                1,
+                60
+            );
+
+        audioSettings.customAlert.file =
+            clamp(
+                data.customAlertFile ??
+                DEFAULTS.customAlert.file,
+                1,
+                11
+            );
+
+        audioSettings.customAlert.volume =
+            clamp(
+                data.customAlertVolume ??
+                DEFAULTS.customAlert.volume,
+                0,
+                30
+            );
+
+        setSelect(
+            "customAlertEnable",
+            audioSettings.customAlert.enable
+        );
+
+        setSelect(
+            "customAlertSource",
+            audioSettings.customAlert.source
+        );
+
+        setNumber(
+            "customAlertHour",
+            audioSettings.customAlert.hour
+        );
+
+        setNumber(
+            "customAlertMinute",
+            audioSettings.customAlert.minute
+        );
+
+        updateCustomAlertDays(
+            audioSettings.customAlert.days
+        );
+
+        setSelect(
+            "customAlertRepeat",
+            audioSettings.customAlert.repeat
+        );
+
+        setNumber(
+            "customAlertInterval",
+            audioSettings.customAlert.interval
+        );
+
+        setSelect(
+            "customAlertFile",
+            audioSettings.customAlert.file
+        );
+
+        setNumber(
+            "customAlertVolume",
+            audioSettings.customAlert.volume
+        );
+
+        updateCustomAlertSourceUI(
+            audioSettings.customAlert.source
+        );
+
+        updateCustomAlertRepeatUI(
+            audioSettings.customAlert.repeat
         );
 
 
@@ -4686,12 +5265,100 @@ function collectAudioSettings() {
 
         alarmToneType:
             clamp(
-                readNumber(
+                readSelect(
                     "alarmToneType",
                     DEFAULTS.alarmToneType
                 ),
                 0,
-                3
+                7
+            ),
+
+
+        /* -------------------------------------------------
+           CUSTOM ALERT
+           ------------------------------------------------- */
+
+        customAlertEnable:
+            readBool(
+                "customAlertEnable",
+                DEFAULTS.customAlert.enable
+            ),
+
+        customAlertSource:
+            clamp(
+                readSelect(
+                    "customAlertSource",
+                    DEFAULTS.customAlert.source
+                ),
+                0,
+                1
+            ),
+
+        customAlertHour:
+            clamp(
+                readNumber(
+                    "customAlertHour",
+                    DEFAULTS.customAlert.hour
+                ),
+                0,
+                23
+            ),
+
+        customAlertMinute:
+            clamp(
+                readNumber(
+                    "customAlertMinute",
+                    DEFAULTS.customAlert.minute
+                ),
+                0,
+                59
+            ),
+
+        customAlertDays:
+            clamp(
+                collectCustomAlertDays(),
+                0,
+                127
+            ),
+
+        customAlertRepeat:
+            clamp(
+                readSelect(
+                    "customAlertRepeat",
+                    DEFAULTS.customAlert.repeat
+                ),
+                0,
+                4
+            ),
+
+        customAlertInterval:
+            clamp(
+                readNumber(
+                    "customAlertInterval",
+                    DEFAULTS.customAlert.interval
+                ),
+                1,
+                60
+            ),
+
+        customAlertFile:
+            clamp(
+                readSelect(
+                    "customAlertFile",
+                    DEFAULTS.customAlert.file
+                ),
+                1,
+                11
+            ),
+
+        customAlertVolume:
+            clamp(
+                readNumber(
+                    "customAlertVolume",
+                    DEFAULTS.customAlert.volume
+                ),
+                0,
+                30
             ),
 
 
@@ -4993,6 +5660,11 @@ function setupEvents() {
         [
             "quranEnable",
             "quranCard"
+        ],
+
+        [
+            "customAlertEnable",
+            "customAlertCard"
         ]
 
     ].forEach(
@@ -5097,6 +5769,50 @@ function setupEvents() {
     )?.addEventListener(
         "click",
         testQuran
+    );
+
+
+    /* Custom Alert: Source toggle */
+
+    getElement(
+        "customAlertSource"
+    )?.addEventListener(
+        "change",
+        () => {
+
+            const source =
+                readSelect(
+                    "customAlertSource",
+                    0
+                );
+
+            updateCustomAlertSourceUI(
+                source
+            );
+
+        }
+    );
+
+
+    /* Custom Alert: Repeat toggle */
+
+    getElement(
+        "customAlertRepeat"
+    )?.addEventListener(
+        "change",
+        () => {
+
+            const repeat =
+                readSelect(
+                    "customAlertRepeat",
+                    0
+                );
+
+            updateCustomAlertRepeatUI(
+                repeat
+            );
+
+        }
     );
 
 
