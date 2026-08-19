@@ -13,11 +13,9 @@ static volatile int8_t rotaryDelta = 0;
 
 static bool lastClkState = false;
 
-static bool lastSwState = HIGH;
+static bool lastSwState    = HIGH;
 
-static unsigned long lastSwBounce = 0;
-
-static bool rotarySwHandled = true;
+static unsigned long lastSwBounce   = 0;
 
 // =================================================
 // Stop Button State
@@ -28,6 +26,16 @@ static bool lastStopState = HIGH;
 static unsigned long lastStopBounce = 0;
 
 static bool stopHandled = true;
+
+// =================================================
+// Button Event State
+// =================================================
+
+static unsigned long swPressStart = 0;
+
+static bool swDown = false;
+
+static ButtonEvent swPendingEvent = BTN_NONE;
 
 // =================================================
 // Buzzer Legacy State (on/off beep)
@@ -359,7 +367,7 @@ static void read_rotary()
     lastClkState = clkState;
 
     // -------------------------------------------------
-    // Rotary Push Button (Volume adjust mode)
+    // Rotary Push Button (short/long press)
     // -------------------------------------------------
 
     bool swState = digitalRead(ROTARY_SW_PIN);
@@ -371,18 +379,32 @@ static void read_rotary()
         30
     );
 
-    if (!swStable && !rotarySwHandled)
+    if (!swStable && !swDown)
     {
-        rotarySwHandled = true;
+        swDown = true;
 
-        Serial.println(F("[HW] Rotary button pressed"));
-
-        buzzer_confirm_tone();
+        swPressStart = millis();
     }
 
-    if (swStable)
+    if (swStable && swDown)
     {
-        rotarySwHandled = false;
+        unsigned long duration =
+            millis() - swPressStart;
+
+        swDown = false;
+
+        if (duration < 500)
+        {
+            swPendingEvent = BTN_SHORT;
+
+            Serial.println(F("[HW] Rotary short press"));
+        }
+        else
+        {
+            swPendingEvent = BTN_LONG;
+
+            Serial.println(F("[HW] Rotary long press"));
+        }
     }
 }
 
@@ -783,10 +805,14 @@ int8_t rotary_get_delta()
 
 
 // =================================================
-// Rotary Button Pressed
+// Get Button Event
 // =================================================
 
-bool rotary_button_pressed()
+ButtonEvent rotary_get_button()
 {
-    return !digitalRead(ROTARY_SW_PIN);
+    ButtonEvent e = swPendingEvent;
+
+    swPendingEvent = BTN_NONE;
+
+    return e;
 }

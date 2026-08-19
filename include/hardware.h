@@ -100,6 +100,12 @@ bool stop_button_pressed();
 
 int8_t rotary_get_delta();
 
-bool rotary_button_pressed();
+enum ButtonEvent {
+    BTN_NONE = 0,
+    BTN_SHORT = 1,
+    BTN_LONG = 2
+};
+
+ButtonEvent rotary_get_button();
 
 #endif

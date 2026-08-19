@@ -18,6 +18,7 @@
 #include "display.h"
 #include "prayer.h"
 #include "hardware.h"
+#include "rotary_menu.h"
 
 
 // =================================
@@ -257,6 +258,11 @@ void setup()
     }
 
 
+    Serial.println("[INIT] Rotary Menu");
+
+    rotary_menu_init();
+
+
     // ---------------------------------
     // System Ready
     // ---------------------------------
@@ -373,12 +379,12 @@ void loop()
 
 
     // ---------------------------------
-    // Display
+    // Display + Rotary Menu
     // ---------------------------------
 
     if (networkServicesInitialized)
     {
-        display_loop();
+        rotary_menu_loop();
     }
 
 
