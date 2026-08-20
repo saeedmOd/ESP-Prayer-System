@@ -356,11 +356,11 @@ static void read_rotary()
 
         if (dtState)
         {
-            rotaryDelta--;
+            rotaryDelta++;
         }
         else
         {
-            rotaryDelta++;
+            rotaryDelta--;
         }
     }
 
