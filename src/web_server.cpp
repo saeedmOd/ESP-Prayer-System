@@ -592,6 +592,34 @@ static void registerStaticRoutes()
     );
 
 
+    server.on(
+        "/web/settings.css",
+        HTTP_GET,
+        [](AsyncWebServerRequest *request)
+        {
+            send_file(
+                request,
+                "/web/settings.css",
+                "text/css"
+            );
+        }
+    );
+
+
+    server.on(
+        "/web/settings.js",
+        HTTP_GET,
+        [](AsyncWebServerRequest *request)
+        {
+            send_file(
+                request,
+                "/web/settings.js",
+                "application/javascript"
+            );
+        }
+    );
+
+
     // Compatibility
 
     server.on(
@@ -679,55 +707,13 @@ static void registerPageRoutes()
 
 
     server.on(
-        "/audio.html",
+        "/settings.html",
         HTTP_GET,
         [](AsyncWebServerRequest *request)
         {
             send_file(
                 request,
-                "/web/audio.html",
-                "text/html"
-            );
-        }
-    );
-
-
-    server.on(
-        "/prayer.html",
-        HTTP_GET,
-        [](AsyncWebServerRequest *request)
-        {
-            send_file(
-                request,
-                "/web/prayer.html",
-                "text/html"
-            );
-        }
-    );
-
-
-    server.on(
-        "/network.html",
-        HTTP_GET,
-        [](AsyncWebServerRequest *request)
-        {
-            send_file(
-                request,
-                "/web/network.html",
-                "text/html"
-            );
-        }
-    );
-
-
-    server.on(
-        "/system.html",
-        HTTP_GET,
-        [](AsyncWebServerRequest *request)
-        {
-            send_file(
-                request,
-                "/web/system.html",
+                "/web/settings.html",
                 "text/html"
             );
         }
@@ -982,6 +968,18 @@ static void registerApiRoutes()
                     true
                 );
 
+            doc["azanDevice"] =
+                storage_get_int(
+                    "audio.azan_device",
+                    0
+                );
+
+            doc["azanBuzzerTone"] =
+                storage_get_int(
+                    "audio.azan_buzzer_tone",
+                    0
+                );
+
             // FIX:
             // POST and GET now use the SAME keys.
 
@@ -1072,6 +1070,18 @@ static void registerApiRoutes()
                 storage_get_bool(
                     "audio.iqama_enable",
                     true
+                );
+
+            doc["iqamaDevice"] =
+                storage_get_int(
+                    "audio.iqama_device",
+                    0
+                );
+
+            doc["iqamaBuzzerTone"] =
+                storage_get_int(
+                    "audio.iqama_buzzer_tone",
+                    0
                 );
 
             doc["iqamaFolder"] =
@@ -1532,6 +1542,42 @@ static void registerApiRoutes()
                 );
             }
 
+            if (doc["azanDevice"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["azanDevice"].as<int>(),
+                        0,
+                        1
+                    );
+
+                settings.azanDevice =
+                    value;
+
+                storage_set_int(
+                    "audio.azan_device",
+                    value
+                );
+            }
+
+            if (doc["azanBuzzerTone"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["azanBuzzerTone"].as<int>(),
+                        ALARM_TONE_MIN,
+                        ALARM_TONE_MAX
+                    );
+
+                settings.azanBuzzerTone =
+                    value;
+
+                storage_set_int(
+                    "audio.azan_buzzer_tone",
+                    value
+                );
+            }
+
             if (doc["azanFolder"].is<int>())
             {
                 int value =
@@ -1764,6 +1810,42 @@ static void registerApiRoutes()
 
                 storage_set_bool(
                     "audio.iqama_enable",
+                    value
+                );
+            }
+
+            if (doc["iqamaDevice"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["iqamaDevice"].as<int>(),
+                        0,
+                        1
+                    );
+
+                settings.iqamaDevice =
+                    value;
+
+                storage_set_int(
+                    "audio.iqama_device",
+                    value
+                );
+            }
+
+            if (doc["iqamaBuzzerTone"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["iqamaBuzzerTone"].as<int>(),
+                        ALARM_TONE_MIN,
+                        ALARM_TONE_MAX
+                    );
+
+                settings.iqamaBuzzerTone =
+                    value;
+
+                storage_set_int(
+                    "audio.iqama_buzzer_tone",
                     value
                 );
             }
@@ -2835,6 +2917,26 @@ static void registerApiRoutes()
                     true
                 );
 
+            doc["mqttServer"] =
+                storage_get_mqtt_server("");
+
+            doc["mqttPort"] =
+                storage_get_mqtt_port(1883);
+
+            doc["mqttUser"] =
+                storage_get_mqtt_user("");
+
+            doc["mqttPassword"] =
+                storage_get_mqtt_password("");
+
+            doc["mqttTopic"] =
+                storage_get_mqtt_topic("prayer");
+
+            doc["mqttEnable"] =
+                storage_get_mqtt_enable(
+                    false
+                );
+
             send_json(
                 request,
                 doc
@@ -2948,6 +3050,72 @@ static void registerApiRoutes()
 
 
             // ------------------------------------------------
+            // MQTT Server
+            // ------------------------------------------------
+
+            if (doc["mqttServer"].is<const char*>())
+            {
+                config["mqtt"]["server"] =
+                    doc["mqttServer"].as<const char*>();
+            }
+
+
+            // ------------------------------------------------
+            // MQTT Port
+            // ------------------------------------------------
+
+            if (doc["mqttPort"].is<int>())
+            {
+                config["mqtt"]["port"] =
+                    doc["mqttPort"].as<int>();
+            }
+
+
+            // ------------------------------------------------
+            // MQTT User
+            // ------------------------------------------------
+
+            if (doc["mqttUser"].is<const char*>())
+            {
+                config["mqtt"]["user"] =
+                    doc["mqttUser"].as<const char*>();
+            }
+
+
+            // ------------------------------------------------
+            // MQTT Password
+            // ------------------------------------------------
+
+            if (doc["mqttPassword"].is<const char*>())
+            {
+                config["mqtt"]["password"] =
+                    doc["mqttPassword"].as<const char*>();
+            }
+
+
+            // ------------------------------------------------
+            // MQTT Topic
+            // ------------------------------------------------
+
+            if (doc["mqttTopic"].is<const char*>())
+            {
+                config["mqtt"]["topic_prefix"] =
+                    doc["mqttTopic"].as<const char*>();
+            }
+
+
+            // ------------------------------------------------
+            // MQTT Enable
+            // ------------------------------------------------
+
+            if (doc["mqttEnable"].is<bool>())
+            {
+                config["mqtt"]["enable"] =
+                    doc["mqttEnable"].as<bool>();
+            }
+
+
+            // ------------------------------------------------
             // Save
             // ------------------------------------------------
 
@@ -2963,7 +3131,7 @@ static void registerApiRoutes()
             }
 
             Serial.println(
-                F("[NETWORK] WiFi settings saved")
+                F("[NETWORK] Network settings saved")
             );
 
             send_json_message(
@@ -3413,6 +3581,16 @@ static void registerSystemRoutes()
                     30
                 );
 
+            uint8_t fileCount =
+                constrain(
+                    doc["fileCount"] | 5,
+                    1,
+                    99
+                );
+
+            String mode =
+                doc["mode"] | "loop";
+
             if (!dfplayer_ready())
             {
                 send_json_message(
@@ -3424,10 +3602,30 @@ static void registerSystemRoutes()
                 return;
             }
 
-            play_folder_with_volume(
-                folder,
-                volume
-            );
+            if (mode == "sequential")
+            {
+                play_folder_sequential(
+                    folder,
+                    fileCount,
+                    volume
+                );
+            }
+            else if (mode == "shuffle")
+            {
+                play_folder_shuffle(
+                    folder,
+                    fileCount,
+                    volume
+                );
+            }
+            else
+            {
+                // Default: loop
+                play_folder_loop(
+                    folder,
+                    volume
+                );
+            }
 
             send_json_message(
                 request,

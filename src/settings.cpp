@@ -331,6 +331,18 @@ void settings_load()
     // Azan
     // =====================================================
 
+    settings.azanDevice =
+        storage_get_int(
+            "audio.azan_device",
+            0
+        );
+
+    settings.azanBuzzerTone =
+        storage_get_int(
+            "audio.azan_buzzer_tone",
+            0
+        );
+
     settings.azanFolder =
         storage_get_int(
             "audio.azan_folder",
@@ -352,6 +364,18 @@ void settings_load()
         storage_get_bool(
             "audio.iqama_enable",
             false
+        );
+
+    settings.iqamaDevice =
+        storage_get_int(
+            "audio.iqama_device",
+            0
+        );
+
+    settings.iqamaBuzzerTone =
+        storage_get_int(
+            "audio.iqama_buzzer_tone",
+            0
         );
 
     settings.iqamaFolder =

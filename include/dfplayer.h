@@ -38,6 +38,23 @@ void play_folder_with_volume(
     uint8_t volume
 );
 
+void play_folder_sequential(
+    uint8_t folder,
+    uint8_t fileCount,
+    uint8_t volume
+);
+
+void play_folder_shuffle(
+    uint8_t folder,
+    uint8_t fileCount,
+    uint8_t volume
+);
+
+void play_folder_loop(
+    uint8_t folder,
+    uint8_t volume
+);
+
 // =================================================
 // Playback Controls
 // =================================================

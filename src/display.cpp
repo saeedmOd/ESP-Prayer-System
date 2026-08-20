@@ -65,9 +65,12 @@ void display_loop()
         return;
     }
 
-    // ===== الوقت بصيغة 24 ساعة =====
+    // ===== الوقت حسب الصيغة =====
     char timeStr[9];
-    strftime(timeStr, sizeof(timeStr), "%H:%M:%S", &timeinfo);
+    if (settings.timeFormat == "12H")
+        strftime(timeStr, sizeof(timeStr), "%I:%M:%S", &timeinfo);
+    else
+        strftime(timeStr, sizeof(timeStr), "%H:%M:%S", &timeinfo);
 
     // ===== آخر جزء من IP =====
     String ipPart = "--";
@@ -140,7 +143,10 @@ void display_normal_loop()
     }
 
     char timeStr[9];
-    strftime(timeStr, sizeof(timeStr), "%H:%M:%S", &timeinfo);
+    if (settings.timeFormat == "12H")
+        strftime(timeStr, sizeof(timeStr), "%I:%M:%S", &timeinfo);
+    else
+        strftime(timeStr, sizeof(timeStr), "%H:%M:%S", &timeinfo);
 
     String ipPart = "--";
 

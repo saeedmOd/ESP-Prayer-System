@@ -25,9 +25,13 @@ static int prayerBrowseIndex = 0;
 
 static int volumeValue = 0;
 
+static int savedVolume = -1;
+
 static bool brightnessOn = true;
 
 static bool needsRedraw = false;
+
+static unsigned long clockVolumeLastChange = 0;
 
 // =================================================
 // Helpers
@@ -121,7 +125,45 @@ static bool handle_snooze(ButtonEvent btn)
 
 static void handle_clock(int8_t delta, ButtonEvent btn)
 {
+    if (delta != 0)
+    {
+        settings.volume += delta;
+
+        if (settings.volume < AUDIO_VOLUME_MIN)
+            settings.volume = AUDIO_VOLUME_MIN;
+
+        if (settings.volume > AUDIO_VOLUME_MAX)
+            settings.volume = AUDIO_VOLUME_MAX;
+
+        savedVolume = settings.volume;
+
+        set_volume(settings.volume);
+
+        buzzer_beep(50, 50, 1);
+
+        clockVolumeLastChange = millis();
+    }
+
     if (btn == BTN_SHORT)
+    {
+        if (settings.volume > 0)
+        {
+            savedVolume = settings.volume;
+            settings.volume = 0;
+            set_volume(0);
+            buzzer_beep(50, 50, 1);
+        }
+        else
+        {
+            settings.volume = (savedVolume > 0) ? savedVolume : 15;
+            set_volume(settings.volume);
+            buzzer_beep(50, 50, 1);
+        }
+
+        clockVolumeLastChange = millis();
+    }
+
+    if (btn == BTN_LONG)
     {
         enter_menu();
     }
@@ -330,7 +372,20 @@ void rotary_menu_loop()
 
     if (currentMode == MODE_CLOCK)
     {
-        display_normal_loop();
+        if (clockVolumeLastChange > 0 && millis() - clockVolumeLastChange > 2000)
+        {
+            clockVolumeLastChange = 0;
+            needsRedraw = true;
+            display_normal_loop();
+        }
+        else if (clockVolumeLastChange > 0)
+        {
+            display_menu_volume(settings.volume);
+        }
+        else
+        {
+            display_normal_loop();
+        }
     }
     else if (needsRedraw)
     {

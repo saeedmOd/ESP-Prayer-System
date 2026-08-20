@@ -622,15 +622,27 @@ if(
 if(settings.azanEnable)
 {
 
-    play_folder_file(
-        settings.azanFolder,
-        settings.azanFile
-    );
+    if (settings.azanDevice == 0)
+    {
+        // DFPlayer
+        play_folder_file(
+            settings.azanFolder,
+            settings.azanFile
+        );
 
+        Serial.print(
+            "Playing Azan (DFPlayer): "
+        );
+    }
+    else
+    {
+        // Buzzer
+        buzzer_play_alarm(settings.azanBuzzerTone);
 
-    Serial.print(
-        "Playing Azan: "
-    );
+        Serial.print(
+            "Playing Azan (Buzzer): "
+        );
+    }
 
 
     Serial.println(
@@ -641,11 +653,8 @@ if(settings.azanEnable)
 else
 {
 
-    // Buzzer alarm when DFPlayer audio is disabled
-    buzzer_play_alarm(settings.alarmToneType);
-
     Serial.print(
-        "Buzzer Alarm: "
+        "Azan Disabled: "
     );
 
 
@@ -733,13 +742,22 @@ if(
 {
     iqamaPlayed[i] = true;
 
-    buzzer_iqama_reminder_tone();
+    if (settings.iqamaDevice == 0)
+    {
+        // DFPlayer
+        buzzer_iqama_reminder_tone();
 
-    play_folder_file_with_volume(
-        settings.iqamaFolder,
-        settings.iqamaFile,
-        settings.iqamaVolume
-    );
+        play_folder_file_with_volume(
+            settings.iqamaFolder,
+            settings.iqamaFile,
+            settings.iqamaVolume
+        );
+    }
+    else
+    {
+        // Buzzer
+        buzzer_play_alarm(settings.iqamaBuzzerTone);
+    }
 
 
     Serial.print(
@@ -853,10 +871,6 @@ String get_prayer_time(
     {
 
 
-        String period;
-
-
-
         int displayHour =
             hour % 12;
 
@@ -869,24 +883,12 @@ String get_prayer_time(
 
 
 
-        if(hour >= 12)
-        {
-            period = "PM";
-        }
-        else
-        {
-            period = "AM";
-        }
-
-
-
         snprintf(
             buffer,
             sizeof(buffer),
-            "%02d:%02d %s",
+            "%02d:%02d",
             displayHour,
-            minute,
-            period.c_str()
+            minute
         );
 
 

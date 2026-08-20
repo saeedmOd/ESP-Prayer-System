@@ -229,6 +229,10 @@ int customAlertVolume;  // DFPlayer volume (0-30)
 // Azan
 // =========================
 
+int azanDevice;   // 0=DFPlayer, 1=Buzzer
+
+int azanBuzzerTone; // ALARM_TONE_*
+
 int azanFolder;
 
 int azanFile;
@@ -239,6 +243,10 @@ int azanFile;
 // =========================
 
 bool iqamaEnable;
+
+int iqamaDevice;  // 0=DFPlayer, 1=Buzzer
+
+int iqamaBuzzerTone; // ALARM_TONE_*
 
 int iqamaFolder;
 

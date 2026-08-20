@@ -7,6 +7,10 @@
 #include "settings.h"
 #include "hardware.h"
 
+#include <algorithm>
+#include <vector>
+#include <cstdlib>
+
 // =================================================
 // Serial Pins
 // =================================================
@@ -598,6 +602,147 @@ void play_folder_with_volume(
 
     Serial.println(
         F("[DFPlayer] Loop folder command sent")
+    );
+}
+
+
+// =================================================
+// Play Folder Sequential (1 → N)
+// =================================================
+
+void play_folder_sequential(
+    uint8_t folder,
+    uint8_t fileCount,
+    uint8_t volume
+)
+{
+    if (!playerReady)
+    {
+        Serial.println(
+            F("[DFPlayer] Not ready - sequential")
+        );
+
+        return;
+    }
+
+    player.volume(volume);
+    delay(DFPLAYER_COMMAND_DELAY);
+
+    Serial.printf(
+        "[DFPlayer] Sequential folder=%u count=%u vol=%u\n",
+        folder, fileCount, volume
+    );
+
+    for (uint8_t i = 1; i <= fileCount; i++)
+    {
+        player.playFolder(folder, i);
+        delay(DFPLAYER_COMMAND_DELAY);
+
+        uint32_t waited = 0;
+        while (waited < 60000)
+        {
+            delay(500);
+            waited += 500;
+
+            if (!player.available())
+                break;
+        }
+
+        if (i < fileCount)
+            delay(300);
+    }
+
+    Serial.println(
+        F("[DFPlayer] Sequential finished")
+    );
+}
+
+
+// =================================================
+// Play Folder Shuffle (random order)
+// =================================================
+
+void play_folder_shuffle(
+    uint8_t folder,
+    uint8_t fileCount,
+    uint8_t volume
+)
+{
+    if (!playerReady)
+    {
+        Serial.println(
+            F("[DFPlayer] Not ready - shuffle")
+        );
+
+        return;
+    }
+
+    std::vector<uint8_t> files;
+    for (uint8_t i = 1; i <= fileCount; i++)
+        files.push_back(i);
+
+    randomSeed(millis());
+    std::random_shuffle(files.begin(), files.end());
+
+    player.volume(volume);
+    delay(DFPLAYER_COMMAND_DELAY);
+
+    Serial.printf(
+        "[DFPlayer] Shuffle folder=%u count=%u vol=%u\n",
+        folder, fileCount, volume
+    );
+
+    for (size_t i = 0; i < files.size(); i++)
+    {
+        player.playFolder(folder, files[i]);
+        delay(DFPLAYER_COMMAND_DELAY);
+
+        uint32_t waited = 0;
+        while (waited < 60000)
+        {
+            delay(500);
+            waited += 500;
+
+            if (!player.available())
+                break;
+        }
+
+        if (i < files.size() - 1)
+            delay(300);
+    }
+
+    Serial.println(
+        F("[DFPlayer] Shuffle finished")
+    );
+}
+
+
+// =================================================
+// Play Folder Loop (repeat forever)
+// =================================================
+
+void play_folder_loop(
+    uint8_t folder,
+    uint8_t volume
+)
+{
+    if (!playerReady)
+    {
+        Serial.println(
+            F("[DFPlayer] Not ready - loop")
+        );
+
+        return;
+    }
+
+    player.volume(volume);
+    delay(DFPLAYER_COMMAND_DELAY);
+
+    player.loopFolder(folder);
+
+    Serial.printf(
+        "[DFPlayer] Loop folder=%u vol=%u\n",
+        folder, volume
     );
 }
 

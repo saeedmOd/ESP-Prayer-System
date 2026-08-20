@@ -1,0 +1,2343 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>
+الإعدادات
+</title>
+
+<link rel="stylesheet" href="/web/settings.css">
+
+</head>
+
+
+<body>
+
+
+<div id="toast" class="toast"></div>
+
+
+<div class="app">
+
+
+    <!-- =====================================================
+         HEADER
+    ===================================================== -->
+
+    <header class="header">
+
+        <div>
+
+            <h1>
+                ⚙️ الإعدادات
+            </h1>
+
+            <small>
+                جميع إعدادات النظام
+            </small>
+
+        </div>
+
+
+        <span
+            id="status"
+            class="status-badge">
+
+            جاري التحميل...
+
+        </span>
+
+    </header>
+
+
+
+    <!-- =====================================================
+         GENERAL CONTROL
+    ===================================================== -->
+
+    <section class="card">
+
+        <div class="card-header">
+
+            <h2>
+                🎛️ التحكم العام
+            </h2>
+
+        </div>
+
+
+        <div class="field-group">
+
+            <label>
+                مستوى الصوت العام
+            </label>
+
+
+            <div class="volume-box">
+
+                <span>🔈</span>
+
+
+                <input
+                    type="range"
+                    id="volume"
+                    min="0"
+                    max="30"
+                    value="15">
+
+
+                <span
+                    id="volumeValue"
+                    class="val-badge">
+
+                    15
+
+                </span>
+
+
+                <span>🔊</span>
+
+            </div>
+
+        </div>
+
+
+        <div class="audio-control-box">
+
+            <div class="audio-control-title">
+
+                <strong>
+                    🎵 التحكم المباشر
+                </strong>
+
+                <span
+                    id="audioControlState"
+                    class="audio-control-state">
+
+                    جاهز
+
+                </span>
+
+            </div>
+
+
+            <div class="audio-buttons">
+
+                <button
+                    type="button"
+                    id="audioPlayButton"
+                    class="audio-btn play">
+
+                    ▶️ تشغيل
+
+                </button>
+
+
+                <button
+                    type="button"
+                    id="audioPauseButton"
+                    class="audio-btn pause">
+
+                    ⏸️ إيقاف مؤقت
+
+                </button>
+
+
+                <button
+                    type="button"
+                    id="audioStopButton"
+                    class="audio-btn stop">
+
+                    ⏹️ إيقاف
+
+                </button>
+
+
+                <button
+                    type="button"
+                    id="audioVolumeUpButton"
+                    class="audio-btn volume">
+
+                    🔊 +
+
+                </button>
+
+
+                <button
+                    type="button"
+                    id="audioVolumeDownButton"
+                    class="audio-btn volume">
+
+                    🔉 −
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         TAB NAVIGATION
+    ===================================================== -->
+
+    <nav class="tab-nav">
+
+        <button class="tab-btn" data-tab="prayer">
+            🕌 الصلاة
+        </button>
+
+        <button class="tab-btn" data-tab="alert">
+            ⏰ تنبيه
+        </button>
+
+        <button class="tab-btn" data-tab="adhkar">
+            📿 أذكار
+        </button>
+
+        <button class="tab-btn" data-tab="quran">
+            📖 القرآن
+        </button>
+
+        <button class="tab-btn" data-tab="network">
+            📶 الشبكة
+        </button>
+
+        <button class="tab-btn" data-tab="system">
+            🛠️ النظام
+        </button>
+
+    </nav>
+
+
+
+    <!-- =====================================================
+         TAB CONTENT
+    ===================================================== -->
+
+    <main class="settings-grid">
+
+
+        <!-- =================================================
+             TAB 1: الصلاة
+        ================================================= -->
+
+        <div id="tab-prayer" class="tab-content active">
+
+            <div class="settings-column">
+
+
+                <!-- AZAN -->
+
+                <section
+                    id="azanCard"
+                    class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            🕌 الأذان
+                        </h2>
+
+                        <div class="header-controls">
+
+                            <select
+                                id="azanEnable"
+                                class="compact-select">
+
+                                <option value="true">
+                                    مفعل
+                                </option>
+
+                                <option value="false">
+                                    معطل
+                                </option>
+
+                            </select>
+
+                            <select
+                                id="azanDevice"
+                                class="compact-select">
+
+                                <option value="0">
+                                    DFPlayer
+                                </option>
+
+                                <option value="1">
+                                    BUZZER
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+
+                    <div id="azanDfplayerSection">
+
+                        <div class="field-group">
+
+                            <label>
+                                صوت الأذان
+                            </label>
+
+
+                            <select
+                                id="azanPreset">
+
+                                <option value="1:1">
+                                    أذان مؤسسة دبي للإعلام
+                                </option>
+
+                                <option value="1:2">
+                                    أذان قصير
+                                </option>
+
+                                <option value="1:3">
+                                    أذان الحرم المكي
+                                </option>
+
+                                <option value="1:4">
+                                    أذان الشيخ مشاري
+                                </option>
+
+                                <option value="1:5">
+                                    جرس
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+
+                    <div id="azanBuzzerSection" style="display:none;">
+
+                        <div class="field-group">
+
+                            <label>
+                                نوع صوت المنبه
+                            </label>
+
+                            <select id="azanBuzzerTone">
+
+                                <option value="0">كلاسيكي (تقليدي)</option>
+                                <option value="1">عالي الصوت</option>
+                                <option value="2">تحذير</option>
+                                <option value="3">ميلودي</option>
+                                <option value="4">ناعم</option>
+                                <option value="5">منبه</option>
+                                <option value="6">عاجل</option>
+                                <option value="7">جرس</option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="btn-test"
+                        data-test-endpoint="/api/test/azan"
+                        data-test-message="تم تشغيل الأذان">
+
+                        ▶️ تجربة الأذان
+
+                    </button>
+
+                </section>
+
+
+
+                <!-- IQAMA -->
+
+                <section
+                    id="iqamaCard"
+                    class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            ⏱️ الإقامة
+                        </h2>
+
+                        <div class="header-controls">
+
+                            <select
+                                id="iqamaEnable"
+                                class="compact-select">
+
+                                <option value="true">
+                                    مفعل
+                                </option>
+
+                                <option value="false">
+                                    معطل
+                                </option>
+
+                            </select>
+
+                            <select
+                                id="iqamaDevice"
+                                class="compact-select">
+
+                                <option value="0">
+                                    DFPlayer
+                                </option>
+
+                                <option value="1">
+                                    BUZZER
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+
+                    <div id="iqamaDfplayerSection">
+
+                        <div class="field-group">
+
+                            <label>
+                                🔊 صوت الإقامة
+                            </label>
+
+
+                            <select
+                                id="iqamaPreset">
+
+                                <option value="2:4">
+                                    إقامة الحرم المكي
+                                </option>
+
+                                <option value="2:5">
+                                    إقامة الحرم المدني
+                                </option>
+
+                                <option value="2:6">
+                                    إقامة قصيرة
+                                </option>
+
+                                <option value="2:7">
+                                    إقامة طويلة
+                                </option>
+
+                                <option value="2:8">
+                                    جرس
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+
+                    <div id="iqamaBuzzerSection" style="display:none;">
+
+                        <div class="field-group">
+
+                            <label>
+                                نوع صوت المنبه
+                            </label>
+
+                            <select id="iqamaBuzzerTone">
+
+                                <option value="0">كلاسيكي (تقليدي)</option>
+                                <option value="1">عالي الصوت</option>
+                                <option value="2">تحذير</option>
+                                <option value="3">ميلودي</option>
+                                <option value="4">ناعم</option>
+                                <option value="5">منبه</option>
+                                <option value="6">عاجل</option>
+                                <option value="7">جرس</option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            🔉 مستوى صوت الإقامة
+                        </label>
+
+
+                        <div class="small-volume-box">
+
+                            <span>🔊</span>
+
+
+                            <input
+                                type="range"
+                                id="iqamaVolume"
+                                min="0"
+                                max="30"
+                                value="12">
+
+
+                            <span
+                                id="iqamaVolumeValue"
+                                class="small-volume-value">
+
+                                12
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            🕌 الصلوات التي يتم تشغيل الإقامة لها
+                        </label>
+
+
+                        <div class="prayer-check-grid">
+
+                            <label class="prayer-check">
+
+                                <input
+                                    type="checkbox"
+                                    id="iqamaFajr">
+
+                                <span>الفجر</span>
+
+                            </label>
+
+
+                            <label class="prayer-check">
+
+                                <input
+                                    type="checkbox"
+                                    id="iqamaDhuhr">
+
+                                <span>الظهر</span>
+
+                            </label>
+
+
+                            <label class="prayer-check">
+
+                                <input
+                                    type="checkbox"
+                                    id="iqamaAsr">
+
+                                <span>العصر</span>
+
+                            </label>
+
+
+                            <label class="prayer-check">
+
+                                <input
+                                    type="checkbox"
+                                    id="iqamaMaghrib">
+
+                                <span>المغرب</span>
+
+                            </label>
+
+
+                            <label class="prayer-check">
+
+                                <input
+                                    type="checkbox"
+                                    id="iqamaIsha">
+
+                                <span>العشاء</span>
+
+                            </label>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            ⏳ تأخير الإقامة بعد الأذان (بالدقائق)
+                        </label>
+
+
+                        <input
+                            type="number"
+                            id="iqamaDelay"
+                            min="0"
+                            max="60"
+                            value="10">
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="btn-test"
+                        data-test-endpoint="/api/test/iqama"
+                        data-test-message="تم تشغيل الإقامة">
+
+                        ▶️ تجربة الإقامة
+
+                    </button>
+
+                </section>
+
+
+
+                <!-- PRAYER SETTINGS -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            ⚙️ إعدادات الصلاة
+                        </h2>
+
+                    </div>
+
+
+                    <div class="location-grid">
+
+                        <div class="location-item">
+                            <label>المدينة</label>
+                            <input type="text" id="city">
+                        </div>
+
+                        <div class="location-item">
+                            <label>الدولة</label>
+                            <input type="text" id="country">
+                        </div>
+
+                        <div class="location-item">
+                            <label>خط العرض</label>
+                            <input type="number" id="latitude" step="0.0001">
+                        </div>
+
+                        <div class="location-item">
+                            <label>خط الطول</label>
+                            <input type="number" id="longitude" step="0.0001">
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        id="detectLocationBtn"
+                        class="btn-test"
+                        onclick="detectLocation()">
+
+                        📍 كشف الموقع تلقائياً
+
+                    </button>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            🧮 طريقة الحساب
+                        </label>
+
+                        <select id="method">
+
+                            <option value="UmmAlQura">
+                                جامعة أم القرى
+                            </option>
+
+                            <option value="MWL">
+                                رابطة العالم الإسلامي
+                            </option>
+
+                            <option value="Egyptian">
+                                الهيئة المصرية
+                            </option>
+
+                            <option value="Karachi">
+                                كراتشي
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            🕒 صيغة الساعة
+                        </label>
+
+                        <select id="timeFormat">
+
+                            <option value="24H">
+                                24 ساعة
+                            </option>
+
+                            <option value="12H">
+                                12 ساعة
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            ⏱ تعديل مواقيت الصلاة (بالدقائق)
+                        </label>
+
+                        <div class="offset-grid">
+
+                            <div class="offset-item">
+                                <span class="offset-label">الفجر</span>
+                                <input type="number" id="fajr_offset" value="0" min="-60" max="60">
+                            </div>
+
+                            <div class="offset-item">
+                                <span class="offset-label">الظهر</span>
+                                <input type="number" id="dhuhr_offset" value="0" min="-60" max="60">
+                            </div>
+
+                            <div class="offset-item">
+                                <span class="offset-label">العصر</span>
+                                <input type="number" id="asr_offset" value="0" min="-60" max="60">
+                            </div>
+
+                            <div class="offset-item">
+                                <span class="offset-label">المغرب</span>
+                                <input type="number" id="maghrib_offset" value="0" min="-60" max="60">
+                            </div>
+
+                            <div class="offset-item">
+                                <span class="offset-label">العشاء</span>
+                                <input type="number" id="isha_offset" value="0" min="-60" max="60">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             TAB 2: تنبيه مخصص
+        ================================================= -->
+
+        <div id="tab-alert" class="tab-content">
+
+            <div class="settings-column">
+
+
+                <!-- CUSTOM ALERT -->
+
+                <section
+                    id="customAlertCard"
+                    class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            ⏰ تنبيه مخصص
+                        </h2>
+
+
+                        <select
+                            id="customAlertEnable"
+                            class="compact-select">
+
+                            <option value="true">
+                                مفعل
+                            </option>
+
+                            <option value="false">
+                                معطل
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            المصدر
+                        </label>
+
+                        <select
+                            id="customAlertSource">
+
+                            <option value="0">
+                                بازر (Buzzer)
+                            </option>
+
+                            <option value="1">
+                                فايل DFPlayer (F)
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            الوقت
+                        </label>
+
+                        <div class="time-input-group">
+
+                            <div class="time-input-wrapper">
+                                <span class="time-label">H</span>
+                                <input
+                                    type="number"
+                                    id="customAlertHour"
+                                    min="0"
+                                    max="23"
+                                    value="0">
+                            </div>
+
+                            <span class="time-sep">:</span>
+
+                            <div class="time-input-wrapper">
+                                <span class="time-label">m</span>
+                                <input
+                                    type="number"
+                                    id="customAlertMinute"
+                                    min="0"
+                                    max="59"
+                                    value="0">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            أيام العمل
+                        </label>
+
+                        <div class="days-grid">
+
+                            <label class="day-check">
+                                <input
+                                    type="checkbox"
+                                    id="customAlertDays0"
+                                    value="1">
+                                أحد
+                            </label>
+
+                            <label class="day-check">
+                                <input
+                                    type="checkbox"
+                                    id="customAlertDays1"
+                                    value="2">
+                                اثنين
+                            </label>
+
+                            <label class="day-check">
+                                <input
+                                    type="checkbox"
+                                    id="customAlertDays2"
+                                    value="4">
+                                ثلاثاء
+                            </label>
+
+                            <label class="day-check">
+                                <input
+                                    type="checkbox"
+                                    id="customAlertDays3"
+                                    value="8">
+                                أربعاء
+                            </label>
+
+                            <label class="day-check">
+                                <input
+                                    type="checkbox"
+                                    id="customAlertDays4"
+                                    value="16">
+                                خميس
+                            </label>
+
+                            <label class="day-check">
+                                <input
+                                    type="checkbox"
+                                    id="customAlertDays5"
+                                    value="32">
+                                جمعة
+                            </label>
+
+                            <label class="day-check">
+                                <input
+                                    type="checkbox"
+                                    id="customAlertDays6"
+                                    value="64">
+                                سبت
+                            </label>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            التكرار
+                        </label>
+
+                        <div class="repeat-row">
+
+                            <select
+                                id="customAlertRepeat">
+
+                                <option value="0">
+                                    بدون تكرار
+                                </option>
+
+                                <option value="1">
+                                    مرة
+                                </option>
+
+                                <option value="2">
+                                    مرتين
+                                </option>
+
+                                <option value="3">
+                                    3 مرات
+                                </option>
+
+                                <option value="4">
+                                    4 مرات
+                                </option>
+
+                            </select>
+
+
+                            <div
+                                id="customAlertIntervalGroup"
+                                style="display:none;">
+
+                                كل
+
+                                <input
+                                    type="number"
+                                    id="customAlertInterval"
+                                    min="1"
+                                    max="60"
+                                    value="1">
+
+                                دقيقة
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- BUZZER SOURCE (B) -->
+
+                    <div id="customAlertBuzzerSection">
+
+                        <div class="field-group">
+
+                            <p style="color: var(--muted); font-size: 0.85em; margin: 8px 0;">
+                                الصوت يُستخدم من إعدادات "صوت المنبه" أعلاه
+                            </p>
+
+                        </div>
+
+
+                        <button
+                            type="button"
+                            class="btn-test"
+                            data-test-endpoint="/api/test/buzzer-alarm"
+                            data-test-message="تم تشغيل الصوت">
+
+                            ▶️ تجربة الصوت
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- FILE SOURCE (F) -->
+
+                    <div id="customAlertFileSection"
+                        style="display:none;">
+
+                        <div class="field-group">
+
+                            <label>
+                                الملف
+                            </label>
+
+                            <select
+                                id="customAlertFile">
+
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="field-group">
+
+                            <label>
+                                🔊 مستوى الصوت
+                            </label>
+
+                            <input
+                                type="range"
+                                id="customAlertVolume"
+                                min="0"
+                                max="30"
+                                value="15">
+
+                            <span
+                                id="customAlertVolumeValue">
+                                15
+                            </span>
+
+                        </div>
+
+
+                        <button
+                            type="button"
+                            class="btn-test"
+                            data-test-endpoint="/api/test/custom-alert-file"
+                            data-test-message="تم تشغيل الملف">
+
+                            ▶️ تجربة الملف
+
+                        </button>
+
+                    </div>
+
+
+                </section>
+
+
+
+                <!-- BUZZER ALARM -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            🔔 صوت المنبه (البازر)
+                        </h2>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            نوع صوت المنبه
+                        </label>
+
+
+                        <select
+                            id="alarmToneType">
+
+                            <option value="0">
+                                كلاسيكي (تقليدي)
+                            </option>
+
+                            <option value="1">
+                                عالي الصوت
+                            </option>
+
+                            <option value="2">
+                                تحذير
+                            </option>
+
+                            <option value="3">
+                                ميلودي
+                            </option>
+
+                            <option value="4">
+                                هادئ
+                            </option>
+
+                            <option value="5">
+                                منبه سريع
+                            </option>
+
+                            <option value="6">
+                                عاجل
+                            </option>
+
+                            <option value="7">
+                                جرس
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="btn-test"
+                        data-test-endpoint="/api/test/buzzer-alarm"
+                        data-test-message="تم تشغيل المنبه">
+
+                        ▶️ تجربة المنبه
+
+                    </button>
+
+                </section>
+
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             TAB 3: أذكار
+        ================================================= -->
+
+        <div id="tab-adhkar" class="tab-content">
+
+            <div class="settings-column">
+
+
+                <!-- ADHKAR -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            📿 أذكار الصباح والمساء
+                        </h2>
+
+                    </div>
+
+
+                    <div class="adhkar-grid">
+
+
+                        <!-- MORNING -->
+
+                        <div
+                            id="morningAdhkarCard"
+                            class="adhkar-card">
+
+                            <div class="adhkar-header">
+
+                                <h3>
+                                    🌅 الصباح
+                                </h3>
+
+
+                                <select
+                                    id="morningAdhkarEnable"
+                                    class="compact-select">
+
+                                    <option value="true">
+                                        مفعل
+                                    </option>
+
+                                    <option value="false">
+                                        معطل
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <div class="system-row">
+
+                                <span>
+                                    🎵 الملف
+                                </span>
+
+                                <span>
+                                    مجلد 4 / ملف 1
+                                </span>
+
+                            </div>
+
+
+                            <div class="field-group">
+
+                                <label>
+                                    وقت التشغيل
+                                </label>
+
+
+                                <div class="time-input-group">
+
+                                    <div class="time-input-wrapper">
+                                        <span class="time-label">H</span>
+                                        <input
+                                            type="number"
+                                            id="morningAdhkarHour"
+                                            min="0"
+                                            max="23"
+                                            value="6">
+                                    </div>
+
+                                    <span class="time-sep">:</span>
+
+                                    <div class="time-input-wrapper">
+                                        <span class="time-label">m</span>
+                                        <input
+                                            type="number"
+                                            id="morningAdhkarMinute"
+                                            min="0"
+                                            max="59"
+                                            value="0">
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="field-group">
+
+                                <label>
+                                    🔊 مستوى الصوت
+                                </label>
+
+
+                                <div class="volume-box">
+
+                                    <input
+                                        type="range"
+                                        id="morningAdhkarVolume"
+                                        min="0"
+                                        max="30"
+                                        value="9">
+
+
+                                    <span
+                                        id="morningAdhkarVolumeValue"
+                                        class="val-badge">
+
+                                        9
+
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <button
+                                type="button"
+                                class="btn-test"
+                                data-test-endpoint="/api/test/morning-adhkar"
+                                data-test-message="تم تشغيل أذكار الصباح">
+
+                                ▶️ تجربة أذكار الصباح
+
+                            </button>
+
+                        </div>
+
+
+
+                        <!-- EVENING -->
+
+                        <div
+                            id="eveningAdhkarCard"
+                            class="adhkar-card">
+
+                            <div class="adhkar-header">
+
+                                <h3>
+                                    🌙 المساء
+                                </h3>
+
+
+                                <select
+                                    id="eveningAdhkarEnable"
+                                    class="compact-select">
+
+                                    <option value="true">
+                                        مفعل
+                                    </option>
+
+                                    <option value="false">
+                                        معطل
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <div class="system-row">
+
+                                <span>
+                                    🎵 الملف
+                                </span>
+
+                                <span>
+                                    مجلد 4 / ملف 2
+                                </span>
+
+                            </div>
+
+
+                            <div class="field-group">
+
+                                <label>
+                                    وقت التشغيل
+                                </label>
+
+
+                                <div class="time-input-group">
+
+                                    <div class="time-input-wrapper">
+                                        <span class="time-label">H</span>
+                                        <input
+                                            type="number"
+                                            id="eveningAdhkarHour"
+                                            min="0"
+                                            max="23"
+                                            value="18">
+                                    </div>
+
+                                    <span class="time-sep">:</span>
+
+                                    <div class="time-input-wrapper">
+                                        <span class="time-label">m</span>
+                                        <input
+                                            type="number"
+                                            id="eveningAdhkarMinute"
+                                            min="0"
+                                            max="59"
+                                            value="0">
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="field-group">
+
+                                <label>
+                                    🔊 مستوى الصوت
+                                </label>
+
+
+                                <div class="volume-box">
+
+                                    <input
+                                        type="range"
+                                        id="eveningAdhkarVolume"
+                                        min="0"
+                                        max="30"
+                                        value="9">
+
+
+                                    <span
+                                        id="eveningAdhkarVolumeValue"
+                                        class="val-badge">
+
+                                        9
+
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <button
+                                type="button"
+                                class="btn-test"
+                                data-test-endpoint="/api/test/evening-adhkar"
+                                data-test-message="تم تشغيل أذكار المساء">
+
+                                ▶️ تجربة أذكار المساء
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- KAHF -->
+
+                <section
+                    id="kahfCard"
+                    class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            📖 سورة الكهف
+                        </h2>
+
+
+                        <select
+                            id="kahfEnable"
+                            class="compact-select">
+
+                            <option value="true">
+                                مفعل
+                            </option>
+
+                            <option value="false">
+                                معطل
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="system-row">
+
+                        <span>
+                            🎵 الملف
+                        </span>
+
+                        <span>
+                            مجلد 4 / ملف 1
+                        </span>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            وقت التنبيه
+                        </label>
+
+
+                    <div class="time-input-group">
+
+                        <div class="time-input-wrapper">
+                            <span class="time-label">H</span>
+                            <input
+                                type="number"
+                                id="kahfHour"
+                                min="0"
+                                max="23"
+                                value="9">
+                        </div>
+
+                        <span class="time-sep">:</span>
+
+                        <div class="time-input-wrapper">
+                            <span class="time-label">m</span>
+                            <input
+                                type="number"
+                                id="kahfMinute"
+                                min="0"
+                                max="59"
+                                value="0">
+                        </div>
+
+                    </div>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            🔊 مستوى الصوت
+                        </label>
+
+
+                        <div class="volume-box">
+
+                            <input
+                                type="range"
+                                id="kahfVolume"
+                                min="0"
+                                max="30"
+                                value="10">
+
+
+                            <span
+                                id="kahfVolumeValue"
+                                class="val-badge">
+
+                                10
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="btn-test"
+                        data-test-endpoint="/api/test/kahf"
+                        data-test-message="تم تشغيل سورة الكهف">
+
+                        ▶️ تجربة سورة الكهف
+
+                    </button>
+
+                </section>
+
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             TAB 4: القرآن
+        ================================================= -->
+
+        <div id="tab-quran" class="tab-content">
+
+            <div class="settings-column">
+
+
+                <!-- QURAN -->
+
+                <section
+                    id="quranCard"
+                    class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            📖 القرآن الكريم
+                        </h2>
+
+
+                        <select
+                            id="quranEnable"
+                            class="compact-select">
+
+                            <option value="true">
+                                مفعل
+                            </option>
+
+                            <option value="false">
+                                معطل
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            اختيار المحتوى
+                        </label>
+
+
+                        <select
+                            id="quranType">
+
+                            <option
+                                value="baqarah"
+                                data-folder="2"
+                                data-file="1">
+
+                                سورة البقرة — محمد أيوب
+
+                            </option>
+
+
+                            <option
+                                value="baqarahLast"
+                                data-folder="2"
+                                data-file="2">
+
+                                أواخر سورة البقرة — محمد أيوب
+
+                            </option>
+
+
+                            <option
+                                value="ayatKursi"
+                                data-folder="2"
+                                data-file="3">
+
+                                آية الكرسي — محمد أيوب
+
+                            </option>
+
+
+                            <option
+                                value="maryam"
+                                data-folder="2"
+                                data-file="4">
+
+                                سورة مريم كاملة — محمد أيوب
+
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="system-row">
+
+                        <span>
+                            🎵 الملف
+                        </span>
+
+                        <span id="quranFileInfo">
+                            مجلد 2 / ملف 1
+                        </span>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            وقت التنبيه
+                        </label>
+
+
+                    <div class="time-input-group">
+
+                        <div class="time-input-wrapper">
+                            <span class="time-label">H</span>
+                            <input
+                                type="number"
+                                id="quranHour"
+                                min="0"
+                                max="23"
+                                value="0">
+                        </div>
+
+                        <span class="time-sep">:</span>
+
+                        <div class="time-input-wrapper">
+                            <span class="time-label">m</span>
+                            <input
+                                type="number"
+                                id="quranMinute"
+                                min="0"
+                                max="59"
+                                value="0">
+                        </div>
+
+                    </div>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            مستوى الصوت
+                        </label>
+
+
+                        <div class="volume-box">
+
+                            <input
+                                type="range"
+                                id="quranVolume"
+                                min="0"
+                                max="30"
+                                value="10">
+
+
+                            <span
+                                id="quranVolumeValue"
+                                class="val-badge">
+
+                                10
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        id="quranTestButton"
+                        class="btn-test">
+
+                        ▶️ تجربة المحتوى المختار
+
+                    </button>
+
+                </section>
+
+
+
+                <!-- FOLDER -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            📁 تشغيل مجلد
+                        </h2>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            📖 المجموعة
+                        </label>
+
+                        <select id="folderCategory">
+
+                            <option value="1" data-count="5">
+                                مجموعه مختارة من الايات (5 ملفات)
+                            </option>
+
+                            <option value="2" data-count="15">
+                                سور قصيره (15 ملف)
+                            </option>
+
+                            <option value="3" data-count="10">
+                                قراءت مختارة (10 ملفات)
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            🔉 مستوى الصوت
+                        </label>
+
+                        <div class="small-volume-box">
+
+                            <span>🔊</span>
+
+                            <input
+                                type="range"
+                                id="folderVolume"
+                                min="0"
+                                max="30"
+                                value="15">
+
+                            <span
+                                id="folderVolumeValue"
+                                class="small-volume-value">
+                                15
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            🎵 وضع التشغيل
+                        </label>
+
+                        <div class="play-mode-grid">
+
+                            <label class="play-mode-option">
+                                <input type="radio" name="folderMode" value="sequential" checked>
+                                <span class="play-mode-box">
+                                    <span class="play-mode-icon">➡️</span>
+                                    <span class="play-mode-text">متسلسل</span>
+                                </span>
+                            </label>
+
+                            <label class="play-mode-option">
+                                <input type="radio" name="folderMode" value="shuffle">
+                                <span class="play-mode-box">
+                                    <span class="play-mode-icon">🔀</span>
+                                    <span class="play-mode-text">عشوائي</span>
+                                </span>
+                            </label>
+
+                            <label class="play-mode-option">
+                                <input type="radio" name="folderMode" value="loop">
+                                <span class="play-mode-box">
+                                    <span class="play-mode-icon">🔁</span>
+                                    <span class="play-mode-text">تكرار</span>
+                                </span>
+                            </label>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        id="folderButton"
+                        class="btn-test">
+
+                        🎵 تشغيل المجلد
+
+                    </button>
+
+                    <button
+                        type="button"
+                        id="folderStopButton"
+                        class="btn-test"
+                        style="display:none; background: rgba(239,68,68,0.15); color: #ef4444; border-color: rgba(239,68,68,0.3);">
+
+                        ⏹️ إيقاف
+
+                    </button>
+
+                </section>
+
+
+
+                <!-- INFO -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            ℹ️ ملاحظات التشغيل
+                        </h2>
+
+                    </div>
+
+
+                    <div class="system-row">
+
+                        <span>
+                            🔊 الصوت العام
+                        </span>
+
+                        <span>
+                            0 — 30
+                        </span>
+
+                    </div>
+
+
+                    <div class="system-row">
+
+                        <span>
+                            ⏱️ تأخير الإقامة
+                        </span>
+
+                        <span>
+                            0 — 60 دقيقة
+                        </span>
+
+                    </div>
+
+
+                    <div class="system-row">
+
+                        <span>
+                            📁 المجلد
+                        </span>
+
+                        <span>
+                            1 — 99
+                        </span>
+
+                    </div>
+
+
+                    <div class="system-row">
+
+                        <span>
+                            🎵 الملف
+                        </span>
+
+                        <span>
+                            1 — 999
+                        </span>
+
+                    </div>
+
+                </section>
+
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             TAB 5: الشبكة
+        ================================================= -->
+
+        <div id="tab-network" class="tab-content">
+
+            <div class="settings-column">
+
+
+                <!-- WIFI -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            📶 شبكة WiFi
+                        </h2>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            اسم الشبكة (SSID)
+                        </label>
+
+                        <input
+                            type="text"
+                            id="wifiSSID"
+                            placeholder="اسم الشبكة">
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            تفعيل WiFi
+                        </label>
+
+                        <select id="wifiEnable">
+
+                            <option value="true">
+                                مفعل
+                            </option>
+
+                            <option value="false">
+                                معطل
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            كلمة المرور
+                        </label>
+
+                        <input
+                            type="password"
+                            id="wifiPassword"
+                            placeholder="كلمة المرور">
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        id="wifiScanBtn"
+                        class="btn-test">
+
+                        🔍 بحث عن الشبكات
+
+                    </button>
+
+
+                    <div id="wifiNetworkList">
+                    </div>
+
+                </section>
+
+
+
+                <!-- MQTT -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            📡 MQTT
+                        </h2>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            الخادم (Server)
+                        </label>
+
+                        <input
+                            type="text"
+                            id="mqttServer"
+                            placeholder="mqtt.example.com">
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            المنفذ (Port)
+                        </label>
+
+                        <input
+                            type="number"
+                            id="mqttPort"
+                            value="1883"
+                            placeholder="1883">
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            المستخدم
+                        </label>
+
+                        <input
+                            type="text"
+                            id="mqttUser"
+                            placeholder="المستخدم">
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            كلمة المرور
+                        </label>
+
+                        <input
+                            type="password"
+                            id="mqttPassword"
+                            placeholder="كلمة المرور">
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            الموضوع (Topic)
+                        </label>
+
+                        <input
+                            type="text"
+                            id="mqttTopic"
+                            value="prayer"
+                            placeholder="prayer">
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            تفعيل MQTT
+                        </label>
+
+                        <select id="mqttEnable">
+
+                            <option value="true">
+                                مفعل
+                            </option>
+
+                            <option value="false">
+                                معطل
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </section>
+
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             TAB 6: النظام
+        ================================================= -->
+
+        <div id="tab-system" class="tab-content">
+
+            <div class="settings-column">
+
+
+                <!-- DEVICE INFO -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            📋 معلومات الجهاز
+                        </h2>
+
+                    </div>
+
+
+                    <div class="status">
+
+                        <p>
+
+                            🕌 الجهاز:
+
+                            <span id="infoDevice">
+                                ESP Prayer System
+                            </span>
+
+                        </p>
+
+
+                        <p>
+
+                            📦 Firmware:
+
+                            <span id="infoVersion">
+                                1.0.0
+                            </span>
+
+                        </p>
+
+
+                        <p>
+
+                            📶 WiFi:
+
+                            <span id="infoWifiStatus">
+                                ---
+                            </span>
+
+                        </p>
+
+
+                        <p>
+
+                            👨‍💻 المطور:
+
+                            <a href="https://github.com/saeedmOd"
+                               target="_blank"
+                               rel="noopener"
+                               style="color: var(--primary); text-decoration: none;">
+
+                                بادي إلكترونيك (BADIELCTRONIC)
+
+                            </a>
+
+                        </p>
+
+                    </div>
+
+                </section>
+
+
+
+                <!-- DEVICE CONTROL -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            🛠️ التحكم بالجهاز
+                        </h2>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        id="restartBtn"
+                        class="btn-test">
+
+                        🔄 إعادة تشغيل
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="resetBtn"
+                        class="btn-test"
+                        style="margin-top: 8px;">
+
+                        ⚠️ مسح الإعدادات
+
+                    </button>
+
+                </section>
+
+
+            </div>
+
+        </div>
+
+
+    </main>
+
+</div>
+
+
+
+<!-- =========================================================
+     FOOTER
+========================================================= -->
+
+<footer class="actions-footer">
+
+    <div class="actions-container">
+
+        <button
+            id="savePrayerBtn"
+            class="btn-primary"
+            type="button">
+
+            💾 حفظ الصلاة
+
+        </button>
+
+
+        <button
+            id="saveAlertBtn"
+            class="btn-primary"
+            type="button"
+            style="display:none;">
+
+            💾 حفظ التنبيه
+
+        </button>
+
+
+        <button
+            id="saveAdhkarBtn"
+            class="btn-primary"
+            type="button"
+            style="display:none;">
+
+            💾 حفظ الأذكار
+
+        </button>
+
+
+        <button
+            id="saveQuranBtn"
+            class="btn-primary"
+            type="button"
+            style="display:none;">
+
+            💾 حفظ القرآن
+
+        </button>
+
+
+        <button
+            id="saveNetworkBtn"
+            class="btn-primary"
+            type="button"
+            style="display:none;">
+
+            💾 حفظ الشبكة
+
+        </button>
+
+
+        <button
+            id="backButton"
+            class="btn-secondary"
+            type="button">
+
+            ← رجوع
+
+        </button>
+
+    </div>
+
+</footer>
+
+
+
+<script src="/web/settings.js"></script>
+
+
+</body>
+
+</html>
