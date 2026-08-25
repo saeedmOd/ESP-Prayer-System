@@ -19,6 +19,7 @@
 #include "prayer.h"
 #include "hardware.h"
 #include "rotary_menu.h"
+#include "api_client.h"
 
 
 // =================================
@@ -400,4 +401,11 @@ void loop()
     // ---------------------------------
 
     web_server_loop();
+
+
+    // ---------------------------------
+    // API Diagnostic Test (non-blocking)
+    // ---------------------------------
+
+    api_process_test();
 }

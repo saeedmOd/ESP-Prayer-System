@@ -9,6 +9,7 @@
 #include "dfplayer.h"
 #include "hardware.h"
 #include "display.h"
+#include "api_client.h"
 
 
 // =====================================
@@ -21,6 +22,8 @@ static float prayerTimes[6] = {
 
 
 static int prayerMinutes[6];
+
+static int iqamaMinutes[6];
 
 
 static bool azanPlayed[6] =
@@ -90,19 +93,31 @@ static const char* prayerNames[6] =
 static void apply_calculation_method()
 {
 
+    float zeroTune[6] = {0,0,0,0,0,0};
+
     if(settings.calculationMethod == "MWL")
     {
         setCalcMethod(MWL);
+        setPrayerTune(zeroTune);
     }
     else if(settings.calculationMethod == "Egypt")
     {
         setCalcMethod(Egyptian);
+        setPrayerTune(zeroTune);
+    }
+    else if(settings.calculationMethod == "UAE")
+    {
+        // Abu Dhabi Awqaf (Al Ain) reference alignment:
+        // Dhuhr +3, Asr +1, Maghrib +3, Sunrise -5 (minutes)
+        float uaeTune[6] = {0, -5, 3, 1, 3, 0};
+        setCalcMethod(UAE);
+        setPrayerTune(uaeTune);
     }
     else
     {
         setCalcMethod(UmmAlQura);
+        setPrayerTune(zeroTune);
     }
-
 
 
     if(settings.asrMethod == "Hanafi")
@@ -140,6 +155,26 @@ static void calculate_prayers()
         return;
     }
 
+
+    // Hijri date is a calendar fact - always compute it locally
+    // (network-free, works reliably on this hardware)
+    compute_local_hijri();
+
+
+    if (settings.prayerSource == "api")
+    {
+        Serial.println("Fetching prayer times from API...");
+
+        bool ok = api_fetch_prayer_times();
+
+        if (ok)
+        {
+            Serial.println("Prayer times loaded from API");
+            return;
+        }
+
+        Serial.println("API failed, falling back to local calculation");
+    }
 
 
     apply_calculation_method();
@@ -330,6 +365,31 @@ static void calculate_prayers()
     }
 
 
+    // =====================================
+    // Calculate Iqama Times
+    // =====================================
+
+    for(int i = 0; i < 6; i++)
+    {
+        int delay = settings.iqamaPrayerDelay[i];
+
+        if(delay <= 0)
+        {
+            delay = settings.iqamaDelayMinutes;
+        }
+
+        iqamaMinutes[i] = prayerMinutes[i] + delay;
+
+        if(iqamaMinutes[i] >= 1440)
+        {
+            iqamaMinutes[i] -= 1440;
+        }
+
+        if(iqamaMinutes[i] < 0)
+        {
+            iqamaMinutes[i] += 1440;
+        }
+    }
 
 
     Serial.println(
@@ -895,13 +955,7 @@ else
 // ==========================
 
 int iqamaMinute =
-    prayerMinutes[i] + settings.iqamaDelayMinutes;
-
-
-if(iqamaMinute >= 1440)
-{
-    iqamaMinute -= 1440;
-}
+    iqamaMinutes[i];
 
 
 // ==========================
@@ -1147,7 +1201,90 @@ String get_prayer_time(
 
 
 
+// =====================================
+// Format Iqama Time
+// =====================================
 
+String get_iqama_time(
+    int index
+)
+{
+
+    if(index < 0 || index > 5)
+        return "--:--";
+
+
+
+    int hour =
+        iqamaMinutes[index] / 60;
+
+
+
+    int minute =
+        iqamaMinutes[index] % 60;
+
+
+
+      char buffer[20];
+
+
+    String format =
+        settings.timeFormat;
+
+
+
+    format.toUpperCase();
+
+
+
+
+    if(format == "12H")
+    {
+
+
+        int displayHour =
+            hour % 12;
+
+
+
+        if(displayHour == 0)
+        {
+            displayHour = 12;
+        }
+
+
+
+        snprintf(
+            buffer,
+            sizeof(buffer),
+            "%02d:%02d",
+            displayHour,
+            minute
+        );
+
+
+    }
+    else
+    {
+
+
+        snprintf(
+            buffer,
+            sizeof(buffer),
+            "%02d:%02d",
+            hour,
+            minute
+        );
+
+
+    }
+
+
+
+
+    return String(buffer);
+
+}
 // =====================================
 // Next Prayer Name
 // =====================================
@@ -1237,6 +1374,15 @@ String get_next_prayer_time()
 // =====================================
 // Countdown Minutes
 // =====================================
+
+void set_prayer_minutes(int index, int minutes)
+{
+    if (index >= 0 && index < 6)
+    {
+        prayerMinutes[index] = minutes;
+    }
+}
+
 
 int get_prayer_countdown() {
     struct tm timeinfo;

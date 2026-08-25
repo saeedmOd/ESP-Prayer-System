@@ -42,6 +42,7 @@
 #define MQTT_PORT 1883
 #define MQTT_TOPIC "ESP-Prayer-System"
 
+#define DEFAULT_PRAYER_SOURCE "local"
 #define DEFAULT_CALCULATION_METHOD "UmmAlQura"
 #define DEFAULT_ASR_METHOD "Shafii"
 #define DEFAULT_HIGH_LATITUDE_RULE "AngleBased"
@@ -163,6 +164,8 @@ struct SystemSettings
     // =========================
     // Prayer
     // =========================
+
+    String prayerSource;
 
     String calculationMethod;
 

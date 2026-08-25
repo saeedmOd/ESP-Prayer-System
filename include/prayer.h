@@ -29,6 +29,11 @@ String get_prayer_time(
 );
 
 
+String get_iqama_time(
+    int index
+);
+
+
 String get_next_prayer_name();
 
 
@@ -36,6 +41,11 @@ String get_next_prayer_time();
 
 
 int get_prayer_countdown();
+
+
+// Set prayer minutes directly (from API)
+
+void set_prayer_minutes(int index, int minutes);
 
 
 

@@ -4,25 +4,24 @@ Import("env")
 # ESP Prayer System
 # Auto Upload Firmware + LittleFS
 #
-
-def after_upload(source, target, env):
-
-    print("")
-    print("==============================")
-    print(" Uploading LittleFS Filesystem ")
-    print("==============================")
-    print("")
-
-    env.Execute(
-        "pio run -t uploadfs"
-    )
-
-
-#
-# Run after firmware upload
+# DISABLED: uploadfs erases config.json (WiFi creds).
+# Run `pio run -t uploadfs` manually when needed.
 #
 
-env.AddPostAction(
-    "$BUILD_DIR/${PROGNAME}.bin",
-    after_upload
-)
+# def after_upload(source, target, env):
+#
+#     print("")
+#     print("==============================")
+#     print(" Uploading LittleFS Filesystem ")
+#     print("==============================")
+#     print("")
+#
+#     env.Execute(
+#         "pio run -t uploadfs"
+#     )
+#
+#
+# env.AddPostAction(
+#     "$BUILD_DIR/${PROGNAME}.bin",
+#     after_upload
+# )

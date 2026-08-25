@@ -207,9 +207,6 @@ function updateClock() {
             "ar-EG",
             {
 
-                weekday:
-                    "long",
-
                 year:
                     "numeric",
 
@@ -366,6 +363,42 @@ async function loadStatus() {
         );
 
 
+        setText(
+            "iqamaFajr",
+            data.iqamaFajr
+                ? "اق " + data.iqamaFajr
+                : ""
+        );
+
+        setText(
+            "iqamaDhuhr",
+            data.iqamaDhuhr
+                ? "اق " + data.iqamaDhuhr
+                : ""
+        );
+
+        setText(
+            "iqamaAsr",
+            data.iqamaAsr
+                ? "اق " + data.iqamaAsr
+                : ""
+        );
+
+        setText(
+            "iqamaMaghrib",
+            data.iqamaMaghrib
+                ? "اق " + data.iqamaMaghrib
+                : ""
+        );
+
+        setText(
+            "iqamaIsha",
+            data.iqamaIsha
+                ? "اق " + data.iqamaIsha
+                : ""
+        );
+
+
         // =================================
         // Next Prayer
         // =================================
@@ -476,6 +509,15 @@ async function loadStatus() {
             "volumeSlider",
             data.volume
         );
+
+
+        // =================================
+        // Hijri Date
+        // =================================
+
+        if (data.hijri) {
+            setText("hijriDate", data.hijri);
+        }
 
     }
 

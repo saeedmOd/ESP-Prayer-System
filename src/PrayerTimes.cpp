@@ -5,6 +5,9 @@
 static int calcMethod = UmmAlQura;
 static int asrMethod = Shafii;
 
+// Per-prayer tune offsets in minutes (Fajr, Sunrise, Dhuhr,
+// Asr, Maghrib, Isha). Used to align with local authority tables.
+static float prayerTune[6] = {0,0,0,0,0,0};
 
 
 struct MethodConfig
@@ -23,8 +26,10 @@ static MethodConfig methods[] =
     {18.5,0},        // Makkah
     {19.5,17.5},     // Egypt
     {17.7,14.0},     // Tehran
-    {18.5,0}         // Umm AlQura
+    {18.5,0},        // Umm AlQura
+    {18.25,18.13}    // UAE (Abu Dhabi Awqaf approx)
 };
+
 
 
 
@@ -82,6 +87,13 @@ void setCalcMethod(int method)
 void setAsrMethod(int method)
 {
     asrMethod=method;
+}
+
+
+void setPrayerTune(float tune[6])
+{
+    for(int i=0;i<6;i++)
+        prayerTune[i]=tune[i];
 }
 
 
@@ -266,13 +278,18 @@ decl
 );
 
 }
-else
-{
+    else
+    {
 
-result[5]=
-result[4]+1.5;
+        result[5]=
+        result[4]+1.5;
 
-}
+    }
+
+
+    // Apply per-prayer tune offsets (minutes -> hours)
+    for(int i=0;i<6;i++)
+        result[i]+=prayerTune[i]/60.0;
 
 
 }

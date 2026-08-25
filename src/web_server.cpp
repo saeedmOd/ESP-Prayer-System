@@ -18,6 +18,7 @@
 #include "dfplayer.h"
 #include "hardware.h"
 #include "display.h"
+#include "api_client.h"
 
 // ============================================================
 // Web Server
@@ -740,6 +741,46 @@ static void registerPageRoutes()
 static void registerApiRoutes()
 {
     // ========================================================
+    // DEBUG: API FETCH TEST
+    // ========================================================
+
+    server.on(
+        "/api/debug/api",
+        HTTP_GET,
+        [](AsyncWebServerRequest *request)
+        {
+            // Non-blocking: trigger test, return last result
+            bool trigger =
+                request->hasParam("run");
+
+            if (trigger)
+            {
+                String url = "";
+                if (request->hasParam("url"))
+                {
+                    url = request
+                        ->getParam("url")
+                        ->value();
+                }
+                api_request_test(url);
+            }
+
+            JsonDocument doc;
+            doc["triggered"] = trigger;
+            doc["result"] = api_get_test_result();
+            doc["freeHeap"] = ESP.getFreeHeap();
+
+            String out;
+            serializeJson(doc, out);
+            request->send(
+                200,
+                "application/json",
+                out
+            );
+        }
+    );
+
+    // ========================================================
     // STATUS
     // ========================================================
 
@@ -791,6 +832,15 @@ static void registerApiRoutes()
             doc["version"] =
                 FIRMWARE_VERSION;
 
+            doc["freeHeap"] =
+                ESP.getFreeHeap();
+
+            String hijri = api_get_hijri_date();
+            if (hijri.length() > 0)
+            {
+                doc["hijri"] = hijri;
+            }
+
             // =================================
             // Event Status
             // =================================
@@ -841,6 +891,24 @@ static void registerApiRoutes()
 
                 doc["isha"] =
                     get_prayer_time(5);
+
+                doc["iqamaFajr"] =
+                    get_iqama_time(0);
+
+                doc["iqamaSunrise"] =
+                    get_iqama_time(1);
+
+                doc["iqamaDhuhr"] =
+                    get_iqama_time(2);
+
+                doc["iqamaAsr"] =
+                    get_iqama_time(3);
+
+                doc["iqamaMaghrib"] =
+                    get_iqama_time(4);
+
+                doc["iqamaIsha"] =
+                    get_iqama_time(5);
             }
             else
             {
@@ -869,6 +937,24 @@ static void registerApiRoutes()
                     "--:--";
 
                 doc["isha"] =
+                    "--:--";
+
+                doc["iqamaFajr"] =
+                    "--:--";
+
+                doc["iqamaSunrise"] =
+                    "--:--";
+
+                doc["iqamaDhuhr"] =
+                    "--:--";
+
+                doc["iqamaAsr"] =
+                    "--:--";
+
+                doc["iqamaMaghrib"] =
+                    "--:--";
+
+                doc["iqamaIsha"] =
                     "--:--";
             }
 
@@ -1140,6 +1226,36 @@ static void registerApiRoutes()
                 storage_get_int(
                     "audio.iqama_volume",
                     1
+                );
+
+            doc["iqamaFajrDelay"] =
+                storage_get_int(
+                    "audio.iqama_fajr_delay",
+                    20
+                );
+
+            doc["iqamaDhuhrDelay"] =
+                storage_get_int(
+                    "audio.iqama_dhuhr_delay",
+                    10
+                );
+
+            doc["iqamaAsrDelay"] =
+                storage_get_int(
+                    "audio.iqama_asr_delay",
+                    10
+                );
+
+            doc["iqamaMaghribDelay"] =
+                storage_get_int(
+                    "audio.iqama_maghrib_delay",
+                    5
+                );
+
+            doc["iqamaIshaDelay"] =
+                storage_get_int(
+                    "audio.iqama_isha_delay",
+                    10
                 );
 
 
@@ -2037,6 +2153,100 @@ static void registerApiRoutes()
 
                 storage_set_int(
                     "audio.iqama_volume",
+                    value
+                );
+            }
+
+            // ------------------------------------------------
+            // Iqama Per-Prayer Delays
+            // ------------------------------------------------
+
+            if (doc["iqamaFajrDelay"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["iqamaFajrDelay"].as<int>(),
+                        0,
+                        180
+                    );
+
+                settings.iqamaPrayerDelay[0] =
+                    value;
+
+                storage_set_int(
+                    "audio.iqama_fajr_delay",
+                    value
+                );
+            }
+
+            if (doc["iqamaDhuhrDelay"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["iqamaDhuhrDelay"].as<int>(),
+                        0,
+                        180
+                    );
+
+                settings.iqamaPrayerDelay[2] =
+                    value;
+
+                storage_set_int(
+                    "audio.iqama_dhuhr_delay",
+                    value
+                );
+            }
+
+            if (doc["iqamaAsrDelay"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["iqamaAsrDelay"].as<int>(),
+                        0,
+                        180
+                    );
+
+                settings.iqamaPrayerDelay[3] =
+                    value;
+
+                storage_set_int(
+                    "audio.iqama_asr_delay",
+                    value
+                );
+            }
+
+            if (doc["iqamaMaghribDelay"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["iqamaMaghribDelay"].as<int>(),
+                        0,
+                        180
+                    );
+
+                settings.iqamaPrayerDelay[4] =
+                    value;
+
+                storage_set_int(
+                    "audio.iqama_maghrib_delay",
+                    value
+                );
+            }
+
+            if (doc["iqamaIshaDelay"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["iqamaIshaDelay"].as<int>(),
+                        0,
+                        180
+                    );
+
+                settings.iqamaPrayerDelay[5] =
+                    value;
+
+                storage_set_int(
+                    "audio.iqama_isha_delay",
                     value
                 );
             }
@@ -2964,6 +3174,12 @@ static void registerApiRoutes()
         {
             JsonDocument doc;
 
+            doc["prayer_source"] =
+                storage_get_string(
+                    "prayer.source",
+                    "local"
+                );
+
             doc["city"] =
                 storage_get_city(
                     "Al Ain"
@@ -3108,6 +3324,23 @@ static void registerApiRoutes()
             {
                 config["location"]["longitude"] =
                     doc["longitude"].as<float>();
+            }
+
+
+            // ------------------------------------------------
+            // Prayer Source
+            // ------------------------------------------------
+
+            if (doc["prayer_source"].is<const char*>())
+            {
+                String source =
+                    doc["prayer_source"].as<const char*>();
+
+                if (source == "local" || source == "api")
+                {
+                    config["prayer"]["source"] = source;
+                    settings.prayerSource = source;
+                }
             }
 
 
@@ -3879,7 +4112,9 @@ static void registerSystemRoutes()
         HTTP_GET,
         [](AsyncWebServerRequest *request)
         {
-            command_process("stop");
+            stop_audio();
+
+            buzzer_stop();
 
             send_json_message(
                 request,

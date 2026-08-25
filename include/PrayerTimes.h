@@ -16,6 +16,7 @@
 #define Egyptian    5
 #define Tehran      6
 #define UmmAlQura   7
+#define UAE         8
 
 
 // =================================
@@ -54,6 +55,17 @@ void setCalcMethod(
 
 void setAsrMethod(
     int method
+);
+
+
+// =================================
+// Set per-prayer tune offsets (minutes)
+// Array order: 0 Fajr, 1 Sunrise, 2 Dhuhr,
+// 3 Asr, 4 Maghrib, 5 Isha
+// =================================
+
+void setPrayerTune(
+    float tune[6]
 );
 
 

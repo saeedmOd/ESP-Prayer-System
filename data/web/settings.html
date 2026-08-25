@@ -603,6 +603,69 @@
                     </div>
 
 
+                    <div class="field-group">
+
+                        <label>
+                            ⏱️ تأخير الإقامة لكل صلاة (بالدقائق)
+                        </label>
+
+                        <div class="iqama-delay-grid">
+
+                            <div class="iqama-delay-row">
+                                <span>الفجر</span>
+                                <input
+                                    type="number"
+                                    id="iqamaFajrDelay"
+                                    min="0"
+                                    max="180"
+                                    value="20">
+                            </div>
+
+                            <div class="iqama-delay-row">
+                                <span>الظهر</span>
+                                <input
+                                    type="number"
+                                    id="iqamaDhuhrDelay"
+                                    min="0"
+                                    max="180"
+                                    value="10">
+                            </div>
+
+                            <div class="iqama-delay-row">
+                                <span>العصر</span>
+                                <input
+                                    type="number"
+                                    id="iqamaAsrDelay"
+                                    min="0"
+                                    max="180"
+                                    value="10">
+                            </div>
+
+                            <div class="iqama-delay-row">
+                                <span>المغرب</span>
+                                <input
+                                    type="number"
+                                    id="iqamaMaghribDelay"
+                                    min="0"
+                                    max="180"
+                                    value="5">
+                            </div>
+
+                            <div class="iqama-delay-row">
+                                <span>العشاء</span>
+                                <input
+                                    type="number"
+                                    id="iqamaIshaDelay"
+                                    min="0"
+                                    max="180"
+                                    value="10">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
                     <button
                         type="button"
                         class="btn-test"
@@ -626,6 +689,27 @@
                         <h2>
                             ⚙️ إعدادات الصلاة
                         </h2>
+
+                    </div>
+
+
+                    <div class="field-group">
+
+                        <label>
+                            📡 مصدر أوقات الصلاة
+                        </label>
+
+                        <select id="prayerSource">
+
+                            <option value="local">
+                                حساب محلي ( calcul locally )
+                            </option>
+
+                            <option value="api">
+                                AlAdhan API (Online)
+                            </option>
+
+                        </select>
 
                     </div>
 
@@ -688,6 +772,10 @@
 
                             <option value="Karachi">
                                 كراتشي
+                            </option>
+
+                            <option value="UAE">
+                                الإمارات (أوقاف أبوظبي)
                             </option>
 
                         </select>

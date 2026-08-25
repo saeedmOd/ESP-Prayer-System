@@ -180,9 +180,15 @@ void settings_load()
     // Prayer
     // =====================================================
 
+    settings.prayerSource =
+        storage_get_string(
+            "prayer.source",
+            DEFAULT_PRAYER_SOURCE
+        );
+
     settings.calculationMethod =
         storage_get_calculation_method(
-            "UmmAlQura"
+            "UAE"
         );
 
     settings.asrMethod =
@@ -998,6 +1004,15 @@ void settings_apply()
     // =====================================================
 
     if (
+        settings.prayerSource != "local" &&
+        settings.prayerSource != "api"
+    )
+    {
+        settings.prayerSource =
+            DEFAULT_PRAYER_SOURCE;
+    }
+
+    if (
         settings.timeFormat != "12H" &&
         settings.timeFormat != "24H"
     )
@@ -1473,6 +1488,11 @@ void settings_save()
     // =====================================================
     // Prayer
     // =====================================================
+
+    storage_set_string(
+        "prayer.source",
+        settings.prayerSource
+    );
 
     storage_set_time_format(
         settings.timeFormat

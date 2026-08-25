@@ -316,13 +316,11 @@ void hardware_init()
     Serial.println(F("[HW] Rotary encoder ready"));
 
     // -------------------------------------------------
-    // Stop Button
+    // Stop Button (DISABLED - D2 is LCD SDA)
     // -------------------------------------------------
 
-    pinMode(STOP_BTN_PIN, INPUT_PULLUP);
-    lastStopState = digitalRead(STOP_BTN_PIN);
-
-    Serial.println(F("[HW] Stop button ready"));
+    // pinMode(STOP_BTN_PIN, INPUT_PULLUP); // DO NOT USE - D2 is I2C SDA
+    // lastStopState = digitalRead(STOP_BTN_PIN);
 
     // -------------------------------------------------
     // Buzzer
@@ -417,28 +415,35 @@ static void read_stop_button()
 {
     bool state = digitalRead(STOP_BTN_PIN);
 
-    bool stable = debounce(
-        state,
-        lastStopState,
-        lastStopBounce,
-        30
-    );
+    unsigned long now = millis();
 
-    if (!stable && !stopHandled)
+    if (state == LOW)
     {
-        stopHandled = true;
+        if (lastStopState == HIGH)
+        {
+            lastStopBounce = now;
+        }
 
-        Serial.println(F("[HW] Stop button pressed"));
+        lastStopState = LOW;
 
-        // Stop any audio
-        stop_audio();
+        if ((now - lastStopBounce) >= 15
+            && !stopHandled)
+        {
+            stopHandled = true;
 
-        // Stop buzzer
-        buzzer_stop();
+            Serial.println(
+                F("[HW] Stop button pressed")
+            );
+
+            stop_audio();
+
+            buzzer_stop();
+        }
     }
-
-    if (stable)
+    else
     {
+        lastStopState = HIGH;
+
         stopHandled = false;
     }
 }
@@ -594,7 +599,7 @@ void hardware_loop()
 {
     read_rotary();
 
-    read_stop_button();
+    // read_stop_button() DISABLED - D2 is LCD SDA
 
     update_tone_sequence();
 

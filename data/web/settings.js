@@ -596,6 +596,12 @@ async function loadAudioSettings() {
         setChecked("iqamaMaghrib", audioSettings.iqama.maghrib);
         setChecked("iqamaIsha", audioSettings.iqama.isha);
 
+        setNumber("iqamaFajrDelay", clamp(data.iqamaFajrDelay ?? 20, 0, 180));
+        setNumber("iqamaDhuhrDelay", clamp(data.iqamaDhuhrDelay ?? 10, 0, 180));
+        setNumber("iqamaAsrDelay", clamp(data.iqamaAsrDelay ?? 10, 0, 180));
+        setNumber("iqamaMaghribDelay", clamp(data.iqamaMaghribDelay ?? 5, 0, 180));
+        setNumber("iqamaIshaDelay", clamp(data.iqamaIshaDelay ?? 10, 0, 180));
+
         audioSettings.morningAdhkar.enable = data.morningAdhkarEnable ?? DEFAULTS.morningAdhkar.enable;
         audioSettings.morningAdhkar.hour = clamp(data.morningAdhkarHour ?? DEFAULTS.morningAdhkar.hour, 0, 23);
         audioSettings.morningAdhkar.minute = clamp(data.morningAdhkarMinute ?? DEFAULTS.morningAdhkar.minute, 0, 59);
@@ -728,7 +734,12 @@ function collectPrayerTab() {
         iqamaDhuhr: getChecked("iqamaDhuhr"),
         iqamaAsr: getChecked("iqamaAsr"),
         iqamaMaghrib: getChecked("iqamaMaghrib"),
-        iqamaIsha: getChecked("iqamaIsha")
+        iqamaIsha: getChecked("iqamaIsha"),
+        iqamaFajrDelay: clamp(readNumber("iqamaFajrDelay", 20), 0, 180),
+        iqamaDhuhrDelay: clamp(readNumber("iqamaDhuhrDelay", 10), 0, 180),
+        iqamaAsrDelay: clamp(readNumber("iqamaAsrDelay", 10), 0, 180),
+        iqamaMaghribDelay: clamp(readNumber("iqamaMaghribDelay", 5), 0, 180),
+        iqamaIshaDelay: clamp(readNumber("iqamaIshaDelay", 10), 0, 180)
     };
 }
 
@@ -822,6 +833,7 @@ async function savePrayerTab() {
     try {
         // Save prayer location/settings
         const prayerData = {
+            prayer_source: $("prayerSource").value,
             city: $("city").value,
             country: $("country").value,
             latitude: parseFloat($("latitude").value),
@@ -881,6 +893,7 @@ async function loadPrayerSettings() {
         $("longitude").value = data.longitude ?? "";
         $("longitude").value = data.longitude ?? "";
         setSelect("method", data.method ?? data.calculation_method ?? "UmmAlQura");
+        setSelect("prayerSource", data.prayer_source ?? "local");
         setSelect("timeFormat", data.time_format ?? data.timeFormat ?? "24H");
         setNumber("fajr_offset", data.fajr_offset ?? 0);
         setNumber("dhuhr_offset", data.dhuhr_offset ?? 0);

@@ -590,6 +590,37 @@ select option[value="false"] {
     font-size: 0.85rem;
 }
 
+.iqama-delay-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.iqama-delay-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+.iqama-delay-row span {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.8);
+}
+
+.iqama-delay-row input[type="number"] {
+    width: 70px;
+    padding: 6px 8px;
+    text-align: center;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    font-size: 0.85rem;
+}
+
 @media (max-width: 700px) {
     .location-grid {
         grid-template-columns: 1fr;
