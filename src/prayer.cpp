@@ -60,6 +60,14 @@ static int customAlertRepeatDone = 0;
 
 static unsigned long customAlertLastRepeatMs = 0;
 
+// =====================================
+// Dhikr Repeat State
+// =====================================
+
+static bool dhikrRepeatPhase2 = false;
+
+static unsigned long dhikrRepeatLastMs = 0;
+
 
 
 static const char* prayerNames[6] =
@@ -708,6 +716,67 @@ if(
         Serial.println(customAlertRepeatDone);
     }
 }
+
+
+    // =====================================
+    // Dhikr Repeat (smart loop)
+    // =====================================
+    //
+    // Plays file 3 (سبحان الله وبحمده) then
+    // file 7 (صل على محمد) every N minutes.
+    // Skips cycle if DFPlayer is busy (azan,
+    // quran, iqama, etc.).
+    //
+
+    if(
+        settings.dhikrRepeatEnable
+        &&
+        settings.dhikrRepeatInterval >= 1
+        &&
+        settings.dhikrRepeatInterval <= 60
+    )
+    {
+        unsigned long intervalMs =
+            (unsigned long)settings.dhikrRepeatInterval
+            * 60000UL;
+
+        if(
+            dhikrRepeatLastMs == 0
+            ||
+            (millis() - dhikrRepeatLastMs) >= intervalMs
+        )
+        {
+            if(!dfplayer_is_busy())
+            {
+                int file =
+                    dhikrRepeatPhase2 ? 7 : 3;
+
+                Serial.printf(
+                    "[Dhikr] Playing file %d\n",
+                    file
+                );
+
+                play_folder_file_with_volume(
+                    4,
+                    file,
+                    settings.dhikrRepeatVolume
+                );
+
+                dhikrRepeatPhase2 =
+                    !dhikrRepeatPhase2;
+
+                dhikrRepeatLastMs = millis();
+            }
+            else
+            {
+                Serial.println(
+                    F("[Dhikr] Skipped - DFPlayer busy")
+                );
+
+                dhikrRepeatLastMs = millis();
+            }
+        }
+    }
 
 
     for(int i = 0; i < 6; i++)

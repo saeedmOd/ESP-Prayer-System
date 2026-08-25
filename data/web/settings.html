@@ -299,7 +299,7 @@
                                 </option>
 
                                 <option value="1:2">
-                                    أذان قصير
+                                    أذان قصير جداً
                                 </option>
 
                                 <option value="1:3">
@@ -307,11 +307,23 @@
                                 </option>
 
                                 <option value="1:4">
-                                    أذان الشيخ مشاري
+                                    جرس
                                 </option>
 
                                 <option value="1:5">
-                                    جرس
+                                    أذان الحرم المكي - محمد رمضان
+                                </option>
+
+                                <option value="1:6">
+                                    أذان الكويت - مشاري العفاسي
+                                </option>
+
+                                <option value="1:7">
+                                    حي على الصلاة
+                                </option>
+
+                                <option value="1:8">
+                                    الأذان - وديع اليمني
                                 </option>
 
                             </select>
@@ -740,8 +752,8 @@
                         </div>
 
                     </div>
-
                 </section>
+
 
             </div>
 
@@ -1452,12 +1464,20 @@
                     <div class="system-row">
 
                         <span>
-                            🎵 الملف
+                            🎵 القارئ
                         </span>
 
-                        <span>
-                            مجلد 4 / ملف 1
-                        </span>
+                        <select
+                            id="kahfReciter"
+                            class="compact-select"
+                            style="max-width:220px;">
+
+                            <option value="1">رعد الكردي (1)</option>
+                            <option value="2">عبدالبديع غيلان (2)</option>
+                            <option value="3">عبدالرحمن السديس (3)</option>
+                            <option value="4">هزاع البلوشي (4)</option>
+
+                        </select>
 
                     </div>
 
@@ -1541,6 +1561,229 @@
                 </section>
 
 
+                <!-- ADHKAR PLAYER + DHIKR REPEAT (side-by-side) -->
+
+                <section class="card">
+
+                    <div class="card-header">
+                        <h2>🎶 مشغل الأذكار والتكرار الذكي</h2>
+                    </div>
+
+                    <div class="adhkar-grid">
+
+                        <!-- PLAYER -->
+                        <div class="adhkar-card">
+                            <div class="adhkar-header">
+                                <h3>🎶 مشغل الأذكار</h3>
+                            </div>
+
+                            <div class="field-group">
+                                <label>اختر الذكر</label>
+                                <select id="adhkarPlayerFile" class="compact-select">
+                                    <option value="3">سبحان الله وبحمده</option>
+                                    <option value="4">سبحان الله وبحمده 2</option>
+                                    <option value="6">سبحان الله والحمد لله - مشاري العفاسي</option>
+                                    <option value="7">صلِّ على محمد ﷺ</option>
+                                </select>
+                            </div>
+
+                            <div class="field-group">
+                                <label>🔊 مستوى الصوت</label>
+                                <div class="volume-box">
+                                    <input type="range" id="adhkarPlayerVolume" min="0" max="30" value="1">
+                                    <span id="adhkarPlayerVolumeValue" class="val-badge">1</span>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                id="adhkarPlayerPlayBtn"
+                                class="btn-test">
+
+                                ▶️ تشغيل الأذكار
+                            </button>
+                        </div>
+
+                        <!-- DHIKR REPEAT -->
+                        <div class="adhkar-card">
+                            <div class="adhkar-header">
+                                <h3>🔁 التكرار الذكي</h3>
+                                <select id="dhikrRepeatEnable" class="compact-select">
+                                    <option value="true">مفعل</option>
+                                    <option value="false">معطل</option>
+                                </select>
+                            </div>
+
+                            <div class="system-row">
+                                <span>🎵 يُشغّل: </span>
+                                <span>سبحان الله / صلِّ على محمد ﷺ</span>
+                            </div>
+
+                            <div class="system-row">
+                                <span>⏱️ كل: </span>
+                                <span>
+                                    <input type="number" id="dhikrRepeatInterval" min="1" max="60" value="5" style="width:50px; text-align:center;"> دقيقة
+                                </span>
+                            </div>
+
+                            <div class="field-group">
+                                <label>🔊 مستوى الصوت</label>
+                                <div class="volume-box">
+                                    <input type="range" id="dhikrRepeatVolume" min="0" max="30" value="1">
+                                    <span id="dhikrRepeatVolumeValue" class="val-badge">1</span>
+                                </div>
+                            </div>
+
+                            <div class="system-row" style="font-size:0.75rem; color:var(--text-dim);">
+                                <span>⚠️ يتخطّى إذا كان صوت آخر يعمل</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- DHIKR COUNTER -->
+
+                <section class="card">
+
+                    <div class="card-header">
+                        <h2>📿 العدّاد</h2>
+                    </div>
+
+                    <div class="field-group">
+                        <label>عدد التكرار المستهدف</label>
+                        <select id="dhikrTarget" class="compact-select">
+                            <option value="33">33</option>
+                            <option value="34">34</option>
+                            <option value="99">99</option>
+                            <option value="100" selected>100</option>
+                            <option value="500">500</option>
+                            <option value="1000">1000</option>
+                        </select>
+                    </div>
+
+                    <div id="dhikrGrid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px;">
+
+                        <div class="dhikr-item" style="text-align:center; padding:10px; border:1px solid var(--border); border-radius:var(--radius-small); background:rgba(34,197,94,0.05); cursor:pointer;" data-dhikr="subhan">
+                            <div style="font-size:0.8rem; color:var(--text-dim); margin-bottom:4px;">سبحان الله</div>
+                            <div id="dhikrCount_subhan" style="font-size:1.5rem; font-weight:700; color:var(--primary);">0</div>
+                        </div>
+
+                        <div class="dhikr-item" style="text-align:center; padding:10px; border:1px solid var(--border); border-radius:var(--radius-small); background:rgba(34,197,94,0.05); cursor:pointer;" data-dhikr="hamd">
+                            <div style="font-size:0.8rem; color:var(--text-dim); margin-bottom:4px;">الحمد لله</div>
+                            <div id="dhikrCount_hamd" style="font-size:1.5rem; font-weight:700; color:var(--primary);">0</div>
+                        </div>
+
+                        <div class="dhikr-item" style="text-align:center; padding:10px; border:1px solid var(--border); border-radius:var(--radius-small); background:rgba(34,197,94,0.05); cursor:pointer;" data-dhikr="tawhid">
+                            <div style="font-size:0.8rem; color:var(--text-dim); margin-bottom:4px;">لا إله إلا الله</div>
+                            <div id="dhikrCount_tawhid" style="font-size:1.5rem; font-weight:700; color:var(--primary);">0</div>
+                        </div>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        id="dhikrResetBtn"
+                        class="btn-test"
+                        style="margin-top:8px; background:rgba(239,68,68,0.1); color:#ef4444; border-color:rgba(239,68,68,0.3);">
+
+                        🔄 إعادة العدّاد
+                    </button>
+
+                </section>
+
+
+                <!-- EID TAKBEERAT -->
+
+                <section class="card">
+
+                    <div class="card-header">
+                        <h2>🌙 تكبيرات العيد</h2>
+                        <select id="eidTakbeeratEnable" class="compact-select">
+                            <option value="true">مفعل</option>
+                            <option value="false">معطل</option>
+                        </select>
+                    </div>
+
+                    <div class="system-row">
+                        <span>📅 يعمل فقط في: </span>
+                        <span>عيد الفطر</span>
+                    </div>
+
+                    <div class="field-group">
+                        <label>🔊 مستوى الصوت</label>
+                        <div class="volume-box">
+                            <input type="range" id="eidTakbeeratVolume" min="0" max="30" value="1">
+                            <span id="eidTakbeeratVolumeValue" class="val-badge">1</span>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        id="eidTakbeeratTestBtn"
+                        class="btn-test"
+                        data-test-endpoint="/api/test/eid-takbeerat"
+                        data-test-message="تم تشغيل تكبيرات العيد">
+
+                        ▶️ تجربة تكبيرات العيد
+                    </button>
+
+                </section>
+
+
+                <!-- RUQYAH -->
+
+                <section class="card">
+
+                    <div class="card-header">
+                        <h2>🤲 الرقية الشرعية</h2>
+                    </div>
+
+                    <div class="system-row">
+                        <span>📁 المجلد: </span>
+                        <span>6</span>
+                    </div>
+
+                    <div class="field-group">
+                        <label>اختر الرقية</label>
+                        <select id="ruqyahFile" class="compact-select">
+                            <option value="1">الرقية الشرعية</option>
+                            <option value="2">رقية شرعية 10 دقائق</option>
+                            <option value="3">رقية شرعية 20 دقيقة</option>
+                            <option value="4">رقية شرعية ساعة</option>
+                        </select>
+                    </div>
+
+                    <div class="field-group">
+                        <label>🔊 مستوى الصوت</label>
+                        <div class="volume-box">
+                            <input type="range" id="ruqyahVolume" min="0" max="30" value="1">
+                            <span id="ruqyahVolumeValue" class="val-badge">1</span>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        id="ruqyahPlayBtn"
+                        class="btn-test">
+
+                        ▶️ تشغيل الرقية
+                    </button>
+
+                    <button
+                        type="button"
+                        id="ruqyahStopBtn"
+                        class="btn-test"
+                        style="display:none; background:rgba(239,68,68,0.15); color:#ef4444; border-color:rgba(239,68,68,0.3);">
+
+                        ⏹️ إيقاف
+                    </button>
+
+                </section>
+
+
             </div>
 
         </div>
@@ -1577,7 +1820,7 @@
                                 مفعل
                             </option>
 
-                            <option value="false">
+                            <option value="false" selected>
                                 معطل
                             </option>
 
@@ -1785,12 +2028,12 @@
                                 id="folderVolume"
                                 min="0"
                                 max="30"
-                                value="15">
+                                value="1">
 
                             <span
                                 id="folderVolumeValue"
                                 class="small-volume-value">
-                                15
+                                1
                             </span>
 
                         </div>
@@ -2285,6 +2528,45 @@
                         ⚠️ مسح الإعدادات
 
                     </button>
+
+                </section>
+
+
+                <!-- EXPORT / IMPORT -->
+
+                <section class="card">
+
+                    <div class="card-header">
+
+                        <h2>
+                            💾 نسخ الاحتياطي
+                        </h2>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        id="exportBtn"
+                        class="btn-test"
+                        style="margin-top: 8px;">
+
+                        📥 تحميل الإعدادات
+                    </button>
+
+                    <button
+                        type="button"
+                        id="importBtn"
+                        class="btn-test"
+                        style="margin-top: 8px;">
+
+                        📤 رفع الإعدادات
+                    </button>
+
+                    <input
+                        type="file"
+                        id="importFile"
+                        accept=".json"
+                        style="display:none;">
 
                 </section>
 

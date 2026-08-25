@@ -777,7 +777,7 @@ void settings_load()
     settings.kahfFolder =
         storage_get_int(
             "audio.kahf_folder",
-            2
+            5
         );
 
     settings.kahfFile =
@@ -825,6 +825,69 @@ void settings_load()
         storage_get_int(
             "audio.dua_folder",
             4
+        );
+
+
+    // =====================================================
+    // Eid Takbeerat
+    // =====================================================
+
+    settings.eidTakbeeratEnable =
+        storage_get_bool(
+            "audio.eid_takbeerat_enable",
+            false
+        );
+
+    settings.eidTakbeeratVolume =
+        storage_get_int(
+            "audio.eid_takbeerat_volume",
+            DEFAULT_VOLUME
+        );
+
+
+    // =====================================================
+    // Ruqyah
+    // =====================================================
+
+    settings.ruqyahFolder =
+        storage_get_int(
+            "audio.ruqyah_folder",
+            6
+        );
+
+    settings.ruqyahFile =
+        storage_get_int(
+            "audio.ruqyah_file",
+            1
+        );
+
+    settings.ruqyahVolume =
+        storage_get_int(
+            "audio.ruqyah_volume",
+            DEFAULT_VOLUME
+        );
+
+
+    // =====================================================
+    // Dhikr Repeat
+    // =====================================================
+
+    settings.dhikrRepeatEnable =
+        storage_get_bool(
+            "audio.dhikr_repeat_enable",
+            false
+        );
+
+    settings.dhikrRepeatInterval =
+        storage_get_int(
+            "audio.dhikr_repeat_interval",
+            5
+        );
+
+    settings.dhikrRepeatVolume =
+        storage_get_int(
+            "audio.dhikr_repeat_volume",
+            DEFAULT_VOLUME
         );
 
 

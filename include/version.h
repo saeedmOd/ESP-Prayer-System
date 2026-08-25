@@ -8,7 +8,7 @@
 
 #define FIRMWARE_NAME        "ESP Prayer System"
 
-#define FIRMWARE_VERSION     "1.9.3"
+#define FIRMWARE_VERSION     "1.10.0"
 
 #define FIRMWARE_BUILD       "2026.07.27"
 

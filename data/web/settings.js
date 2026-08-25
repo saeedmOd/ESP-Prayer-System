@@ -58,8 +58,8 @@ const DEFAULTS = {
         hour: 9,
         minute: 0,
         volume: 1,
-        folder: 2,
-        file: 3
+        folder: 5,
+        file: 1
     },
 
     alarmToneType: 0,
@@ -622,6 +622,24 @@ async function loadAudioSettings() {
         setNumber("kahfHour", audioSettings.kahf.hour);
         setNumber("kahfMinute", audioSettings.kahf.minute);
         setNumber("kahfVolume", audioSettings.kahf.volume);
+        setSelect("kahfReciter", data.kahfFile ?? DEFAULTS.kahf.file);
+
+        setSelect("eidTakbeeratEnable", data.eidTakbeeratEnable ?? false);
+        setNumber("eidTakbeeratVolume", data.eidTakbeeratVolume ?? 1);
+        const etVal = $("eidTakbeeratVolumeValue");
+        if (etVal) etVal.textContent = String(data.eidTakbeeratVolume ?? 1);
+
+        setNumber("ruqyahFolder", data.ruqyahFolder ?? 6);
+        setNumber("ruqyahFile", data.ruqyahFile ?? 1);
+        setNumber("ruqyahVolume", data.ruqyahVolume ?? 15);
+        const rqVal = $("ruqyahVolumeValue");
+        if (rqVal) rqVal.textContent = String(data.ruqyahVolume ?? 15);
+
+        setSelect("dhikrRepeatEnable", data.dhikrRepeatEnable ?? false);
+        setNumber("dhikrRepeatInterval", data.dhikrRepeatInterval ?? 5);
+        setNumber("dhikrRepeatVolume", data.dhikrRepeatVolume ?? 1);
+        const drVal = $("dhikrRepeatVolumeValue");
+        if (drVal) drVal.textContent = String(data.dhikrRepeatVolume ?? 1);
 
         audioSettings.alarmToneType = clamp(data.alarmToneType ?? DEFAULTS.alarmToneType, 0, 7);
         setSelect("alarmToneType", audioSettings.alarmToneType);
@@ -747,8 +765,16 @@ function collectAdhkarTab() {
         kahfHour: clamp(readNumber("kahfHour", DEFAULTS.kahf.hour), 0, 23),
         kahfMinute: clamp(readNumber("kahfMinute", DEFAULTS.kahf.minute), 0, 59),
         kahfVolume: clamp(readNumber("kahfVolume", DEFAULTS.kahf.volume), 0, 30),
-        kahfFolder: readPreset("kahfPreset", DEFAULTS.kahf.folder, DEFAULTS.kahf.file).folder,
-        kahfFile: readPreset("kahfPreset", DEFAULTS.kahf.folder, DEFAULTS.kahf.file).file
+        kahfFolder: 5,
+        kahfFile: clamp(readNumber("kahfReciter", DEFAULTS.kahf.file), 1, 99),
+        eidTakbeeratEnable: readBool("eidTakbeeratEnable", false),
+        eidTakbeeratVolume: clamp(readNumber("eidTakbeeratVolume", 1), 0, 30),
+        ruqyahFolder: 6,
+        ruqyahFile: clamp(readNumber("ruqyahFile", 1), 1, 255),
+        ruqyahVolume: clamp(readNumber("ruqyahVolume", 15), 0, 30),
+        dhikrRepeatEnable: readBool("dhikrRepeatEnable", false),
+        dhikrRepeatInterval: clamp(readNumber("dhikrRepeatInterval", 5), 1, 60),
+        dhikrRepeatVolume: clamp(readNumber("dhikrRepeatVolume", 1), 0, 30)
     };
 }
 
@@ -1090,9 +1116,170 @@ async function resetSettings() {
     } catch (_) {}
 }
 
+async function exportSettings() {
+    const btn = $("exportBtn");
+    if (btn) { btn.disabled = true; btn.textContent = "⏳ جاري التحميل..."; }
+    try {
+        const r = await fetch("/api/settings/export", { cache: "no-store" });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "prayer-config.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("تم تحميل الإعدادات", "success");
+    } catch (e) {
+        console.error("[EXPORT]", e);
+        showToast("فشل تحميل الإعدادات", "error");
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "📥 تحميل الإعدادات"; }
+    }
+}
+
+function importSettings() {
+    $("importFile")?.click();
+}
+
+async function importSettingsFile(file) {
+    if (!file) return;
+    if (!confirm("⚠️ سيتم استبدال جميع الإعدادات وإعادة تشغيل الجهاز!")) return;
+    const btn = $("importBtn");
+    if (btn) { btn.disabled = true; btn.textContent = "⏳ جاري الرفع..."; }
+    try {
+        const text = await file.text();
+        JSON.parse(text); // validate
+        const r = await fetch("/api/settings/import", {
+            method: "POST", cache: "no-store",
+            headers: { "Content-Type": "application/json" },
+            body: text
+        });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        showToast("تم رفع الإعدادات — جاري إعادة التشغيل...", "success");
+    } catch (e) {
+        console.error("[IMPORT]", e);
+        showToast("فشل رفع الإعدادات — تأكد من صحة الملف", "error");
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "📤 رفع الإعدادات"; }
+    }
+}
+
 
 /* ==========================================================
-   EVENT LISTENERS
+   DHIKR COUNTER
+   ========================================================== */
+
+const dhikrState = {
+    subhan: 0,
+    hamd: 0,
+    tawhid: 0
+};
+
+function loadDhikrState() {
+    try {
+        const saved = JSON.parse(localStorage.getItem("dhikr") || "{}");
+        dhikrState.subhan = Number(saved.subhan) || 0;
+        dhikrState.hamd = Number(saved.hamd) || 0;
+        dhikrState.tawhid = Number(saved.tawhid) || 0;
+    } catch (_) {}
+    updateDhikrDisplay();
+}
+
+function saveDhikrState() {
+    try { localStorage.setItem("dhikr", JSON.stringify(dhikrState)); } catch (_) {}
+}
+
+function updateDhikrDisplay() {
+    for (const key of ["subhan", "hamd", "tawhid"]) {
+        const el = $("dhikrCount_" + key);
+        if (el) el.textContent = String(dhikrState[key]);
+    }
+}
+
+async function tapDhikr(key) {
+    const target = clamp(readNumber("dhikrTarget", 100), 1, 9999);
+    dhikrState[key] = (dhikrState[key] + 1) % (target + 1);
+    saveDhikrState();
+    updateDhikrDisplay();
+    try { await fetch("/api/test/click", { method: "POST", cache: "no-store" }); } catch (_) {}
+}
+
+function resetDhikr() {
+    dhikrState.subhan = 0;
+    dhikrState.hamd = 0;
+    dhikrState.tawhid = 0;
+    saveDhikrState();
+    updateDhikrDisplay();
+    showToast("تم إعادة العدّاد", "success");
+}
+
+
+/* ==========================================================
+   RUQYAH PLAY / STOP
+   ========================================================== */
+
+async function playRuqyah() {
+    const btn = $("ruqyahPlayBtn");
+    const stopBtn = $("ruqyahStopBtn");
+    if (btn) btn.disabled = true;
+    try {
+        const r = await fetch("/api/test/ruqyah", { method: "GET", cache: "no-store" });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        showToast("تم تشغيل الرقية", "success");
+        if (stopBtn) stopBtn.style.display = "";
+    } catch (e) {
+        console.error("[RUQYAH]", e);
+        showToast("فشل تشغيل الرقية", "error");
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+async function stopRuqyah() {
+    const stopBtn = $("ruqyahStopBtn");
+    if (stopBtn) stopBtn.disabled = true;
+    try {
+        await fetch("/api/test/ruqyah-stop", { method: "GET", cache: "no-store" });
+        showToast("تم إيقاف الرقية", "success");
+        if (stopBtn) stopBtn.style.display = "none";
+    } catch (e) {
+        console.error("[RUQYAH-STOP]", e);
+        showToast("فشل الإيقاف", "error");
+    } finally {
+        if (stopBtn) stopBtn.disabled = false;
+    }
+}
+
+
+/* ==========================================================
+   ADHKAR PLAYER
+   ========================================================== */
+
+async function playAdhkar() {
+    const btn = $("adhkarPlayerPlayBtn");
+    if (btn) btn.disabled = true;
+    try {
+        const file = clamp(readNumber("adhkarPlayerFile", 3), 1, 7);
+        const volume = clamp(readNumber("adhkarPlayerVolume", 10), 0, 30);
+        const r = await fetch(`/api/test/adhkar?file=${file}&volume=${volume}`, {
+            method: "GET",
+            cache: "no-store"
+        });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        showToast("تم تشغيل الأذكار", "success");
+    } catch (e) {
+        console.error("[ADHKAR]", e);
+        showToast("فشل تشغيل الأذكار", "error");
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+
+/* ==========================================================
    ========================================================== */
 
 function setupEvents() {
@@ -1178,6 +1365,44 @@ function setupEvents() {
     /* System buttons */
     $("restartBtn")?.addEventListener("click", restartDevice);
     $("resetBtn")?.addEventListener("click", resetSettings);
+    $("exportBtn")?.addEventListener("click", exportSettings);
+    $("importBtn")?.addEventListener("click", importSettings);
+    $("importFile")?.addEventListener("change", (e) => {
+        importSettingsFile(e.target.files[0]);
+        e.target.value = "";
+    });
+
+    /* Dhikr counter */
+    document.querySelectorAll("[data-dhikr]").forEach(el => {
+        el.addEventListener("click", () => tapDhikr(el.dataset.dhikr));
+    });
+    $("dhikrResetBtn")?.addEventListener("click", resetDhikr);
+    loadDhikrState();
+
+    /* Adhkar player */
+    $("adhkarPlayerPlayBtn")?.addEventListener("click", playAdhkar);
+    $("adhkarPlayerVolume")?.addEventListener("input", () => {
+        const v = $("adhkarPlayerVolumeValue");
+        if (v) v.textContent = String($("adhkarPlayerVolume")?.value || 0);
+    });
+
+    /* Ruqyah */
+    $("ruqyahPlayBtn")?.addEventListener("click", playRuqyah);
+    $("ruqyahStopBtn")?.addEventListener("click", stopRuqyah);
+
+    /* Volume labels */
+    $("eidTakbeeratVolume")?.addEventListener("input", () => {
+        const v = $("eidTakbeeratVolumeValue");
+        if (v) v.textContent = String($("eidTakbeeratVolume")?.value || 0);
+    });
+    $("ruqyahVolume")?.addEventListener("input", () => {
+        const v = $("ruqyahVolumeValue");
+        if (v) v.textContent = String($("ruqyahVolume")?.value || 0);
+    });
+    $("dhikrRepeatVolume")?.addEventListener("input", () => {
+        const v = $("dhikrRepeatVolumeValue");
+        if (v) v.textContent = String($("dhikrRepeatVolume")?.value || 0);
+    });
 
     /* Event duration save */
     $("saveEventDurationBtn")?.addEventListener("click", saveEventDuration);

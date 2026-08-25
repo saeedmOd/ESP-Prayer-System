@@ -68,6 +68,13 @@ static unsigned long seqFileStartMs = 0;
 static const uint32_t SEQ_FILE_TIMEOUT_MS = 90000;
 
 // =================================================
+// Single-play busy tracking
+// =================================================
+
+static unsigned long lastPlayMs = 0;
+static const uint32_t SINGLE_PLAY_BUSY_MS = 15000;
+
+// =================================================
 // Internal Helpers
 // =================================================
 
@@ -437,6 +444,8 @@ void play_folder_file(
         file
     );
 
+    lastPlayMs = millis();
+
     Serial.println(
         F("[DFPlayer] Play command sent")
     );
@@ -533,6 +542,8 @@ void play_folder_file_with_volume(
         folder,
         file
     );
+
+    lastPlayMs = millis();
 
     Serial.println(
         F("[DFPlayer] Temporary-volume play command sent")
@@ -1073,4 +1084,17 @@ void pause_audio()
 bool dfplayer_ready()
 {
     return playerReady;
+}
+
+
+bool dfplayer_is_busy()
+{
+    if (seqPlaying)
+        return true;
+
+    if (lastPlayMs > 0 &&
+        (millis() - lastPlayMs) < SINGLE_PLAY_BUSY_MS)
+        return true;
+
+    return false;
 }

@@ -1302,6 +1302,65 @@ static void registerApiRoutes()
 
 
             // ------------------------------------------------
+            // Eid Takbeerat
+            // ------------------------------------------------
+
+            doc["eidTakbeeratEnable"] =
+                storage_get_bool(
+                    "audio.eid_takbeerat_enable",
+                    false
+                );
+
+            doc["eidTakbeeratVolume"] =
+                storage_get_int(
+                    "audio.eid_takbeerat_volume",
+                    DEFAULT_VOLUME
+                );
+
+
+            // ------------------------------------------------
+            // Ruqyah
+            // ------------------------------------------------
+
+            doc["ruqyahFolder"] =
+                storage_get_int(
+                    "audio.ruqyah_folder",
+                    6
+                );
+
+            doc["ruqyahFile"] =
+                storage_get_int(
+                    "audio.ruqyah_file",
+                    1
+                );
+
+            doc["ruqyahVolume"] =
+                storage_get_int(
+                    "audio.ruqyah_volume",
+                    DEFAULT_VOLUME
+                );
+
+
+            doc["dhikrRepeatEnable"] =
+                storage_get_bool(
+                    "audio.dhikr_repeat_enable",
+                    false
+                );
+
+            doc["dhikrRepeatInterval"] =
+                storage_get_int(
+                    "audio.dhikr_repeat_interval",
+                    5
+                );
+
+            doc["dhikrRepeatVolume"] =
+                storage_get_int(
+                    "audio.dhikr_repeat_volume",
+                    DEFAULT_VOLUME
+                );
+
+
+            // ------------------------------------------------
             // Quran
             // ------------------------------------------------
 
@@ -2380,6 +2439,152 @@ static void registerApiRoutes()
 
                 storage_set_int(
                     "audio.kahf_volume",
+                    value
+                );
+            }
+
+
+            // ------------------------------------------------
+            // Eid Takbeerat
+            // ------------------------------------------------
+
+            if (doc["eidTakbeeratEnable"].is<bool>())
+            {
+                bool value =
+                    doc["eidTakbeeratEnable"].as<bool>();
+
+                settings.eidTakbeeratEnable =
+                    value;
+
+                storage_set_bool(
+                    "audio.eid_takbeerat_enable",
+                    value
+                );
+            }
+
+            if (doc["eidTakbeeratVolume"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["eidTakbeeratVolume"].as<int>(),
+                        0,
+                        30
+                    );
+
+                settings.eidTakbeeratVolume =
+                    value;
+
+                storage_set_int(
+                    "audio.eid_takbeerat_volume",
+                    value
+                );
+            }
+
+
+            // ------------------------------------------------
+            // Ruqyah
+            // ------------------------------------------------
+
+            if (doc["ruqyahFolder"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["ruqyahFolder"].as<int>(),
+                        1,
+                        99
+                    );
+
+                settings.ruqyahFolder =
+                    value;
+
+                storage_set_int(
+                    "audio.ruqyah_folder",
+                    value
+                );
+            }
+
+            if (doc["ruqyahFile"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["ruqyahFile"].as<int>(),
+                        1,
+                        255
+                    );
+
+                settings.ruqyahFile =
+                    value;
+
+                storage_set_int(
+                    "audio.ruqyah_file",
+                    value
+                );
+            }
+
+            if (doc["ruqyahVolume"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["ruqyahVolume"].as<int>(),
+                        0,
+                        30
+                    );
+
+                settings.ruqyahVolume =
+                    value;
+
+                storage_set_int(
+                    "audio.ruqyah_volume",
+                    value
+                );
+            }
+
+            if (doc["dhikrRepeatEnable"].is<bool>())
+            {
+                bool value =
+                    doc["dhikrRepeatEnable"].as<bool>();
+
+                settings.dhikrRepeatEnable =
+                    value;
+
+                storage_set_bool(
+                    "audio.dhikr_repeat_enable",
+                    value
+                );
+            }
+
+            if (doc["dhikrRepeatInterval"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["dhikrRepeatInterval"].as<int>(),
+                        1,
+                        60
+                    );
+
+                settings.dhikrRepeatInterval =
+                    value;
+
+                storage_set_int(
+                    "audio.dhikr_repeat_interval",
+                    value
+                );
+            }
+
+            if (doc["dhikrRepeatVolume"].is<int>())
+            {
+                int value =
+                    constrain(
+                        doc["dhikrRepeatVolume"].as<int>(),
+                        0,
+                        30
+                    );
+
+                settings.dhikrRepeatVolume =
+                    value;
+
+                storage_set_int(
+                    "audio.dhikr_repeat_volume",
                     value
                 );
             }
@@ -3511,6 +3716,56 @@ static void registerSystemRoutes()
 
 
     // ========================================================
+    // Test Adhkar Player
+    // ========================================================
+
+    server.on(
+        "/api/test/adhkar",
+        HTTP_GET,
+        [](AsyncWebServerRequest *request)
+        {
+            if (!dfplayer_ready())
+            {
+                send_json_message(
+                    request,
+                    503,
+                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
+                );
+
+                return;
+            }
+
+            int file = 3;
+            int adhkarVolume = 10;
+
+            if (request->hasParam("file"))
+            {
+                file =
+                    request->getParam("file")->value().toInt();
+            }
+
+            if (request->hasParam("volume"))
+            {
+                adhkarVolume =
+                    request->getParam("volume")->value().toInt();
+            }
+
+            play_folder_file_with_volume(
+                4,
+                file,
+                adhkarVolume
+            );
+
+            send_json_message(
+                request,
+                200,
+                "{\"status\":\"playing\"}"
+            );
+        }
+    );
+
+
+    // ========================================================
     // Test Kahf
     // ========================================================
 
@@ -3540,6 +3795,96 @@ static void registerSystemRoutes()
                 request,
                 200,
                 "{\"status\":\"playing\"}"
+            );
+        }
+    );
+
+
+    // ========================================================
+    // Test Eid Takbeerat
+    // ========================================================
+
+    server.on(
+        "/api/test/eid-takbeerat",
+        HTTP_POST,
+        [](AsyncWebServerRequest *request)
+        {
+            if (!dfplayer_ready())
+            {
+                send_json_message(
+                    request,
+                    503,
+                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
+                );
+
+                return;
+            }
+
+            play_folder_file_with_volume(
+                4,
+                5,
+                settings.eidTakbeeratVolume
+            );
+
+            send_json_message(
+                request,
+                200,
+                "{\"status\":\"playing\"}"
+            );
+        }
+    );
+
+
+    // ========================================================
+    // Test Ruqyah
+    // ========================================================
+
+    server.on(
+        "/api/test/ruqyah",
+        HTTP_GET,
+        [](AsyncWebServerRequest *request)
+        {
+            if (!dfplayer_ready())
+            {
+                send_json_message(
+                    request,
+                    503,
+                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
+                );
+
+                return;
+            }
+
+            play_folder_file_with_volume(
+                6,
+                settings.ruqyahFile,
+                settings.ruqyahVolume
+            );
+
+            send_json_message(
+                request,
+                200,
+                "{\"status\":\"playing\"}"
+            );
+        }
+    );
+
+
+    // ========================================================
+    // Stop Ruqyah
+    // ========================================================
+
+    server.on(
+        "/api/test/ruqyah-stop",
+        HTTP_GET,
+        [](AsyncWebServerRequest *request)
+        {
+            command_process("stop");
+
+            send_json_message(
+                request,
+                200,
+                "{\"status\":\"stopped\"}"
             );
         }
     );
@@ -4150,6 +4495,174 @@ static void registerSystemRoutes()
                 request,
                 200,
                 "{\"status\":\"success\",\"message\":\"تم الحفظ بنجاح\"}"
+            );
+        }
+    );
+
+
+    // ========================================================
+    // Export Settings
+    // ========================================================
+
+    server.on(
+        "/api/settings/export",
+        HTTP_GET,
+        [](AsyncWebServerRequest *request)
+        {
+            if (
+                !LittleFS.exists(
+                    STORAGE_CONFIG_FILE
+                )
+            )
+            {
+                send_json_message(
+                    request,
+                    404,
+                    "{\"status\":\"error\",\"message\":\"No config\"}"
+                );
+
+                return;
+            }
+
+            File file =
+                LittleFS.open(
+                    STORAGE_CONFIG_FILE,
+                    "r"
+                );
+
+            if (!file)
+            {
+                send_json_message(
+                    request,
+                    500,
+                    "{\"status\":\"error\",\"message\":\"Cannot read config\"}"
+                );
+
+                return;
+            }
+
+            String content =
+                file.readString();
+
+            file.close();
+
+            AsyncWebServerResponse *response =
+                request->beginResponse(
+                    200,
+                    "application/json",
+                    content
+                );
+
+            response->addHeader(
+                "Content-Disposition",
+                "attachment; filename=\"prayer-config.json\""
+            );
+
+            response->addHeader(
+                "Cache-Control",
+                "no-store"
+            );
+
+            request->send(response);
+        }
+    );
+
+
+    // ========================================================
+    // Import Settings
+    // ========================================================
+
+    static String importBody;
+
+    server.on(
+        "/api/settings/import",
+        HTTP_POST,
+
+        [](AsyncWebServerRequest *request)
+        {
+            // Response sent after body.
+        },
+
+        NULL,
+
+        [](AsyncWebServerRequest *request,
+           uint8_t *data,
+           size_t len,
+           size_t index,
+           size_t total)
+        {
+            if (
+                !collect_body(
+                    importBody,
+                    data,
+                    len,
+                    index,
+                    total
+                )
+            )
+            {
+                return;
+            }
+
+            JsonDocument doc;
+
+            if (
+                !parse_json(
+                    importBody,
+                    doc
+                )
+            )
+            {
+                send_json_message(
+                    request,
+                    400,
+                    "{\"status\":\"error\",\"message\":\"Invalid JSON\"}"
+                );
+
+                return;
+            }
+
+            // Write to config file
+            File file =
+                LittleFS.open(
+                    STORAGE_CONFIG_FILE,
+                    "w"
+                );
+
+            if (!file)
+            {
+                send_json_message(
+                    request,
+                    500,
+                    "{\"status\":\"error\",\"message\":\"Cannot write config\"}"
+                );
+
+                return;
+            }
+
+            String output;
+            serializeJsonPretty(doc, output);
+            file.print(output);
+            file.close();
+
+            Serial.println(
+                F("[IMPORT] Config imported successfully")
+            );
+
+            send_json_message(
+                request,
+                200,
+                "{\"status\":\"imported\"}"
+            );
+
+            importBody = "";
+
+            rebootTimer.once_ms(
+                1000,
+                []()
+                {
+                    ESP.restart();
+                }
             );
         }
     );

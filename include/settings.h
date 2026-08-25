@@ -368,6 +368,36 @@ int shortSurahFolder;
 int duaFolder;
 
 
+// =========================
+// Eid Takbeerat
+// =========================
+
+bool eidTakbeeratEnable;
+
+int eidTakbeeratVolume;
+
+
+// =========================
+// Ruqyah
+// =========================
+
+int ruqyahFolder;
+
+int ruqyahFile;
+
+int ruqyahVolume;
+
+
+// =========================
+// Dhikr Repeat
+// =========================
+
+bool dhikrRepeatEnable;
+
+int dhikrRepeatInterval; // 1-60 minutes
+
+int dhikrRepeatVolume;
+
 
     // =========================
     // Display

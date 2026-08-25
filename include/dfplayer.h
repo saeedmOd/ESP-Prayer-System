@@ -90,4 +90,6 @@ void play_test();
 
 bool dfplayer_ready();
 
+bool dfplayer_is_busy();
+
 #endif
