@@ -10,7 +10,7 @@
 
 const DEFAULTS = {
 
-    volume: 15,
+    volume: 1,
 
     azan: {
         enable: true,
@@ -21,12 +21,12 @@ const DEFAULTS = {
     },
 
     iqama: {
-        enable: true,
+        enable: false,
         device: 0,
         buzzerTone: 0,
         folder: 1,
         file: 4,
-        volume: 12,
+        volume: 1,
         delay: 10,
         fajr: false,
         dhuhr: false,
@@ -36,28 +36,28 @@ const DEFAULTS = {
     },
 
     morningAdhkar: {
-        enable: true,
+        enable: false,
         hour: 6,
         minute: 0,
-        volume: 9,
+        volume: 1,
         folder: 4,
         file: 1
     },
 
     eveningAdhkar: {
-        enable: true,
+        enable: false,
         hour: 18,
         minute: 0,
-        volume: 9,
+        volume: 1,
         folder: 4,
         file: 2
     },
 
     kahf: {
-        enable: true,
+        enable: false,
         hour: 9,
         minute: 0,
-        volume: 10,
+        volume: 1,
         folder: 2,
         file: 3
     },
@@ -73,22 +73,28 @@ const DEFAULTS = {
         repeat: 0,
         interval: 1,
         file: 1,
-        volume: 15
+        volume: 1
     },
 
     quran: {
         baqarah: {
-            enable: true, hour: 0, minute: 0, volume: 10, folder: 2, file: 1
+            enable: false, hour: 0, minute: 0, volume: 1, folder: 2, file: 1
         },
         baqarahLast: {
-            enable: true, hour: 0, minute: 0, volume: 10, folder: 2, file: 2
+            enable: false, hour: 0, minute: 0, volume: 1, folder: 2, file: 2
         },
         ayatKursi: {
-            enable: true, hour: 0, minute: 0, volume: 10, folder: 2, file: 3
+            enable: false, hour: 0, minute: 0, volume: 1, folder: 2, file: 3
         },
         maryam: {
-            enable: true, hour: 0, minute: 0, volume: 10, folder: 2, file: 4
+            enable: false, hour: 0, minute: 0, volume: 1, folder: 2, file: 4
         }
+    },
+
+    folderPlay: {
+        category: 1,
+        volume: 1,
+        mode: "sequential"
     }
 };
 
@@ -642,14 +648,31 @@ async function loadAudioSettings() {
         updateCustomAlertRepeatUI(audioSettings.customAlert.repeat);
 
         ["baqarah", "baqarahLast", "ayatKursi", "maryam"].forEach(key => {
-            const prefix = "quran_" + key + "_";
-            audioSettings.quran[key].enable = data[prefix + "enable"] ?? DEFAULTS.quran[key].enable;
-            audioSettings.quran[key].hour = clamp(data[prefix + "hour"] ?? DEFAULTS.quran[key].hour, 0, 23);
-            audioSettings.quran[key].minute = clamp(data[prefix + "minute"] ?? DEFAULTS.quran[key].minute, 0, 59);
-            audioSettings.quran[key].volume = clamp(data[prefix + "volume"] ?? DEFAULTS.quran[key].volume, 0, 30);
-            audioSettings.quran[key].folder = data[prefix + "folder"] ?? DEFAULTS.quran[key].folder;
-            audioSettings.quran[key].file = data[prefix + "file"] ?? DEFAULTS.quran[key].file;
+            const q = (data.quran && data.quran[key]) ? data.quran[key] : null;
+            if (!q) return;
+            audioSettings.quran[key].enable = q.enable ?? DEFAULTS.quran[key].enable;
+            audioSettings.quran[key].hour = clamp(q.hour ?? DEFAULTS.quran[key].hour, 0, 23);
+            audioSettings.quran[key].minute = clamp(q.minute ?? DEFAULTS.quran[key].minute, 0, 59);
+            audioSettings.quran[key].volume = clamp(q.volume ?? DEFAULTS.quran[key].volume, 0, 30);
+            audioSettings.quran[key].folder = q.folder ?? DEFAULTS.quran[key].folder;
+            audioSettings.quran[key].file = q.file ?? DEFAULTS.quran[key].file;
         });
+        loadSelectedQuran();
+
+        const fp = data.folderPlay || {};
+        audioSettings.folderPlay.category = clamp(Number(fp.category ?? DEFAULTS.folderPlay.category), 1, 99);
+        audioSettings.folderPlay.volume = clamp(Number(fp.volume ?? DEFAULTS.folderPlay.volume), 0, 30);
+        audioSettings.folderPlay.mode = ["sequential", "shuffle", "loop"].includes(fp.mode)
+            ? fp.mode
+            : DEFAULTS.folderPlay.mode;
+
+        setSelect("folderCategory", audioSettings.folderPlay.category);
+        setNumber("folderVolume", audioSettings.folderPlay.volume);
+        const fvVal = $("folderVolumeValue");
+        if (fvVal) fvVal.textContent = String(audioSettings.folderPlay.volume);
+
+        const modeRadio = document.querySelector('input[name="folderMode"][value="' + audioSettings.folderPlay.mode + '"]');
+        if (modeRadio) modeRadio.checked = true;
 
         setStatus("متصل", "success");
     } catch (error) {
@@ -732,7 +755,12 @@ function collectAdhkarTab() {
 function collectQuranTab() {
     readCurrentQuran();
     return {
-        quran: deepClone(audioSettings.quran)
+        quran: deepClone(audioSettings.quran),
+        folderPlay: {
+            category: clamp(Number($("folderCategory")?.value || 1), 1, 99),
+            volume: clamp(Number($("folderVolume")?.value || 15), 0, 30),
+            mode: document.querySelector('input[name="folderMode"]:checked')?.value || "sequential"
+        }
     };
 }
 
@@ -1009,8 +1037,37 @@ async function loadSystemInfo() {
         setText("infoVersion", data.version ?? "1.0.0");
         setText("infoWifiStatus", data.wifiConnected ? "متصل" : "غير متصل");
         $("infoWifiStatus").className = data.wifiConnected ? "success" : "error";
+        const durInput = $("eventDuration");
+        if (durInput && data.eventDisplayDuration !== undefined) {
+            durInput.value = data.eventDisplayDuration;
+        }
     } catch (error) {
         console.error("[SYSTEM] Load error:", error);
+    }
+}
+
+async function saveEventDuration() {
+    const button = $("saveEventDurationBtn");
+    const duration = parseInt($("eventDuration")?.value, 10);
+    if (!Number.isFinite(duration)) {
+        showToast("أدخل مدة صحيحة (2-60 ثانية)", "warning");
+        return;
+    }
+    if (button) button.disabled = true;
+    try {
+        const response = await fetch("/api/settings/display", {
+            method: "POST",
+            cache: "no-store",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ eventDisplayDuration: Math.min(Math.max(duration, 2), 60) })
+        });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        showToast("تم حفظ مدة العرض بنجاح", "success");
+    } catch (error) {
+        console.error("[DISPLAY] Save error:", error);
+        showToast("فشل حفظ المدة", "error");
+    } finally {
+        if (button) button.disabled = false;
     }
 }
 
@@ -1103,6 +1160,10 @@ function setupEvents() {
     /* Folder play */
     $("folderButton")?.addEventListener("click", playFolder);
     $("folderStopButton")?.addEventListener("click", stopFolder);
+    $("folderVolume")?.addEventListener("input", () => {
+        const v = $("folderVolumeValue");
+        if (v) v.textContent = String($("folderVolume")?.value || 0);
+    });
 
     /* WiFi scan */
     $("wifiScanBtn")?.addEventListener("click", startWifiScan);
@@ -1117,6 +1178,9 @@ function setupEvents() {
     /* System buttons */
     $("restartBtn")?.addEventListener("click", restartDevice);
     $("resetBtn")?.addEventListener("click", resetSettings);
+
+    /* Event duration save */
+    $("saveEventDurationBtn")?.addEventListener("click", saveEventDuration);
 
     /* Back button */
     $("backButton")?.addEventListener("click", () => { window.location.href = "index.html"; });

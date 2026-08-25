@@ -236,6 +236,15 @@ bool storage_load();
 
 bool storage_save();
 
+// =================================================
+// Batch Save (write to flash only once at end)
+// Avoids one full LittleFS rewrite per setting.
+// =================================================
+
+void storage_begin_batch();
+
+bool storage_end_batch();
+
 void storage_create_defaults();
 
 void storage_reset();

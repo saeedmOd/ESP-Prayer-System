@@ -541,6 +541,135 @@ void settings_load()
         );
 
 
+    // -----------------------------------------------------
+    // Structured scheduled Quran items
+    // -----------------------------------------------------
+
+    settings.quranBaqarah.enable =
+        storage_get_bool(
+            "audio.quran.baqarah.enable",
+            false
+        );
+    settings.quranBaqarah.hour =
+        storage_get_int(
+            "audio.quran.baqarah.hour",
+            0
+        );
+    settings.quranBaqarah.minute =
+        storage_get_int(
+            "audio.quran.baqarah.minute",
+            0
+        );
+    settings.quranBaqarah.volume =
+        storage_get_int(
+            "audio.quran.baqarah.volume",
+            DEFAULT_VOLUME
+        );
+    settings.quranBaqarah.folder =
+        storage_get_int(
+            "audio.quran.baqarah.folder",
+            2
+        );
+    settings.quranBaqarah.file =
+        storage_get_int(
+            "audio.quran.baqarah.file",
+            1
+        );
+
+    settings.quranBaqarahLast.enable =
+        storage_get_bool(
+            "audio.quran.baqarah_last.enable",
+            false
+        );
+    settings.quranBaqarahLast.hour =
+        storage_get_int(
+            "audio.quran.baqarah_last.hour",
+            0
+        );
+    settings.quranBaqarahLast.minute =
+        storage_get_int(
+            "audio.quran.baqarah_last.minute",
+            0
+        );
+    settings.quranBaqarahLast.volume =
+        storage_get_int(
+            "audio.quran.baqarah_last.volume",
+            DEFAULT_VOLUME
+        );
+    settings.quranBaqarahLast.folder =
+        storage_get_int(
+            "audio.quran.baqarah_last.folder",
+            2
+        );
+    settings.quranBaqarahLast.file =
+        storage_get_int(
+            "audio.quran.baqarah_last.file",
+            1
+        );
+
+    settings.quranAyatKursi.enable =
+        storage_get_bool(
+            "audio.quran.ayat_kursi.enable",
+            false
+        );
+    settings.quranAyatKursi.hour =
+        storage_get_int(
+            "audio.quran.ayat_kursi.hour",
+            0
+        );
+    settings.quranAyatKursi.minute =
+        storage_get_int(
+            "audio.quran.ayat_kursi.minute",
+            0
+        );
+    settings.quranAyatKursi.volume =
+        storage_get_int(
+            "audio.quran.ayat_kursi.volume",
+            DEFAULT_VOLUME
+        );
+    settings.quranAyatKursi.folder =
+        storage_get_int(
+            "audio.quran.ayat_kursi.folder",
+            2
+        );
+    settings.quranAyatKursi.file =
+        storage_get_int(
+            "audio.quran.ayat_kursi.file",
+            1
+        );
+
+    settings.quranMaryam.enable =
+        storage_get_bool(
+            "audio.quran.maryam.enable",
+            false
+        );
+    settings.quranMaryam.hour =
+        storage_get_int(
+            "audio.quran.maryam.hour",
+            0
+        );
+    settings.quranMaryam.minute =
+        storage_get_int(
+            "audio.quran.maryam.minute",
+            0
+        );
+    settings.quranMaryam.volume =
+        storage_get_int(
+            "audio.quran.maryam.volume",
+            DEFAULT_VOLUME
+        );
+    settings.quranMaryam.folder =
+        storage_get_int(
+            "audio.quran.maryam.folder",
+            2
+        );
+    settings.quranMaryam.file =
+        storage_get_int(
+            "audio.quran.maryam.file",
+            1
+        );
+
+
     // =====================================================
     // Morning Adhkar
     // =====================================================
@@ -725,6 +854,12 @@ void settings_load()
         storage_get_bool(
             "display.show_temperature",
             false
+        );
+
+    settings.eventDisplayDuration =
+        storage_get_int(
+            "display.event_duration",
+            5
         );
 
 
@@ -1103,6 +1238,13 @@ void settings_apply()
             0,
             100
         );
+
+    settings.eventDisplayDuration =
+        clampInt(
+            settings.eventDisplayDuration,
+            2,
+            60
+        );
 }
 
 
@@ -1135,6 +1277,9 @@ void settings_save()
     Serial.println(F("Saving Settings..."));
     Serial.println(F("================================"));
 
+
+    // Batch: update RAM only, then write flash once.
+    storage_begin_batch();
 
     // =====================================================
     // Validate before saving
@@ -1394,6 +1539,16 @@ void settings_save()
     // =====================================================
 
     storage_set_int(
+        "audio.azan_device",
+        settings.azanDevice
+    );
+
+    storage_set_int(
+        "audio.azan_buzzer_tone",
+        settings.azanBuzzerTone
+    );
+
+    storage_set_int(
         "audio.azan_folder",
         settings.azanFolder
     );
@@ -1411,6 +1566,16 @@ void settings_save()
     storage_set_bool(
         "audio.iqama_enable",
         settings.iqamaEnable
+    );
+
+    storage_set_int(
+        "audio.iqama_device",
+        settings.iqamaDevice
+    );
+
+    storage_set_int(
+        "audio.iqama_buzzer_tone",
+        settings.iqamaBuzzerTone
     );
 
     storage_set_int(
@@ -1685,10 +1850,17 @@ void settings_save()
         settings.showTemperature
     );
 
+    storage_set_int(
+        "display.event_duration",
+        settings.eventDisplayDuration
+    );
+
 
     // =====================================================
-    // Done
+    // Done - single flash write
     // =====================================================
+
+    storage_end_batch();
 
     Serial.println(
         F("Settings Saved")

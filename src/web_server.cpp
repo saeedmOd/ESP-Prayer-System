@@ -17,6 +17,7 @@
 #include "time_manager.h"
 #include "dfplayer.h"
 #include "hardware.h"
+#include "display.h"
 
 // ============================================================
 // Web Server
@@ -39,6 +40,7 @@ static String networkBody;
 static String volumeBody;
 static String quranTestBody;
 static String folderTestBody;
+static String displayBody;
 
 // ============================================================
 // Forward Declarations
@@ -140,10 +142,18 @@ static void send_file(
     String gzipPath = path + ".gz";
 
     // --------------------------------------------------------
-    // Prefer gzip
+    // Prefer gzip when the client supports it
     // --------------------------------------------------------
 
-    if (LittleFS.exists(gzipPath))
+    bool acceptsGzip =
+        request->header("Accept-Encoding")
+            .indexOf("gzip") >= 0;
+
+    if (
+        acceptsGzip
+        &&
+        LittleFS.exists(gzipPath)
+    )
     {
         Serial.print(F("[FS] Sending gzip: "));
         Serial.println(gzipPath);
@@ -620,7 +630,9 @@ static void registerStaticRoutes()
     );
 
 
+    // ========================================================
     // Compatibility
+    // ========================================================
 
     server.on(
         "/style.css",
@@ -778,6 +790,28 @@ static void registerApiRoutes()
 
             doc["version"] =
                 FIRMWARE_VERSION;
+
+            // =================================
+            // Event Status
+            // =================================
+
+            bool eventActive =
+                display_event_active();
+
+            doc["eventActive"] =
+                eventActive;
+
+            doc["eventTitle"] =
+                eventActive ? get_event_title() : "";
+
+            doc["eventSubtitle"] =
+                eventActive ? get_event_subtitle() : "";
+
+            if (eventActive)
+            {
+                doc["eventRemaining"] =
+                    get_event_remaining();
+            }
 
             if (time_is_ready())
             {
@@ -1439,6 +1473,29 @@ static void registerApiRoutes()
                 );
 
 
+            JsonObject folderPlay =
+                doc["folderPlay"]
+                    .to<JsonObject>();
+
+            folderPlay["category"] =
+                storage_get_int(
+                    "audio.folder_play.category",
+                    1
+                );
+
+            folderPlay["volume"] =
+                storage_get_int(
+                    "audio.folder_play.volume",
+                    15
+                );
+
+            folderPlay["mode"] =
+                storage_get_string(
+                    "audio.folder_play.mode",
+                    "sequential"
+                );
+
+
             send_json(
                 request,
                 doc
@@ -1501,6 +1558,9 @@ static void registerApiRoutes()
 
                 return;
             }
+
+            // Batch: update RAM only, single flash write at end
+            storage_begin_batch();
 
             // ------------------------------------------------
             // General
@@ -2588,6 +2648,61 @@ static void registerApiRoutes()
 
 
             // ------------------------------------------------
+            // Folder Play
+            // ------------------------------------------------
+
+            if (
+                doc["folderPlay"]
+                    .is<JsonObject>()
+            )
+            {
+                JsonObject fp =
+                    doc["folderPlay"]
+                        .as<JsonObject>();
+
+                if (fp["category"].is<int>())
+                    storage_set_int(
+                        "audio.folder_play.category",
+                        constrain(
+                            fp["category"].as<int>(),
+                            1,
+                            99
+                        )
+                    );
+
+                if (fp["volume"].is<int>())
+                    storage_set_int(
+                        "audio.folder_play.volume",
+                        constrain(
+                            fp["volume"].as<int>(),
+                            0,
+                            30
+                        )
+                    );
+
+                if (fp["mode"].is<const char *>())
+                {
+                    String m =
+                        fp["mode"].as<String>();
+
+                    if (
+                        m == "sequential"
+                        ||
+                        m == "shuffle"
+                        ||
+                        m == "loop"
+                    )
+                    {
+                        storage_set_string(
+                            "audio.folder_play.mode",
+                            m
+                        );
+                    }
+                }
+            }
+
+
+            // ------------------------------------------------
             // Save
             // ------------------------------------------------
 
@@ -2595,7 +2710,7 @@ static void registerApiRoutes()
                 F("[AUDIO] Saving settings...")
             );
 
-            if (!storage_save())
+            if (!storage_end_batch())
             {
                 buzzer_error_tone();
 
@@ -2611,6 +2726,10 @@ static void registerApiRoutes()
 
                 return;
             }
+
+            // Reload live settings from storage so scheduled
+            // events (e.g. Quran) use the new values immediately.
+            settings_load();
 
             settings_apply();
 
@@ -3602,6 +3721,32 @@ static void registerSystemRoutes()
                 return;
             }
 
+            // Event status: show category name on LCD
+            String categoryName = "تشغيل مجلد " + String(folder);
+            String categoryLcd = "FOLDER " + String(folder);
+
+            if (folder == 1)
+            {
+                categoryName = "مجموعه مختارة من الايات";
+                categoryLcd = "MAJMOU'AT AYAT";
+            }
+            else if (folder == 2)
+            {
+                categoryName = "سور قصيره";
+                categoryLcd = "SURAR QASIRA";
+            }
+            else if (folder == 3)
+            {
+                categoryName = "قراءت مختارة";
+                categoryLcd = "QIRA'AT MUKHTARA";
+            }
+
+            set_event_status(
+                categoryName,
+                "",
+                categoryLcd
+            );
+
             if (mode == "sequential")
             {
                 play_folder_sequential(
@@ -3927,9 +4072,84 @@ static void registerSystemRoutes()
                 WiFi.status()
                 == WL_CONNECTED;
 
+            doc["freeHeap"] =
+                ESP.getFreeHeap();
+
+            doc["frag"] =
+                ESP.getHeapFragmentation();
+
+            doc["eventDisplayDuration"] =
+                settings.eventDisplayDuration;
+
             send_json(
                 request,
                 doc
+            );
+        }
+    );
+
+
+    server.on(
+        "/api/settings/display",
+        HTTP_POST,
+
+        [](AsyncWebServerRequest *request)
+        {
+            // Response after body.
+        },
+
+        NULL,
+
+        [](AsyncWebServerRequest *request,
+           uint8_t *data,
+           size_t len,
+           size_t index,
+           size_t total)
+        {
+            if (
+                !collect_body(
+                    displayBody,
+                    data,
+                    len,
+                    index,
+                    total
+                )
+            )
+            {
+                return;
+            }
+
+            JsonDocument doc;
+
+            if (!parse_json(displayBody, doc))
+            {
+                send_json_message(
+                    request,
+                    400,
+                    "{\"status\":\"error\",\"message\":\"Invalid JSON\"}"
+                );
+
+                return;
+            }
+
+            if (doc["eventDisplayDuration"].is<int>())
+            {
+                settings.eventDisplayDuration =
+                    constrain(
+                        doc["eventDisplayDuration"].as<int>(),
+                        2,
+                        60
+                    );
+
+                settings_save();
+            }
+
+            settings_apply();
+
+            send_json_message(
+                request,
+                200,
+                "{\"status\":\"success\",\"message\":\"تم الحفظ بنجاح\"}"
             );
         }
     );

@@ -399,6 +399,61 @@ body {
 }
 
 
+/* Event Status Banner */
+
+.event-banner {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    padding: 14px 18px;
+
+    margin-bottom: 18px;
+
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #b45309,
+            #d97706
+        );
+
+    color: #ffffff;
+
+    font-size: 1.15rem;
+
+    font-weight: 700;
+
+    box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
+
+    animation: eventPulse 2s ease-in-out infinite;
+}
+
+
+.event-banner .event-subtitle {
+
+    font-weight: 500;
+
+    font-size: 1rem;
+
+    color: #fef3c7;
+}
+
+
+@keyframes eventPulse {
+
+    0%, 100% { opacity: 1; }
+
+    50% { opacity: 0.85; }
+}
+
+
 .prayer-name {
 
     margin: 4px 0;

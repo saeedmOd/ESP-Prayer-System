@@ -384,7 +384,7 @@ void rotary_menu_loop()
         }
         else
         {
-            display_normal_loop();
+            display_event_check();
         }
     }
     else if (needsRedraw)

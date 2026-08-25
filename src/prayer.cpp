@@ -8,6 +8,7 @@
 #include "time_manager.h"
 #include "dfplayer.h"
 #include "hardware.h"
+#include "display.h"
 
 
 // =====================================
@@ -47,6 +48,11 @@ static bool morningAdhkarPlayed = false;
 static bool eveningAdhkarPlayed = false;
 
 static bool kahfPlayed = false;
+
+static bool quranBaqarahPlayed = false;
+static bool quranBaqarahLastPlayed = false;
+static bool quranAyatKursiPlayed = false;
+static bool quranMaryamPlayed = false;
 
 static bool customAlertPlayed = false;
 
@@ -436,6 +442,15 @@ void prayer_loop()
 
             prayer_reload();
 
+            morningAdhkarPlayed = false;
+            eveningAdhkarPlayed = false;
+            kahfPlayed = false;
+            quranBaqarahPlayed = false;
+            quranBaqarahLastPlayed = false;
+            quranAyatKursiPlayed = false;
+            quranMaryamPlayed = false;
+            customAlertPlayed = false;
+
         }
 
     }
@@ -451,6 +466,8 @@ void prayer_loop()
     )
     {
         morningAdhkarPlayed = true;
+
+        set_event_status("أذكار الصباح", "", "ADH. SABAH");
 
         play_folder_file_with_volume(
             settings.morningAdhkarFolder,
@@ -473,6 +490,8 @@ void prayer_loop()
     )
     {
         eveningAdhkarPlayed = true;
+
+        set_event_status("أذكار المساء", "", "ADH. MASAA");
 
         play_folder_file_with_volume(
             settings.eveningAdhkarFolder,
@@ -500,6 +519,8 @@ void prayer_loop()
     {
         kahfPlayed = true;
 
+        set_event_status("سورة الكهف", "", "SURAT AL-KAHF");
+
         play_folder_file_with_volume(
             settings.kahfFolder,
             settings.kahfFile,
@@ -507,6 +528,106 @@ void prayer_loop()
         );
 
         Serial.println("Playing Surat Al-Kahf");
+    }
+
+
+// ==========================
+// Scheduled Quran Items
+// ==========================
+
+    if(
+        settings.quranBaqarah.enable
+        &&
+        now >= (settings.quranBaqarah.hour * 60 + settings.quranBaqarah.minute)
+        &&
+        now <= (settings.quranBaqarah.hour * 60 + settings.quranBaqarah.minute + 1)
+        &&
+        !quranBaqarahPlayed
+    )
+    {
+        quranBaqarahPlayed = true;
+
+        set_event_status("سورة البقرة", "", "SURAT AL-BAQARAH");
+
+        play_folder_file_with_volume(
+            settings.quranBaqarah.folder,
+            settings.quranBaqarah.file,
+            settings.quranBaqarah.volume
+        );
+
+        Serial.println("Playing Scheduled Quran: Baqarah");
+    }
+
+
+    if(
+        settings.quranBaqarahLast.enable
+        &&
+        now >= (settings.quranBaqarahLast.hour * 60 + settings.quranBaqarahLast.minute)
+        &&
+        now <= (settings.quranBaqarahLast.hour * 60 + settings.quranBaqarahLast.minute + 1)
+        &&
+        !quranBaqarahLastPlayed
+    )
+    {
+        quranBaqarahLastPlayed = true;
+
+        set_event_status("خاتمة البقرة", "", "END OF BAQARAH");
+
+        play_folder_file_with_volume(
+            settings.quranBaqarahLast.folder,
+            settings.quranBaqarahLast.file,
+            settings.quranBaqarahLast.volume
+        );
+
+        Serial.println("Playing Scheduled Quran: Baqarah Last");
+    }
+
+
+    if(
+        settings.quranAyatKursi.enable
+        &&
+        now >= (settings.quranAyatKursi.hour * 60 + settings.quranAyatKursi.minute)
+        &&
+        now <= (settings.quranAyatKursi.hour * 60 + settings.quranAyatKursi.minute + 1)
+        &&
+        !quranAyatKursiPlayed
+    )
+    {
+        quranAyatKursiPlayed = true;
+
+        set_event_status("آية الكرسي", "", "AYAT AL-KURSI");
+
+        play_folder_file_with_volume(
+            settings.quranAyatKursi.folder,
+            settings.quranAyatKursi.file,
+            settings.quranAyatKursi.volume
+        );
+
+        Serial.println("Playing Scheduled Quran: Ayat Al-Kursi");
+    }
+
+
+    if(
+        settings.quranMaryam.enable
+        &&
+        now >= (settings.quranMaryam.hour * 60 + settings.quranMaryam.minute)
+        &&
+        now <= (settings.quranMaryam.hour * 60 + settings.quranMaryam.minute + 1)
+        &&
+        !quranMaryamPlayed
+    )
+    {
+        quranMaryamPlayed = true;
+
+        set_event_status("سورة مريم", "", "SURAT MARYAM");
+
+        play_folder_file_with_volume(
+            settings.quranMaryam.folder,
+            settings.quranMaryam.file,
+            settings.quranMaryam.volume
+        );
+
+        Serial.println("Playing Scheduled Quran: Maryam");
     }
 
 
@@ -540,6 +661,8 @@ if(
         customAlertPlayed = true;
         customAlertRepeatDone = 0;
         customAlertLastRepeatMs = millis();
+
+        set_event_status("المنبّه", "", "AL-MUNABBIH");
 
         if(settings.customAlertSource == 1)
         {
@@ -599,6 +722,32 @@ if(
 
 
 
+        // ==========================
+        // Pre-Azan Countdown (last 10 seconds)
+        // ==========================
+
+        if(getLocalTime(&timeinfo))
+        {
+            int secsNow =
+                hour * 3600 +
+                minute * 60 +
+                timeinfo.tm_sec;
+
+            int untilAzan =
+                prayerMinutes[i] * 60 - secsNow;
+
+            if(untilAzan >= 0 && untilAzan <= 10)
+            {
+                set_event_status(
+                    String("أذان ") + prayerNames[i],
+                    "بعد " + String(untilAzan) + " ثانية",
+                    String("ADAN ") + prayerNames[i],
+                    "IN " + String(untilAzan) + " SEC"
+                );
+            }
+        }
+
+
 
         if(
             now >= prayerMinutes[i]
@@ -613,6 +762,11 @@ if(
             azanPlayed[i] = true;
 
 
+            set_event_status(
+                String("أذان ") + prayerNames[i],
+                "",
+                String("ADAN ") + prayerNames[i]
+            );
 
 
 // ==========================
@@ -661,6 +815,8 @@ else
     Serial.println(
         prayerNames[i]
     );
+
+}
 
 }
 
@@ -742,6 +898,12 @@ if(
 {
     iqamaPlayed[i] = true;
 
+    set_event_status(
+        String("إقامة ") + prayerNames[i],
+        "",
+        String("IQAMA ") + prayerNames[i]
+    );
+
     if (settings.iqamaDevice == 0)
     {
         // DFPlayer
@@ -795,10 +957,7 @@ else if(
     );
 }
 
-        }
-
     }
-
 }
 
 

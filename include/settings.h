@@ -280,6 +280,23 @@ int quranFolder;
 int quranFile;
 
 
+// Structured scheduled Quran items
+struct QuranItemSettings
+{
+    bool enable;
+    int hour;
+    int minute;
+    int volume;
+    int folder;
+    int file;
+};
+
+QuranItemSettings quranBaqarah;
+QuranItemSettings quranBaqarahLast;
+QuranItemSettings quranAyatKursi;
+QuranItemSettings quranMaryam;
+
+
 // =========================
 // Morning Adhkar
 // =========================
@@ -364,6 +381,7 @@ int duaFolder;
 
     bool showTemperature;
 
+    int eventDisplayDuration;  // seconds, how long event status shows on LCD
 
 };
 

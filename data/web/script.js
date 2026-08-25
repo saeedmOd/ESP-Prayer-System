@@ -405,6 +405,13 @@ async function loadStatus() {
 
 
         // =================================
+        // Event Status Banner
+        // =================================
+
+        updateEventBanner(data);
+
+
+        // =================================
         // Wi-Fi
         // =================================
 
@@ -549,6 +556,54 @@ function updateCountdownFromStatus(
                 updateCountdown,
                 1000
             );
+
+    }
+
+}
+
+
+// =====================================
+// Event Status Banner
+// =====================================
+
+function updateEventBanner(
+    data
+) {
+
+    const banner =
+        document.getElementById(
+            "eventBanner"
+        );
+
+    if (!banner) {
+        return;
+    }
+
+
+    if (
+        data.eventActive
+    ) {
+
+        let html =
+            "🕌 الآن: " +
+            (data.eventTitle || "");
+
+        if (
+            data.eventSubtitle
+        ) {
+            html +=
+                ' <span class="event-subtitle">' +
+                data.eventSubtitle +
+                "</span>";
+        }
+
+        banner.innerHTML = html;
+
+        banner.style.display = "flex";
+
+    } else {
+
+        banner.style.display = "none";
 
     }
 
@@ -759,10 +814,10 @@ loadStatus();
 
 
 // =====================================
-// Sync ESP Status Every 5 Seconds
+// Sync ESP Status Every 2 Seconds
 // =====================================
 
 setInterval(
     loadStatus,
-    5000
+    2000
 );

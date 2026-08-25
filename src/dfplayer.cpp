@@ -57,6 +57,17 @@ static DFRobotDFPlayerMini player;
 static bool playerReady = false;
 
 // =================================================
+// Non-blocking sequential playback state
+// =================================================
+
+static bool seqPlaying = false;
+static uint8_t seqFolder = 0;
+static uint8_t seqFileCount = 0;
+static uint8_t seqCurrent = 0;
+static unsigned long seqFileStartMs = 0;
+static const uint32_t SEQ_FILE_TIMEOUT_MS = 90000;
+
+// =================================================
 // Internal Helpers
 // =================================================
 
@@ -633,28 +644,79 @@ void play_folder_sequential(
         folder, fileCount, volume
     );
 
-    for (uint8_t i = 1; i <= fileCount; i++)
-    {
-        player.playFolder(folder, i);
-        delay(DFPLAYER_COMMAND_DELAY);
+    seqFolder = folder;
+    seqFileCount = fileCount;
+    seqCurrent = 1;
+    seqFileStartMs = millis();
 
-        uint32_t waited = 0;
-        while (waited < 60000)
-        {
-            delay(500);
-            waited += 500;
+    player.playFolder(folder, seqCurrent);
+    delay(DFPLAYER_COMMAND_DELAY);
 
-            if (!player.available())
-                break;
-        }
-
-        if (i < fileCount)
-            delay(300);
-    }
+    seqPlaying = true;
 
     Serial.println(
-        F("[DFPlayer] Sequential finished")
+        F("[DFPlayer] Sequential started (non-blocking)")
     );
+}
+
+
+// =================================================
+// Non-blocking Sequential Loop
+// Advances to the next file when the current one
+// finishes (or after a safety timeout) so the main
+// loop never blocks (prevents Soft WDT reset).
+// =================================================
+
+void dfplayer_loop()
+{
+    if (!playerReady)
+        return;
+
+    if (!seqPlaying)
+        return;
+
+    bool advance = false;
+
+    if (player.available())
+    {
+        auto type =
+            player.readType();
+
+        player.read();
+
+        if (type == DFPlayerPlayFinished)
+        {
+            advance = true;
+        }
+    }
+
+    if (
+        !advance &&
+        (millis() - seqFileStartMs >= SEQ_FILE_TIMEOUT_MS)
+    )
+    {
+        advance = true;
+    }
+
+    if (advance)
+    {
+        seqCurrent++;
+
+        if (seqCurrent <= seqFileCount)
+        {
+            player.playFolder(seqFolder, seqCurrent);
+            delay(DFPLAYER_COMMAND_DELAY);
+            seqFileStartMs = millis();
+        }
+        else
+        {
+            seqPlaying = false;
+
+            Serial.println(
+                F("[DFPlayer] Sequential finished")
+            );
+        }
+    }
 }
 
 
@@ -700,8 +762,9 @@ void play_folder_shuffle(
         uint32_t waited = 0;
         while (waited < 60000)
         {
-            delay(500);
-            waited += 500;
+            delay(100);
+            yield();
+            waited += 100;
 
             if (!player.available())
                 break;
@@ -950,6 +1013,8 @@ void stop_audio()
     {
         return;
     }
+
+    seqPlaying = false;
 
     player.stop();
 

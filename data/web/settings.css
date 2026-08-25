@@ -337,6 +337,10 @@
     pointer-events: none;
 }
 
+.card.disabled .card-header {
+    pointer-events: auto;
+}
+
 .card-header {
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border);
@@ -801,6 +805,10 @@ input[type="range"]::-moz-range-thumb {
 .adhkar-card.disabled {
     opacity: 0.5;
     pointer-events: none;
+}
+
+.adhkar-card.disabled .adhkar-header {
+    pointer-events: auto;
 }
 
 .adhkar-header h3 {

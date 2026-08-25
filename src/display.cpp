@@ -117,6 +117,153 @@ void display_loop()
 
 
 // =================================================
+// Event Status Display
+// =================================================
+
+static String eventTitle = "";
+static String eventSubtitle = "";
+
+// LCD-safe (Latin/transliterated) versions
+static String eventLcdTitle = "";
+static String eventLcdSubtitle = "";
+
+static unsigned long eventStartMs = 0;
+
+// HD44780 (16x2) cannot render Arabic; keep LCD text ASCII.
+static String lcd_safe(String s)
+{
+    if (s.length() > 16)
+        s = s.substring(0, 16);
+
+    return s;
+}
+
+void set_event_status(
+    String title,
+    String subtitle,
+    String lcdTitle,
+    String lcdSubtitle
+)
+{
+    eventTitle = title;
+    eventSubtitle = subtitle;
+
+    eventLcdTitle =
+        (lcdTitle.length() > 0) ? lcdTitle : title;
+
+    eventLcdSubtitle =
+        (lcdSubtitle.length() > 0) ? lcdSubtitle : subtitle;
+
+    eventStartMs = millis();
+}
+
+
+bool display_event_active()
+{
+    if (eventStartMs == 0)
+        return false;
+
+    unsigned long elapsed =
+        millis() - eventStartMs;
+
+    unsigned long duration =
+        (unsigned long)settings.eventDisplayDuration * 1000UL;
+
+    return elapsed < duration;
+}
+
+
+String get_event_title()
+{
+    return eventTitle;
+}
+
+
+String get_event_subtitle()
+{
+    return eventSubtitle;
+}
+
+
+int get_event_remaining()
+{
+    if (eventStartMs == 0)
+        return 0;
+
+    unsigned long elapsed = millis() - eventStartMs;
+
+    unsigned long duration =
+        (unsigned long)settings.eventDisplayDuration * 1000UL;
+
+    if (elapsed >= duration)
+        return 0;
+
+    return (int)((duration - elapsed) / 1000UL);
+}
+
+
+void display_event_render()
+{
+    lcd.clear();
+
+    lcd.setCursor(0, 0);
+    lcd.print(lcd_safe(eventLcdTitle));
+
+    if (eventLcdSubtitle.length() > 0)
+    {
+        lcd.setCursor(0, 1);
+        lcd.print(lcd_safe(eventLcdSubtitle));
+    }
+}
+
+
+// Called from clock mode loop:
+// shows event screen while active, else normal clock
+void display_event_check()
+{
+    static bool lastEventState = false;
+    static unsigned long lastUpdate = 0;
+
+    bool active = display_event_active();
+
+    // Countdown subtitles refresh every second
+    if (active)
+    {
+        if (!lastEventState)
+        {
+            display_event_render();
+            lastUpdate = millis();
+        }
+        else if (eventSubtitle.length() > 0 &&
+                 millis() - lastUpdate >= 1000)
+        {
+            display_event_render();
+            lastUpdate = millis();
+        }
+
+        lastEventState = true;
+        return;
+    }
+
+// Event just ended -> force one redraw of clock
+    if (lastEventState)
+    {
+        lastEventState = false;
+        display_force_clock_redraw();
+        return;
+    }
+
+    display_normal_loop();
+}
+
+
+void display_force_clock_redraw()
+{
+    lcd.clear();
+}
+
+
+// =================================================
 // Normal Clock Loop (called by menu system)
 // =================================================
 

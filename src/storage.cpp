@@ -26,6 +26,10 @@
 static bool storage_ready = false;
 static bool config_loaded = false;
 
+// When true, storage_set_* only updates RAM; flash write
+// happens once via storage_end_batch().
+static bool storageBatchMode = false;
+
 // RAM cache
 static JsonDocument configDoc;
 
@@ -229,58 +233,63 @@ static bool set_path(
     if (path.length() == 0)
         return false;
 
-    JsonVariant current =
-        doc.as<JsonVariant>();
+    int lastDot =
+        path.lastIndexOf('.');
+
+    String leaf =
+        path.substring(lastDot + 1);
+
+    if (leaf.length() == 0)
+        return false;
+
+    if (doc.isNull())
+    {
+        doc.to<JsonObject>();
+    }
+
+    JsonObject current =
+        doc.as<JsonObject>();
 
     int start = 0;
 
-    while (true)
+    while (
+        lastDot >= 0
+        &&
+        start <= lastDot
+    )
     {
         int dot =
             path.indexOf('.', start);
 
-        String key;
+        if (dot < 0 || dot > lastDot)
+            break;
 
-        if (dot < 0)
-        {
-            key =
-                path.substring(start);
-
-            if (key.length() == 0)
-                return false;
-
-            current[key] =
-                value;
-
-            return true;
-        }
-
-        key =
-            path.substring(
-                start,
-                dot
-            );
+        String key =
+            path.substring(start, dot);
 
         if (key.length() == 0)
             return false;
 
-        JsonVariant next =
-            current[key];
-
-        if (
-            next.isNull() ||
-            !next.is<JsonObject>()
-        )
+        // Get-or-create the intermediate object.
+        // NOTE: `current[key] = JsonObject()` assigns NULL
+        // (a default JsonObject isNull()), so use to<>()
+        // which converts the slot into a real object.
+        if (!current[key].is<JsonObject>())
         {
-            next.to<JsonObject>();
+            current[key].to<JsonObject>();
         }
 
         current =
-            next;
+            current[key].as<JsonObject>();
 
         start =
             dot + 1;
     }
+
+    current[leaf] =
+        value;
+
+    return true;
 }
 
 
@@ -431,6 +440,29 @@ void storage_init()
             ? F("[STORAGE] Config Loaded")
             : F("[STORAGE] Config NOT Loaded")
     );
+
+    // --------------------------------------------------------
+    // Remove leftover debug keys (one-time cleanup)
+    // --------------------------------------------------------
+
+    if (config_loaded)
+    {
+        if (configDoc["zzz_flat"].is<int>())
+        {
+            configDoc.remove("zzz_flat");
+        }
+
+        if (
+            configDoc["audio"].is<JsonObject>()
+            &&
+            configDoc["audio"]["zzz_two"]
+                .is<int>()
+        )
+        {
+            configDoc["audio"]
+                .remove("zzz_two");
+        }
+    }
 
     Serial.println(
         F("[STORAGE] Initialization complete")
@@ -1743,6 +1775,11 @@ static bool storage_save_cache()
     if (!config_loaded)
         return false;
 
+    // In batch mode we only keep RAM changes and let
+    // storage_end_batch() perform a single flash write.
+    if (storageBatchMode)
+        return true;
+
     return storage_write_json(
         configDoc
     );
@@ -1765,6 +1802,20 @@ bool storage_load()
 
 bool storage_save()
 {
+    return storage_save_cache();
+}
+
+
+void storage_begin_batch()
+{
+    storageBatchMode = true;
+}
+
+
+bool storage_end_batch()
+{
+    storageBatchMode = false;
+
     return storage_save_cache();
 }
 
