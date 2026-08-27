@@ -1073,6 +1073,58 @@ function readSelect(id, fallback = 0) {
     return Number.isFinite(v) ? v : fallback;
 }
 
+/* ==========================================================
+   12/24 HOUR HELPERS
+   Hour fields display in the selected format. When 12H is
+   active the H input shows 1-12 plus an AM/PM select.
+   ========================================================== */
+
+function convert24To12(hour24) {
+    const h = Number(hour24);
+    const ap = h < 12 ? "AM" : "PM";
+    let v = h % 12;
+    if (v === 0) v = 12;
+    return { hour: v, ap };
+}
+
+function convert12To24(hour12, ap) {
+    let h = Number(hour12) % 12;
+    if (ap === "PM") h += 12;
+    return h; // 12 AM -> 0
+}
+
+function setHourField(hourId, ampmId, hour24) {
+    const el = $(hourId);
+    if (!el) return;
+    const value = Number.isFinite(Number(hour24)) ? Number(hour24) : 0;
+    const apEl = $(ampmId);
+    if (timeFormat === "12H") {
+        const c = convert24To12(value);
+        el.value = c.hour;
+        el.min = 1;
+        el.max = 12;
+        if (apEl) { apEl.style.display = ""; apEl.value = c.ap; }
+    } else {
+        el.value = value;
+        el.min = 0;
+        el.max = 23;
+        if (apEl) apEl.style.display = "none";
+    }
+}
+
+function readHourField(hourId, ampmId, fallback) {
+    const el = $(hourId);
+    if (!el) return fallback;
+    let h = Number(el.value);
+    if (timeFormat === "12H") {
+        h = clamp(h, 1, 12);
+        const apEl = $(ampmId);
+        const ap = apEl ? apEl.value : "AM";
+        return convert12To24(h, ap);
+    }
+    return clamp(h, 0, 23);
+}
+
 function clamp(value, min, max) {
     const n = Number(value);
     if (!Number.isFinite(n)) return min;
@@ -1293,7 +1345,7 @@ function loadSelectedQuran() {
     const settings = audioSettings.quran[selected.type];
     if (!settings) return;
     setSelect("quranEnable", settings.enable);
-    setNumber("quranHour", settings.hour);
+    setHourField("quranHour", "quranAmPm", settings.hour);
     setNumber("quranMinute", settings.minute);
     setNumber("quranVolume", settings.volume);
     updateVolumeDisplays();
@@ -1308,7 +1360,7 @@ function readCurrentQuran() {
     }
     const q = audioSettings.quran[selected.type];
     q.enable = readBool("quranEnable", true);
-    q.hour = clamp(readNumber("quranHour", 0), 0, 23);
+    q.hour = readHourField("quranHour", "quranAmPm", 0);
     q.minute = clamp(readNumber("quranMinute", 0), 0, 59);
     q.volume = clamp(readNumber("quranVolume", 10), 0, 30);
     q.folder = selected.folder;
@@ -1540,7 +1592,7 @@ async function loadAudioSettings() {
         audioSettings.morningAdhkar.folder = data.morningAdhkarFolder ?? DEFAULTS.morningAdhkar.folder;
         audioSettings.morningAdhkar.file = data.morningAdhkarFile ?? DEFAULTS.morningAdhkar.file;
         setSelect("morningAdhkarEnable", audioSettings.morningAdhkar.enable);
-        setNumber("morningAdhkarHour", audioSettings.morningAdhkar.hour);
+        setHourField("morningAdhkarHour", "morningAdhkarAmPm", audioSettings.morningAdhkar.hour);
         setNumber("morningAdhkarMinute", audioSettings.morningAdhkar.minute);
         setNumber("morningAdhkarVolume", audioSettings.morningAdhkar.volume);
 
@@ -1551,7 +1603,7 @@ async function loadAudioSettings() {
         audioSettings.eveningAdhkar.folder = data.eveningAdhkarFolder ?? DEFAULTS.eveningAdhkar.folder;
         audioSettings.eveningAdhkar.file = data.eveningAdhkarFile ?? DEFAULTS.eveningAdhkar.file;
         setSelect("eveningAdhkarEnable", audioSettings.eveningAdhkar.enable);
-        setNumber("eveningAdhkarHour", audioSettings.eveningAdhkar.hour);
+        setHourField("eveningAdhkarHour", "eveningAdhkarAmPm", audioSettings.eveningAdhkar.hour);
         setNumber("eveningAdhkarMinute", audioSettings.eveningAdhkar.minute);
         setNumber("eveningAdhkarVolume", audioSettings.eveningAdhkar.volume);
 
@@ -1560,7 +1612,7 @@ async function loadAudioSettings() {
         audioSettings.kahf.minute = clamp(data.kahfMinute ?? DEFAULTS.kahf.minute, 0, 59);
         audioSettings.kahf.volume = clamp(data.kahfVolume ?? DEFAULTS.kahf.volume, 0, 30);
         setSelect("kahfEnable", audioSettings.kahf.enable);
-        setNumber("kahfHour", audioSettings.kahf.hour);
+        setHourField("kahfHour", "kahfAmPm", audioSettings.kahf.hour);
         setNumber("kahfMinute", audioSettings.kahf.minute);
         setNumber("kahfVolume", audioSettings.kahf.volume);
         let savedKahfFile = data.kahfFile;
@@ -1602,7 +1654,7 @@ async function loadAudioSettings() {
         audioSettings.customAlert.volume = clamp(data.customAlertVolume ?? DEFAULTS.customAlert.volume, 0, 30);
         setSelect("customAlertEnable", audioSettings.customAlert.enable);
         setSelect("customAlertSource", audioSettings.customAlert.source);
-        setNumber("customAlertHour", audioSettings.customAlert.hour);
+        setHourField("customAlertHour", "customAlertAmPm", audioSettings.customAlert.hour);
         setNumber("customAlertMinute", audioSettings.customAlert.minute);
         updateCustomAlertDays(audioSettings.customAlert.days);
         setSelect("customAlertRepeat", audioSettings.customAlert.repeat);
@@ -1688,7 +1740,7 @@ function collectAlertTab() {
     return {
         customAlertEnable: readBool("customAlertEnable", DEFAULTS.customAlert.enable),
         customAlertSource: clamp(readSelect("customAlertSource", DEFAULTS.customAlert.source), 0, 1),
-        customAlertHour: clamp(readNumber("customAlertHour", DEFAULTS.customAlert.hour), 0, 23),
+        customAlertHour: readHourField("customAlertHour", "customAlertAmPm", DEFAULTS.customAlert.hour),
         customAlertMinute: clamp(readNumber("customAlertMinute", DEFAULTS.customAlert.minute), 0, 59),
         customAlertDays: clamp(collectCustomAlertDays(), 0, 127),
         customAlertRepeat: clamp(readSelect("customAlertRepeat", DEFAULTS.customAlert.repeat), 0, 4),
@@ -1702,19 +1754,19 @@ function collectAlertTab() {
 function collectAdhkarTab() {
     return {
         morningAdhkarEnable: readBool("morningAdhkarEnable", DEFAULTS.morningAdhkar.enable),
-        morningAdhkarHour: clamp(readNumber("morningAdhkarHour", DEFAULTS.morningAdhkar.hour), 0, 23),
+        morningAdhkarHour: readHourField("morningAdhkarHour", "morningAdhkarAmPm", DEFAULTS.morningAdhkar.hour),
         morningAdhkarMinute: clamp(readNumber("morningAdhkarMinute", DEFAULTS.morningAdhkar.minute), 0, 59),
         morningAdhkarVolume: clamp(readNumber("morningAdhkarVolume", DEFAULTS.morningAdhkar.volume), 0, 30),
         morningAdhkarFolder: audioSettings.morningAdhkar?.folder ?? DEFAULTS.morningAdhkar.folder,
         morningAdhkarFile: audioSettings.morningAdhkar?.file ?? DEFAULTS.morningAdhkar.file,
         eveningAdhkarEnable: readBool("eveningAdhkarEnable", DEFAULTS.eveningAdhkar.enable),
-        eveningAdhkarHour: clamp(readNumber("eveningAdhkarHour", DEFAULTS.eveningAdhkar.hour), 0, 23),
+        eveningAdhkarHour: readHourField("eveningAdhkarHour", "eveningAdhkarAmPm", DEFAULTS.eveningAdhkar.hour),
         eveningAdhkarMinute: clamp(readNumber("eveningAdhkarMinute", DEFAULTS.eveningAdhkar.minute), 0, 59),
         eveningAdhkarVolume: clamp(readNumber("eveningAdhkarVolume", DEFAULTS.eveningAdhkar.volume), 0, 30),
         eveningAdhkarFolder: audioSettings.eveningAdhkar?.folder ?? DEFAULTS.eveningAdhkar.folder,
         eveningAdhkarFile: audioSettings.eveningAdhkar?.file ?? DEFAULTS.eveningAdhkar.file,
         kahfEnable: readBool("kahfEnable", DEFAULTS.kahf.enable),
-        kahfHour: clamp(readNumber("kahfHour", DEFAULTS.kahf.hour), 0, 23),
+        kahfHour: readHourField("kahfHour", "kahfAmPm", DEFAULTS.kahf.hour),
         kahfMinute: clamp(readNumber("kahfMinute", DEFAULTS.kahf.minute), 0, 59),
         kahfVolume: clamp(readNumber("kahfVolume", DEFAULTS.kahf.volume), 0, 30),
         kahfFolder: audioSettings.kahf?.folder ?? 5,
@@ -2402,8 +2454,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (isSettingsPage) {
         // Load sequentially to avoid firing many heavy requests at once
         // on the low-memory ESP8266 (parallel loads cause OOM crashes).
-        await loadAudioSettings();
+        // Load prayer settings first so timeFormat (12H/24H) is known
+        // before audio hour fields are rendered.
         await loadPrayerSettings();
+        await loadAudioSettings();
         await loadNetworkSettings();
         await loadSystemInfo();
 
