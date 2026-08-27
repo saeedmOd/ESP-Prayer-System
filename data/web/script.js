@@ -1458,6 +1458,25 @@ async function stopFolder() {
 }
 
 
+/* Retry a GET fetch + JSON parse a few times. On the low-memory ESP8266,
+   a request can transiently fail right after an audio call (memory pressure /
+   fragmented heap), so retry with a short delay before giving up. */
+async function fetchJsonRetry(url, opts = {}, tries = 3, delayMs = 600) {
+    let lastErr;
+    for (let attempt = 0; attempt < tries; attempt++) {
+        try {
+            const response = await fetch(url, opts);
+            if (!response.ok) throw new Error("HTTP " + response.status);
+            return await response.json();
+        } catch (e) {
+            lastErr = e;
+            if (attempt < tries - 1) await new Promise(r => setTimeout(r, delayMs));
+        }
+    }
+    throw lastErr;
+}
+
+
 /* ==========================================================
    LOAD AUDIO SETTINGS
    ========================================================== */
@@ -1467,9 +1486,7 @@ async function loadAudioSettings() {
     isLoading = true;
     setStatus("جاري التحميل...");
     try {
-        const response = await fetch("/api/settings/audio", { method: "GET", cache: "no-store" });
-        if (!response.ok) throw new Error("HTTP " + response.status);
-        const data = await response.json();
+        const data = await fetchJsonRetry("/api/settings/audio", { method: "GET", cache: "no-store" });
         audioSettings = deepClone(DEFAULTS);
 
         audioSettings.volume = clamp(data.volume ?? DEFAULTS.volume, 0, 30);
@@ -1806,9 +1823,7 @@ async function saveQuranTab() { return saveSettingsTab(collectQuranTab, "/api/se
 
 async function loadPrayerSettings() {
     try {
-        const response = await fetch("/api/settings/prayer", { method: "GET", cache: "no-store" });
-        if (!response.ok) throw new Error("HTTP " + response.status);
-        const data = await response.json();
+        const data = await fetchJsonRetry("/api/settings/prayer", { method: "GET", cache: "no-store" });
         setTextValue("city", data.city ?? "");
         setTextValue("country", data.country ?? "");
         setNumber("latitude", data.latitude ?? "");
@@ -1928,9 +1943,7 @@ function escapeHtml(text) {
 
 async function loadNetworkSettings() {
     try {
-        const response = await fetch("/api/settings/network", { method: "GET", cache: "no-store" });
-        if (!response.ok) throw new Error("HTTP " + response.status);
-        const data = await response.json();
+        const data = await fetchJsonRetry("/api/settings/network", { method: "GET", cache: "no-store" });
         $("wifiSSID").value = data.ssid ?? "";
         setSelect("wifiEnable", data.wifiEnable ?? true);
         $("mqttServer").value = data.mqttServer ?? "";
@@ -1990,9 +2003,7 @@ async function saveNetworkSettings() {
 
 async function loadSystemInfo() {
     try {
-        const response = await fetch("/api/system/info", { method: "GET", cache: "no-store" });
-        if (!response.ok) throw new Error("HTTP " + response.status);
-        const data = await response.json();
+        const data = await fetchJsonRetry("/api/system/info", { method: "GET", cache: "no-store" });
         setText("infoDevice", data.device ?? "ESP-Prayer-System");
         setText("infoVersion", data.version ?? "1.0.0");
         setText("infoWifiStatus", data.wifiConnected ? "متصل" : "غير متصل");
