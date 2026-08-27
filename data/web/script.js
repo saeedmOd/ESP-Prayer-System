@@ -263,7 +263,7 @@ async function loadStatus() {
                 controller.abort();
 
             },
-            4000
+            10000
         );
 
 
@@ -862,12 +862,12 @@ loadLastEvent();
 
 
 // =====================================
-// Sync ESP Status Every 2 Seconds
+// Sync ESP Status Every 5 Seconds
 // =====================================
 
 setInterval(
     loadStatus,
-    2000
+    5000
 );
 
 
