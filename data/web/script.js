@@ -2387,12 +2387,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     isSettingsPage = !!$("settingsApp") || !!$("city");
 
     if (isSettingsPage) {
-        await Promise.all([
-            loadAudioSettings(),
-            loadPrayerSettings(),
-            loadNetworkSettings(),
-            loadSystemInfo()
-        ]);
+        // Load sequentially to avoid firing many heavy requests at once
+        // on the low-memory ESP8266 (parallel loads cause OOM crashes).
+        await loadAudioSettings();
+        await loadPrayerSettings();
+        await loadNetworkSettings();
+        await loadSystemInfo();
 
         initTabs();
         initLogFilters();

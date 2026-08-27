@@ -60,7 +60,7 @@ static void send_json(
     JsonDocument &doc
 )
 {
-    String output;
+    static String output;
 
     output.clear();
     serializeJson(doc, output);
