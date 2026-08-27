@@ -1366,6 +1366,12 @@ void settings_apply()
             2,
             60
         );
+
+    // Free the in-memory config cache now that all settings have
+    // been copied into the settings struct. storage_get_*() /
+    // storage_set_*() reload from flash on demand, so this keeps
+    // the tiny RAM heap free on the memory-constrained ESP8266.
+    storage_flush();
 }
 
 
