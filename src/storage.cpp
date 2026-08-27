@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <LittleFS.h>
+#include <cstring>
 
 #include "settings.h"
 
@@ -66,18 +67,18 @@ static bool storage_copy_file(
 
 static JsonVariant get_path(
     JsonDocument &doc,
-    const String &path
+    const char *path
 );
 
 static JsonVariantConst get_path_const(
     const JsonDocument &doc,
-    const String &path
+    const char *path
 );
 
 template <typename T>
 static bool set_path(
     JsonDocument &doc,
-    const String &path,
+    const char *path,
     T value
 );
 
@@ -109,52 +110,44 @@ static int storage_get_config_version(
 
 static JsonVariant get_path(
     JsonDocument &doc,
-    const String &path
+    const char *path
 )
 {
-    if (path.length() == 0)
+    if (!path || !path[0])
         return JsonVariant();
 
     JsonVariant current =
         doc.as<JsonVariant>();
 
-    int start = 0;
+    const char *start = path;
 
-    while (start < path.length())
+    while (*start)
     {
-        int dot =
-            path.indexOf('.', start);
+        const char *dot =
+            strchr(start, '.');
 
-        String key;
+        size_t len = dot
+            ? (size_t)(dot - start)
+            : strlen(start);
 
-        if (dot < 0)
-        {
-            key =
-                path.substring(start);
-
-            start =
-                path.length();
-        }
-        else
-        {
-            key =
-                path.substring(
-                    start,
-                    dot
-                );
-
-            start =
-                dot + 1;
-        }
-
-        if (key.length() == 0)
+        if (len == 0)
             return JsonVariant();
 
         if (current.isNull())
             return JsonVariant();
 
-        current =
-            current[key];
+        char key[32];
+        if (len >= sizeof(key))
+            return JsonVariant();
+        memcpy(key, start, len);
+        key[len] = '\0';
+
+        current = current[key];
+
+        if (dot)
+            start = dot + 1;
+        else
+            break;
     }
 
     return current;
@@ -167,52 +160,44 @@ static JsonVariant get_path(
 
 static JsonVariantConst get_path_const(
     const JsonDocument &doc,
-    const String &path
+    const char *path
 )
 {
-    if (path.length() == 0)
+    if (!path || !path[0])
         return JsonVariantConst();
 
     JsonVariantConst current =
         doc.as<JsonVariantConst>();
 
-    int start = 0;
+    const char *start = path;
 
-    while (start < path.length())
+    while (*start)
     {
-        int dot =
-            path.indexOf('.', start);
+        const char *dot =
+            strchr(start, '.');
 
-        String key;
+        size_t len = dot
+            ? (size_t)(dot - start)
+            : strlen(start);
 
-        if (dot < 0)
-        {
-            key =
-                path.substring(start);
-
-            start =
-                path.length();
-        }
-        else
-        {
-            key =
-                path.substring(
-                    start,
-                    dot
-                );
-
-            start =
-                dot + 1;
-        }
-
-        if (key.length() == 0)
+        if (len == 0)
             return JsonVariantConst();
 
         if (current.isNull())
             return JsonVariantConst();
 
-        current =
-            current[key];
+        char key[32];
+        if (len >= sizeof(key))
+            return JsonVariantConst();
+        memcpy(key, start, len);
+        key[len] = '\0';
+
+        current = current[key];
+
+        if (dot)
+            start = dot + 1;
+        else
+            break;
     }
 
     return current;
@@ -226,20 +211,22 @@ static JsonVariantConst get_path_const(
 template <typename T>
 static bool set_path(
     JsonDocument &doc,
-    const String &path,
+    const char *path,
     T value
 )
 {
-    if (path.length() == 0)
+    if (!path || !path[0])
         return false;
 
-    int lastDot =
-        path.lastIndexOf('.');
+    const char *lastDot =
+        strrchr(path, '.');
 
-    String leaf =
-        path.substring(lastDot + 1);
+    if (!lastDot)
+        return false;
 
-    if (leaf.length() == 0)
+    const char *leaf = lastDot + 1;
+
+    if (!leaf[0])
         return false;
 
     if (doc.isNull())
@@ -250,30 +237,27 @@ static bool set_path(
     JsonObject current =
         doc.as<JsonObject>();
 
-    int start = 0;
+    const char *start = path;
 
-    while (
-        lastDot >= 0
-        &&
-        start <= lastDot
-    )
+    while (start <= lastDot)
     {
-        int dot =
-            path.indexOf('.', start);
+        const char *dot =
+            strchr(start, '.');
 
-        if (dot < 0 || dot > lastDot)
+        if (!dot || dot > lastDot)
             break;
 
-        String key =
-            path.substring(start, dot);
+        size_t len = (size_t)(dot - start);
 
-        if (key.length() == 0)
+        if (len == 0)
             return false;
 
-        // Get-or-create the intermediate object.
-        // NOTE: `current[key] = JsonObject()` assigns NULL
-        // (a default JsonObject isNull()), so use to<>()
-        // which converts the slot into a real object.
+        char key[32];
+        if (len >= sizeof(key))
+            return false;
+        memcpy(key, start, len);
+        key[len] = '\0';
+
         if (!current[key].is<JsonObject>())
         {
             current[key].to<JsonObject>();
@@ -282,12 +266,10 @@ static bool set_path(
         current =
             current[key].as<JsonObject>();
 
-        start =
-            dot + 1;
+        start = dot + 1;
     }
 
-    current[leaf] =
-        value;
+    current[leaf] = value;
 
     return true;
 }
@@ -1188,33 +1170,26 @@ bool storage_write_json(
     }
 
     // --------------------------------------------------------
-    // Validate TEMP
+    // Validate TEMP (lightweight — no second JsonDocument)
     // --------------------------------------------------------
 
-    JsonDocument verifyDoc;
-
-    if (!storage_load_file(
-            TEMP_FILE,
-            verifyDoc))
     {
-        Serial.println(
-            F("[STORAGE] Temp verification failed")
-        );
+        File verify = LittleFS.open(TEMP_FILE, "r");
 
-        LittleFS.remove(TEMP_FILE);
+        if (!verify || verify.size() == 0)
+        {
+            Serial.println(
+                F("[STORAGE] Temp verification failed")
+            );
 
-        return false;
-    }
+            if (verify) verify.close();
 
-    if (!storage_validate_config(verifyDoc))
-    {
-        Serial.println(
-            F("[STORAGE] Temp config validation failed")
-        );
+            LittleFS.remove(TEMP_FILE);
 
-        LittleFS.remove(TEMP_FILE);
+            return false;
+        }
 
-        return false;
+        verify.close();
     }
 
     // --------------------------------------------------------
@@ -1582,7 +1557,7 @@ void storage_create_defaults()
         false;
 
     doc["audio"]["morning_adhkar_folder"] =
-        4;
+        1;
 
     doc["audio"]["morning_adhkar_file"] =
         1;
@@ -1607,10 +1582,10 @@ void storage_create_defaults()
         false;
 
     doc["audio"]["evening_adhkar_folder"] =
-        4;
+        1;
 
     doc["audio"]["evening_adhkar_file"] =
-        2;
+        1;
 
     doc["audio"]["evening_adhkar_hour"] =
         18;
@@ -1632,7 +1607,7 @@ void storage_create_defaults()
         false;
 
     doc["audio"]["kahf_folder"] =
-        2;
+        1;
 
     doc["audio"]["kahf_file"] =
         1;
@@ -1693,69 +1668,68 @@ static bool storage_load_cache()
     if (!storage_ready)
         return false;
 
-    JsonDocument tempDoc;
+    configDoc.clear();
 
     if (!storage_load_file(
             CONFIG_FILE,
-            tempDoc))
+            configDoc))
     {
+        configDoc.clear();
         return false;
     }
 
-    if (!storage_validate_config(tempDoc))
+    if (!storage_validate_config(configDoc))
     {
         Serial.println(
             F("[STORAGE] Config validation failed")
         );
 
+        configDoc.clear();
         return false;
     }
 
     int version =
-        storage_get_config_version(tempDoc);
+        storage_get_config_version(configDoc);
 
     if (version < CONFIG_VERSION)
     {
-        if (!storage_migrate_config(tempDoc))
+        if (!storage_migrate_config(configDoc))
         {
             Serial.println(
                 F("[STORAGE] Config migration failed")
             );
 
+            configDoc.clear();
             return false;
         }
 
-        if (!storage_write_json(tempDoc))
+        if (!storage_write_json(configDoc))
         {
             Serial.println(
                 F("[STORAGE] Failed to save migrated config")
             );
 
+            configDoc.clear();
             return false;
         }
     }
     else
     {
-        // Normalize missing schema_version
-        if (tempDoc["schema_version"].isNull())
+        if (configDoc["schema_version"].isNull())
         {
-            tempDoc["schema_version"] =
+            configDoc["schema_version"] =
                 CONFIG_VERSION;
         }
 
-        // Normalize system version
         if (
-            tempDoc["system"]["config_version"]
+            configDoc["system"]["config_version"]
                 .isNull()
         )
         {
-            tempDoc["system"]["config_version"] =
+            configDoc["system"]["config_version"] =
                 CONFIG_VERSION;
         }
     }
-
-    configDoc.clear();
-    configDoc = tempDoc;
 
     config_loaded = true;
 
@@ -1821,11 +1795,25 @@ bool storage_end_batch()
 
 
 // ============================================================
+// Flush RAM Cache
+// ============================================================
+// Called after settings_load() to free the in-memory
+// configDoc.  The next storage_get_*() will automatically
+// reload from flash on demand.
+
+void storage_flush()
+{
+    configDoc.clear();
+    config_loaded = false;
+}
+
+
+// ============================================================
 // Generic STRING
 // ============================================================
 
 bool storage_set_string(
-    String path,
+    const char *path,
     String value
 )
 {
@@ -1851,12 +1839,15 @@ bool storage_set_string(
 
 
 String storage_get_string(
-    String path,
+    const char *path,
     String defaultValue
 )
 {
     if (!config_loaded)
-        return defaultValue;
+    {
+        if (!storage_load_cache())
+            return defaultValue;
+    }
 
     JsonVariantConst value =
         get_path_const(
@@ -1876,7 +1867,7 @@ String storage_get_string(
 // ============================================================
 
 bool storage_set_int(
-    String path,
+    const char *path,
     int value
 )
 {
@@ -1902,12 +1893,15 @@ bool storage_set_int(
 
 
 int storage_get_int(
-    String path,
+    const char *path,
     int defaultValue
 )
 {
     if (!config_loaded)
-        return defaultValue;
+    {
+        if (!storage_load_cache())
+            return defaultValue;
+    }
 
     JsonVariantConst value =
         get_path_const(
@@ -1927,7 +1921,7 @@ int storage_get_int(
 // ============================================================
 
 bool storage_set_float(
-    String path,
+    const char *path,
     float value
 )
 {
@@ -1953,12 +1947,15 @@ bool storage_set_float(
 
 
 float storage_get_float(
-    String path,
+    const char *path,
     float defaultValue
 )
 {
     if (!config_loaded)
-        return defaultValue;
+    {
+        if (!storage_load_cache())
+            return defaultValue;
+    }
 
     JsonVariantConst value =
         get_path_const(
@@ -1978,7 +1975,7 @@ float storage_get_float(
 // ============================================================
 
 bool storage_set_bool(
-    String path,
+    const char *path,
     bool value
 )
 {
@@ -2004,12 +2001,15 @@ bool storage_set_bool(
 
 
 bool storage_get_bool(
-    String path,
+    const char *path,
     bool defaultValue
 )
 {
     if (!config_loaded)
-        return defaultValue;
+    {
+        if (!storage_load_cache())
+            return defaultValue;
+    }
 
     JsonVariantConst value =
         get_path_const(
@@ -3601,7 +3601,7 @@ bool storage_restore_config()
 // ============================================================
 
 bool storage_has_key(
-    String path
+    const char *path
 )
 {
     if (!config_loaded)
@@ -3622,7 +3622,7 @@ bool storage_has_key(
 // ============================================================
 
 bool storage_remove_key(
-    String path
+    const char *path
 )
 {
     if (!storage_ready)
@@ -3634,14 +3634,14 @@ bool storage_remove_key(
             return false;
     }
 
-    int dot =
-        path.lastIndexOf('.');
+    const char *lastDot =
+        strrchr(path, '.');
 
     // --------------------------------------------------------
     // Root key
     // --------------------------------------------------------
 
-    if (dot < 0)
+    if (!lastDot)
     {
         if (!configDoc[path])
             return false;
@@ -3655,21 +3655,21 @@ bool storage_remove_key(
     // Nested key
     // --------------------------------------------------------
 
-    String parentPath =
-        path.substring(
-            0,
-            dot
-        );
+    size_t parentLen =
+        (size_t)(lastDot - path);
 
-    String key =
-        path.substring(
-            dot + 1
-        );
+    char parentBuf[32];
+    if (parentLen >= sizeof(parentBuf))
+        return false;
+    memcpy(parentBuf, path, parentLen);
+    parentBuf[parentLen] = '\0';
+
+    const char *key = lastDot + 1;
 
     JsonVariant parent =
         get_path(
             configDoc,
-            parentPath
+            parentBuf
         );
 
     if (parent.isNull())

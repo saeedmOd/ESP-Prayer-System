@@ -6,3 +6,5 @@
 *.bin
 *.elf
 *.map
+# generated gzip web assets
+*.gz

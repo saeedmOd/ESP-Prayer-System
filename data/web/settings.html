@@ -11,7 +11,7 @@
 الإعدادات
 </title>
 
-<link rel="stylesheet" href="/web/settings.css">
+<link rel="stylesheet" href="/web/style.css">
 
 </head>
 
@@ -215,6 +215,10 @@
             🛠️ النظام
         </button>
 
+        <button class="tab-btn" data-tab="logs">
+            📋 السجلات
+        </button>
+
     </nav>
 
 
@@ -362,7 +366,7 @@
                     <button
                         type="button"
                         class="btn-test"
-                        data-test-endpoint="/api/test/azan"
+                        data-test-endpoint="azan"
                         data-test-message="تم تشغيل الأذان">
 
                         ▶️ تجربة الأذان
@@ -669,7 +673,7 @@
                     <button
                         type="button"
                         class="btn-test"
-                        data-test-endpoint="/api/test/iqama"
+                        data-test-endpoint="iqama"
                         data-test-message="تم تشغيل الإقامة">
 
                         ▶️ تجربة الإقامة
@@ -1086,7 +1090,7 @@
                         <button
                             type="button"
                             class="btn-test"
-                            data-test-endpoint="/api/test/buzzer-alarm"
+                            data-test-endpoint="buzzer-alarm"
                             data-test-message="تم تشغيل الصوت">
 
                             ▶️ تجربة الصوت
@@ -1151,7 +1155,7 @@
                         <button
                             type="button"
                             class="btn-test"
-                            data-test-endpoint="/api/test/custom-alert-file"
+                            data-test-endpoint="custom-alert-file"
                             data-test-message="تم تشغيل الملف">
 
                             ▶️ تجربة الملف
@@ -1228,7 +1232,7 @@
                     <button
                         type="button"
                         class="btn-test"
-                        data-test-endpoint="/api/test/buzzer-alarm"
+                        data-test-endpoint="buzzer-alarm"
                         data-test-message="تم تشغيل المنبه">
 
                         ▶️ تجربة المنبه
@@ -1381,7 +1385,7 @@
                             <button
                                 type="button"
                                 class="btn-test"
-                                data-test-endpoint="/api/test/morning-adhkar"
+                                data-test-endpoint="morning-adhkar"
                                 data-test-message="تم تشغيل أذكار الصباح">
 
                                 ▶️ تجربة أذكار الصباح
@@ -1504,7 +1508,7 @@
                             <button
                                 type="button"
                                 class="btn-test"
-                                data-test-endpoint="/api/test/evening-adhkar"
+                                data-test-endpoint="evening-adhkar"
                                 data-test-message="تم تشغيل أذكار المساء">
 
                                 ▶️ تجربة أذكار المساء
@@ -1639,7 +1643,7 @@
                     <button
                         type="button"
                         class="btn-test"
-                        data-test-endpoint="/api/test/kahf"
+                        data-test-endpoint="kahf"
                         data-test-message="تم تشغيل سورة الكهف">
 
                         ▶️ تجربة سورة الكهف
@@ -1812,7 +1816,7 @@
                         type="button"
                         id="eidTakbeeratTestBtn"
                         class="btn-test"
-                        data-test-endpoint="/api/test/eid-takbeerat"
+                        data-test-endpoint="eid-takbeerat"
                         data-test-message="تم تشغيل تكبيرات العيد">
 
                         ▶️ تجربة تكبيرات العيد
@@ -2664,6 +2668,36 @@
         </div>
 
 
+        <!-- =====================================================
+             TAB: Event Logs
+        ===================================================== -->
+
+        <div id="tab-logs" class="tab-content">
+
+            <div class="card-header">
+                <h2>📋 سجل الأحداث</h2>
+            </div>
+
+            <div class="log-actions">
+                <button onclick="loadLogs()">🔄 تحديث</button>
+                <button class="btn-danger" onclick="clearLogs()">🗑️ مسح السجل</button>
+            </div>
+
+            <div class="log-filters">
+                <button class="log-filter-btn active" data-filter="all">الكل</button>
+                <button class="log-filter-btn" data-filter="AUDIO">🔊 صوت</button>
+                <button class="log-filter-btn" data-filter="SYS">⚙️ نظام</button>
+                <button class="log-filter-btn" data-filter="OTA">📦 تحديث</button>
+                <button class="log-filter-btn" data-filter="MQTT">📶 MQTT</button>
+            </div>
+
+            <div id="logContainer">
+                <div class="log-empty">جاري تحميل السجلات...</div>
+            </div>
+
+        </div>
+
+
     </main>
 
 </div>
@@ -2747,7 +2781,7 @@
 
 
 
-<script src="/web/settings.js"></script>
+<script src="/web/script.js?v=12"></script>
 
 
 </body>

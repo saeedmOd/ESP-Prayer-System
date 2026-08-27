@@ -90,6 +90,24 @@
 // System Settings Structure
 // =================================
 
+#define SET_STR_DEVICE_NAME   33
+#define SET_STR_WIFI_SSID     33
+#define SET_STR_WIFI_PASS     65
+#define SET_STR_MQTT_SERVER   33
+#define SET_STR_MQTT_USER     33
+#define SET_STR_MQTT_PASS     33
+#define SET_STR_MQTT_TOPIC    65
+#define SET_STR_OTA_HOST      33
+#define SET_STR_OTA_PASS      33
+#define SET_STR_CITY          33
+#define SET_STR_COUNTRY       17
+#define SET_STR_PRAYER_SRC    9
+#define SET_STR_CALC_METHOD   17
+#define SET_STR_ASR_METHOD    9
+#define SET_STR_HI_LAT_RULE   17
+#define SET_STR_TIME_FMT      5
+#define SET_STR_QURAN_SEL     33
+
 struct SystemSettings
 {
 
@@ -97,7 +115,7 @@ struct SystemSettings
     // Device
     // =========================
 
-    String deviceName;
+    char deviceName[SET_STR_DEVICE_NAME];
 
 
 
@@ -107,9 +125,9 @@ struct SystemSettings
 
     bool wifiEnable;
 
-    String wifiSSID;
+    char wifiSSID[SET_STR_WIFI_SSID];
 
-    String wifiPassword;
+    char wifiPassword[SET_STR_WIFI_PASS];
 
     bool wifiAutoReconnect;
 
@@ -121,15 +139,15 @@ struct SystemSettings
 
     bool mqttEnable;
 
-    String mqttServer;
+    char mqttServer[SET_STR_MQTT_SERVER];
 
     int mqttPort;
 
-    String mqttUser;
+    char mqttUser[SET_STR_MQTT_USER];
 
-    String mqttPassword;
+    char mqttPassword[SET_STR_MQTT_PASS];
 
-    String mqttTopic;
+    char mqttTopic[SET_STR_MQTT_TOPIC];
 
 
 
@@ -139,9 +157,9 @@ struct SystemSettings
 
     bool otaEnable;
 
-    String otaHostname;
+    char otaHostname[SET_STR_OTA_HOST];
 
-    String otaPassword;
+    char otaPassword[SET_STR_OTA_PASS];
 
 
 
@@ -149,9 +167,9 @@ struct SystemSettings
     // Location
     // =========================
 
-    String city;
+    char city[SET_STR_CITY];
 
-    String country;
+    char country[SET_STR_COUNTRY];
 
     float latitude;
 
@@ -165,15 +183,15 @@ struct SystemSettings
     // Prayer
     // =========================
 
-    String prayerSource;
+    char prayerSource[SET_STR_PRAYER_SRC];
 
-    String calculationMethod;
+    char calculationMethod[SET_STR_CALC_METHOD];
 
-    String asrMethod;
+    char asrMethod[SET_STR_ASR_METHOD];
 
-    String highLatitudeRule;
+    char highLatitudeRule[SET_STR_HI_LAT_RULE];
 
-    String timeFormat;
+    char timeFormat[SET_STR_TIME_FMT];
 
 
     int fajrOffset;
@@ -276,7 +294,7 @@ int quranMinute;
 
 int quranVolume;
 
-String quranSelected;
+char quranSelected[SET_STR_QURAN_SEL];
 
 int quranFolder;
 
@@ -447,10 +465,10 @@ void settings_reset();
 // =================================
 
 
-String get_device_name();
+const char* get_device_name();
 
 
-String get_time_format();
+const char* get_time_format();
 
 
 int get_volume();
@@ -466,10 +484,10 @@ bool audio_is_enabled();
 
 
 
-String get_city();
+const char* get_city();
 
 
-String get_country();
+const char* get_country();
 
 
 float get_latitude();
@@ -482,10 +500,10 @@ int get_timezone();
 
 
 
-String get_calculation_method();
+const char* get_calculation_method();
 
 
-String get_asr_method();
+const char* get_asr_method();
 
 
 // =================================

@@ -20,6 +20,7 @@
 #include "hardware.h"
 #include "rotary_menu.h"
 #include "api_client.h"
+#include "event_log.h"
 
 
 // =================================
@@ -123,12 +124,17 @@ static void initialize_network_services()
 
     display_init();
 
+    Serial.printf("[HEAP] After all init: %d\n", ESP.getFreeHeap());
+
 
     // ---------------------------------
     // Mark Initialized
     // ---------------------------------
 
     networkServicesInitialized = true;
+
+
+    log_event("SYS", "boot", "system", "ok");
 
 
     Serial.println();
@@ -187,12 +193,23 @@ void setup()
 
 
     // ---------------------------------
+    // Event Log
+    // ---------------------------------
+
+    Serial.println("[INIT] Event Log");
+
+    event_log_init();
+
+
+    // ---------------------------------
     // Settings
     // ---------------------------------
 
     Serial.println("[INIT] Settings");
 
     settings_init();
+
+    Serial.printf("[HEAP] After settings_init: %d\n", ESP.getFreeHeap());
 
 
     // ---------------------------------
@@ -408,4 +425,11 @@ void loop()
     // ---------------------------------
 
     api_process_test();
+
+
+    // ---------------------------------
+    // Event Log (batch save to LittleFS)
+    // ---------------------------------
+
+    event_log_loop();
 }

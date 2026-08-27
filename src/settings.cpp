@@ -3,6 +3,7 @@
 #include <Arduino.h>
 
 #include "storage.h"
+#include "event_log.h"
 
 
 // =========================================================
@@ -48,10 +49,12 @@ void settings_load()
     // Device
     // =====================================================
 
-    settings.deviceName =
+    strlcpy(settings.deviceName,
         storage_get_device_name(
             DEVICE_NAME_DEFAULT
-        );
+        ).c_str(),
+        sizeof(settings.deviceName)
+    );
 
 
     // =====================================================
@@ -64,15 +67,19 @@ void settings_load()
             true
         );
 
-    settings.wifiSSID =
+    strlcpy(settings.wifiSSID,
         storage_get_wifi_ssid(
             ""
-        );
+        ).c_str(),
+        sizeof(settings.wifiSSID)
+    );
 
-    settings.wifiPassword =
+    strlcpy(settings.wifiPassword,
         storage_get_wifi_password(
             ""
-        );
+        ).c_str(),
+        sizeof(settings.wifiPassword)
+    );
 
     settings.wifiAutoReconnect =
         storage_get_bool(
@@ -91,11 +98,13 @@ void settings_load()
             false
         );
 
-    settings.mqttServer =
+    strlcpy(settings.mqttServer,
         storage_get_string(
             "mqtt.server",
             MQTT_SERVER
-        );
+        ).c_str(),
+        sizeof(settings.mqttServer)
+    );
 
     settings.mqttPort =
         storage_get_int(
@@ -103,23 +112,29 @@ void settings_load()
             MQTT_PORT
         );
 
-    settings.mqttUser =
+    strlcpy(settings.mqttUser,
         storage_get_string(
             "mqtt.user",
             ""
-        );
+        ).c_str(),
+        sizeof(settings.mqttUser)
+    );
 
-    settings.mqttPassword =
+    strlcpy(settings.mqttPassword,
         storage_get_string(
             "mqtt.password",
             ""
-        );
+        ).c_str(),
+        sizeof(settings.mqttPassword)
+    );
 
-    settings.mqttTopic =
+    strlcpy(settings.mqttTopic,
         storage_get_string(
             "mqtt.topic_prefix",
             "esp/prayer"
-        );
+        ).c_str(),
+        sizeof(settings.mqttTopic)
+    );
 
 
     // =====================================================
@@ -132,32 +147,40 @@ void settings_load()
             true
         );
 
-    settings.otaHostname =
+    strlcpy(settings.otaHostname,
         storage_get_string(
             "ota.hostname",
             OTA_HOSTNAME
-        );
+        ).c_str(),
+        sizeof(settings.otaHostname)
+    );
 
-    settings.otaPassword =
+    strlcpy(settings.otaPassword,
         storage_get_string(
             "ota.password",
             ""
-        );
+        ).c_str(),
+        sizeof(settings.otaPassword)
+    );
 
 
     // =====================================================
     // Location
     // =====================================================
 
-    settings.city =
+    strlcpy(settings.city,
         storage_get_city(
             DEFAULT_CITY
-        );
+        ).c_str(),
+        sizeof(settings.city)
+    );
 
-    settings.country =
+    strlcpy(settings.country,
         storage_get_country(
             DEFAULT_COUNTRY
-        );
+        ).c_str(),
+        sizeof(settings.country)
+    );
 
     settings.latitude =
         storage_get_latitude(
@@ -180,33 +203,43 @@ void settings_load()
     // Prayer
     // =====================================================
 
-    settings.prayerSource =
+    strlcpy(settings.prayerSource,
         storage_get_string(
             "prayer.source",
             DEFAULT_PRAYER_SOURCE
-        );
+        ).c_str(),
+        sizeof(settings.prayerSource)
+    );
 
-    settings.calculationMethod =
+    strlcpy(settings.calculationMethod,
         storage_get_calculation_method(
             "UAE"
-        );
+        ).c_str(),
+        sizeof(settings.calculationMethod)
+    );
 
-    settings.asrMethod =
+    strlcpy(settings.asrMethod,
         storage_get_string(
             "prayer.asr_method",
             "Standard"
-        );
+        ).c_str(),
+        sizeof(settings.asrMethod)
+    );
 
-    settings.highLatitudeRule =
+    strlcpy(settings.highLatitudeRule,
         storage_get_string(
             "prayer.high_latitude_rule",
             "None"
-        );
+        ).c_str(),
+        sizeof(settings.highLatitudeRule)
+    );
 
-    settings.timeFormat =
+    strlcpy(settings.timeFormat,
         storage_get_time_format(
             DEFAULT_TIME_FORMAT
-        );
+        ).c_str(),
+        sizeof(settings.timeFormat)
+    );
 
     settings.fajrOffset =
         storage_get_fajr_offset(
@@ -520,11 +553,13 @@ void settings_load()
             DEFAULT_VOLUME
         );
 
-    settings.quranSelected =
+    strlcpy(settings.quranSelected,
         storage_get_string(
             "audio.quran_selected",
             "baqarah"
-        );
+        ).c_str(),
+        sizeof(settings.quranSelected)
+    );
 
 
     // -----------------------------------------------------
@@ -537,7 +572,7 @@ void settings_load()
     settings.quranFolder =
         storage_get_int(
             "audio.quran_folder",
-            2
+            1
         );
 
     settings.quranFile =
@@ -953,10 +988,12 @@ void settings_apply()
     // Device
     // =====================================================
 
-    if (settings.deviceName.length() == 0)
+    if (settings.deviceName[0] == '\0')
     {
-        settings.deviceName =
-            DEVICE_NAME_DEFAULT;
+        strlcpy(settings.deviceName,
+            DEVICE_NAME_DEFAULT,
+            sizeof(settings.deviceName)
+        );
     }
 
 
@@ -1004,21 +1041,25 @@ void settings_apply()
     // =====================================================
 
     if (
-        settings.prayerSource != "local" &&
-        settings.prayerSource != "api"
+        strcmp(settings.prayerSource, "local") != 0 &&
+        strcmp(settings.prayerSource, "api") != 0
     )
     {
-        settings.prayerSource =
-            DEFAULT_PRAYER_SOURCE;
+        strlcpy(settings.prayerSource,
+            DEFAULT_PRAYER_SOURCE,
+            sizeof(settings.prayerSource)
+        );
     }
 
     if (
-        settings.timeFormat != "12H" &&
-        settings.timeFormat != "24H"
+        strcmp(settings.timeFormat, "12H") != 0 &&
+        strcmp(settings.timeFormat, "24H") != 0
     )
     {
-        settings.timeFormat =
-            DEFAULT_TIME_FORMAT;
+        strlcpy(settings.timeFormat,
+            DEFAULT_TIME_FORMAT,
+            sizeof(settings.timeFormat)
+        );
     }
 
 
@@ -1186,14 +1227,16 @@ void settings_apply()
             AUDIO_VOLUME_MAX
         );
 
-    if (settings.quranSelected.length() == 0)
+    if (settings.quranSelected[0] == '\0')
     {
-        settings.quranSelected =
-            "baqarah";
+        strlcpy(settings.quranSelected,
+            "baqarah",
+            sizeof(settings.quranSelected)
+        );
     }
 
     if (settings.quranFolder < AUDIO_FOLDER_MIN)
-        settings.quranFolder = 2;
+        settings.quranFolder = 1;
 
     if (settings.quranFile < AUDIO_FILE_MIN)
         settings.quranFile = 1;
@@ -1204,7 +1247,7 @@ void settings_apply()
     // =====================================================
 
     if (settings.morningAdhkarFolder < 1)
-        settings.morningAdhkarFolder = 4;
+        settings.morningAdhkarFolder = 1;
 
     if (settings.morningAdhkarFile < 1)
         settings.morningAdhkarFile = 1;
@@ -1236,7 +1279,7 @@ void settings_apply()
     // =====================================================
 
     if (settings.eveningAdhkarFolder < 1)
-        settings.eveningAdhkarFolder = 4;
+        settings.eveningAdhkarFolder = 1;
 
     if (settings.eveningAdhkarFile < 1)
         settings.eveningAdhkarFile = 1;
@@ -1268,7 +1311,7 @@ void settings_apply()
     // =====================================================
 
     if (settings.kahfFolder < 1)
-        settings.kahfFolder = 2;
+        settings.kahfFolder = 1;
 
     if (settings.kahfFile < 1)
         settings.kahfFile = 1;
@@ -1948,6 +1991,8 @@ void settings_save()
     Serial.println(
         F("Settings Saved")
     );
+
+    log_event("SYS", "settings_save", "user", "ok");
 }
 
 
@@ -1969,13 +2014,13 @@ void settings_reset()
 // Getters
 // =========================================================
 
-String get_device_name()
+const char* get_device_name()
 {
     return settings.deviceName;
 }
 
 
-String get_time_format()
+const char* get_time_format()
 {
     return settings.timeFormat;
 }
@@ -2005,13 +2050,13 @@ bool audio_is_enabled()
 }
 
 
-String get_city()
+const char* get_city()
 {
     return settings.city;
 }
 
 
-String get_country()
+const char* get_country()
 {
     return settings.country;
 }
@@ -2035,19 +2080,19 @@ int get_timezone()
 }
 
 
-String get_calculation_method()
+const char* get_calculation_method()
 {
     return settings.calculationMethod;
 }
 
 
-String get_asr_method()
+const char* get_asr_method()
 {
     return settings.asrMethod;
 }
 
 
-String get_high_latitude_rule()
+const char* get_high_latitude_rule()
 {
     return settings.highLatitudeRule;
 }

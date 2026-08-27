@@ -67,7 +67,7 @@ void display_loop()
 
     // ===== الوقت حسب الصيغة =====
     char timeStr[9];
-    if (settings.timeFormat == "12H")
+    if (strcmp(settings.timeFormat, "12H") == 0)
         strftime(timeStr, sizeof(timeStr), "%I:%M:%S", &timeinfo);
     else
         strftime(timeStr, sizeof(timeStr), "%H:%M:%S", &timeinfo);
@@ -139,20 +139,20 @@ static String lcd_safe(String s)
 }
 
 void set_event_status(
-    String title,
-    String subtitle,
-    String lcdTitle,
-    String lcdSubtitle
+    const char *title,
+    const char *subtitle,
+    const char *lcdTitle,
+    const char *lcdSubtitle
 )
 {
     eventTitle = title;
     eventSubtitle = subtitle;
 
     eventLcdTitle =
-        (lcdTitle.length() > 0) ? lcdTitle : title;
+        (strlen(lcdTitle) > 0) ? lcdTitle : title;
 
     eventLcdSubtitle =
-        (lcdSubtitle.length() > 0) ? lcdSubtitle : subtitle;
+        (strlen(lcdSubtitle) > 0) ? lcdSubtitle : subtitle;
 
     eventStartMs = millis();
 }
@@ -290,7 +290,7 @@ void display_normal_loop()
     }
 
     char timeStr[9];
-    if (settings.timeFormat == "12H")
+    if (strcmp(settings.timeFormat, "12H") == 0)
         strftime(timeStr, sizeof(timeStr), "%I:%M:%S", &timeinfo);
     else
         strftime(timeStr, sizeof(timeStr), "%H:%M:%S", &timeinfo);

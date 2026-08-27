@@ -245,6 +245,13 @@ void storage_begin_batch();
 
 bool storage_end_batch();
 
+// =================================================
+// Flush: free RAM cache after settings_load()
+// next storage_get_*() will reload from flash.
+// =================================================
+
+void storage_flush();
+
 void storage_create_defaults();
 
 void storage_reset();
@@ -282,12 +289,12 @@ bool storage_migrate_config(
 // ============================================================
 
 bool storage_set_string(
-    String path,
+    const char *path,
     String value
 );
 
 String storage_get_string(
-    String path,
+    const char *path,
     String defaultValue
 );
 
@@ -296,12 +303,12 @@ String storage_get_string(
 // ============================================================
 
 bool storage_set_int(
-    String path,
+    const char *path,
     int value
 );
 
 int storage_get_int(
-    String path,
+    const char *path,
     int defaultValue
 );
 
@@ -310,12 +317,12 @@ int storage_get_int(
 // ============================================================
 
 bool storage_set_float(
-    String path,
+    const char *path,
     float value
 );
 
 float storage_get_float(
-    String path,
+    const char *path,
     float defaultValue
 );
 
@@ -324,12 +331,12 @@ float storage_get_float(
 // ============================================================
 
 bool storage_set_bool(
-    String path,
+    const char *path,
     bool value
 );
 
 bool storage_get_bool(
-    String path,
+    const char *path,
     bool defaultValue
 );
 
@@ -338,11 +345,11 @@ bool storage_get_bool(
 // ============================================================
 
 bool storage_has_key(
-    String path
+    const char *path
 );
 
 bool storage_remove_key(
-    String path
+    const char *path
 );
 
 // ============================================================

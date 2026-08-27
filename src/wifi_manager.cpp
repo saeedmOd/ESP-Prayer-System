@@ -57,8 +57,8 @@ static void startSTA()
     connectStartTime = millis();
 
     WiFi.begin(
-        settings.wifiSSID.c_str(),
-        settings.wifiPassword.c_str()
+        settings.wifiSSID,
+        settings.wifiPassword
     );
 }
 
@@ -160,7 +160,7 @@ static void stopAP()
 static void startConnection()
 {
     if (
-        settings.wifiSSID.length() == 0
+        settings.wifiSSID[0] == '\0'
     )
     {
         Serial.println(
@@ -212,7 +212,7 @@ void wifi_init()
     // =================================================
 
     if (
-        settings.wifiSSID.length() == 0
+        settings.wifiSSID[0] == '\0'
     )
     {
         Serial.println(

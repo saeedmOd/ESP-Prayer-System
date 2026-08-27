@@ -10,6 +10,7 @@
 #include "hardware.h"
 #include "display.h"
 #include "api_client.h"
+#include "event_log.h"
 
 
 // =====================================
@@ -95,17 +96,17 @@ static void apply_calculation_method()
 
     float zeroTune[6] = {0,0,0,0,0,0};
 
-    if(settings.calculationMethod == "MWL")
+    if(strcmp(settings.calculationMethod, "MWL") == 0)
     {
         setCalcMethod(MWL);
         setPrayerTune(zeroTune);
     }
-    else if(settings.calculationMethod == "Egypt")
+    else if(strcmp(settings.calculationMethod, "Egypt") == 0)
     {
         setCalcMethod(Egyptian);
         setPrayerTune(zeroTune);
     }
-    else if(settings.calculationMethod == "UAE")
+    else if(strcmp(settings.calculationMethod, "UAE") == 0)
     {
         // Abu Dhabi Awqaf (Al Ain) reference alignment:
         // Dhuhr +3, Asr +1, Maghrib +3, Sunrise -5 (minutes)
@@ -120,7 +121,7 @@ static void apply_calculation_method()
     }
 
 
-    if(settings.asrMethod == "Hanafi")
+    if(strcmp(settings.asrMethod, "Hanafi") == 0)
     {
         setAsrMethod(Hanafi);
     }
@@ -161,7 +162,7 @@ static void calculate_prayers()
     compute_local_hijri();
 
 
-    if (settings.prayerSource == "api")
+    if (strcmp(settings.prayerSource, "api") == 0)
     {
         Serial.println("Fetching prayer times from API...");
 
@@ -435,6 +436,10 @@ void prayer_reload()
     customAlertPlayed = false;
     customAlertRepeatDone = 0;
     customAlertLastRepeatMs = 0;
+    quranBaqarahPlayed = false;
+    quranBaqarahLastPlayed = false;
+    quranAyatKursiPlayed = false;
+    quranMaryamPlayed = false;
 
 
 
@@ -544,6 +549,8 @@ void prayer_loop()
         );
 
         Serial.println("Playing Morning Adhkar");
+
+        log_event("AUDIO", "adhkar_morning", "system", "ok");
     }
 
 
@@ -568,6 +575,8 @@ void prayer_loop()
         );
 
         Serial.println("Playing Evening Adhkar");
+
+        log_event("AUDIO", "adhkar_evening", "system", "ok");
     }
 
 
@@ -589,13 +598,24 @@ void prayer_loop()
 
         set_event_status("سورة الكهف", "", "SURAT AL-KAHF");
 
+        uint8_t kFolder = settings.kahfFolder;
+        uint8_t kFile = settings.kahfFile;
+
+        if (kFolder == 1 && kFile > 1)
+        {
+            kFolder = kFile;
+            kFile = 1;
+        }
+
         play_folder_file_with_volume(
-            settings.kahfFolder,
-            settings.kahfFile,
+            kFolder,
+            kFile,
             settings.kahfVolume
         );
 
         Serial.println("Playing Surat Al-Kahf");
+
+        log_event("AUDIO", "kahf", "system", "ok");
     }
 
 
@@ -624,6 +644,8 @@ void prayer_loop()
         );
 
         Serial.println("Playing Scheduled Quran: Baqarah");
+
+        log_event("AUDIO", "quran_baqarah", "system", "ok");
     }
 
 
@@ -648,6 +670,8 @@ void prayer_loop()
         );
 
         Serial.println("Playing Scheduled Quran: Baqarah Last");
+
+        log_event("AUDIO", "quran_baqarah_last", "system", "ok");
     }
 
 
@@ -672,6 +696,8 @@ void prayer_loop()
         );
 
         Serial.println("Playing Scheduled Quran: Ayat Al-Kursi");
+
+        log_event("AUDIO", "quran_ayat_kursi", "system", "ok");
     }
 
 
@@ -696,6 +722,8 @@ void prayer_loop()
         );
 
         Serial.println("Playing Scheduled Quran: Maryam");
+
+        log_event("AUDIO", "quran_maryam", "system", "ok");
     }
 
 
@@ -746,6 +774,8 @@ if(
         }
 
         Serial.println("Custom Alert: triggered");
+
+        log_event("AUDIO", "custom_alert", "system", "ok");
     }
     else if(
         customAlertPlayed
@@ -867,12 +897,15 @@ if(
 
             if(untilAzan >= 0 && untilAzan <= 10)
             {
-                set_event_status(
-                    String("أذان ") + prayerNames[i],
-                    "بعد " + String(untilAzan) + " ثانية",
-                    String("ADAN ") + prayerNames[i],
-                    "IN " + String(untilAzan) + " SEC"
-                );
+                static char evAr[48];
+                static char evSub[32];
+                static char evLcd[32];
+                static char evLcdSub[32];
+                snprintf(evAr, sizeof(evAr), "أذان %s", prayerNames[i]);
+                snprintf(evSub, sizeof(evSub), "بعد %d ثانية", untilAzan);
+                snprintf(evLcd, sizeof(evLcd), "ADAN %s", prayerNames[i]);
+                snprintf(evLcdSub, sizeof(evLcdSub), "IN %d SEC", untilAzan);
+                set_event_status(evAr, evSub, evLcd, evLcdSub);
             }
         }
 
@@ -891,11 +924,13 @@ if(
             azanPlayed[i] = true;
 
 
-            set_event_status(
-                String("أذان ") + prayerNames[i],
-                "",
-                String("ADAN ") + prayerNames[i]
-            );
+            {
+                static char evAr[32];
+                static char evLcd[32];
+                snprintf(evAr, sizeof(evAr), "أذان %s", prayerNames[i]);
+                snprintf(evLcd, sizeof(evLcd), "ADAN %s", prayerNames[i]);
+                set_event_status(evAr, "", evLcd);
+            }
 
 
 // ==========================
@@ -932,6 +967,12 @@ if(settings.azanEnable)
         prayerNames[i]
     );
 
+    {
+        char action[24];
+        snprintf(action, sizeof(action), "azan_%s", prayerNames[i]);
+        log_event("AUDIO", action, "system", "ok");
+    }
+
 }
 else
 {
@@ -945,9 +986,7 @@ else
         prayerNames[i]
     );
 
-}
-
-}
+}}
 
 
 // ==========================
@@ -1021,11 +1060,13 @@ if(
 {
     iqamaPlayed[i] = true;
 
-    set_event_status(
-        String("إقامة ") + prayerNames[i],
-        "",
-        String("IQAMA ") + prayerNames[i]
-    );
+    {
+        static char evAr[32];
+        static char evLcd[32];
+        snprintf(evAr, sizeof(evAr), "إقامة %s", prayerNames[i]);
+        snprintf(evLcd, sizeof(evLcd), "IQAMA %s", prayerNames[i]);
+        set_event_status(evAr, "", evLcd);
+    }
 
     if (settings.iqamaDevice == 0)
     {
@@ -1053,6 +1094,12 @@ if(
     Serial.println(
         prayerNames[i]
     );
+
+    {
+        char action[24];
+        snprintf(action, sizeof(action), "iqama_%s", prayerNames[i]);
+        log_event("AUDIO", action, "system", "ok");
+    }
 }
 
 
@@ -1139,17 +1186,17 @@ String get_prayer_time(
       char buffer[20];
 
 
-    String format =
-        settings.timeFormat;
+    char format[5];
+    strlcpy(format, settings.timeFormat, sizeof(format));
 
 
 
-    format.toUpperCase();
+    for (char *p = format; *p; p++) *p = toupper(*p);
 
 
 
 
-    if(format == "12H")
+    if(strcmp(format, "12H") == 0)
     {
 
 
@@ -1228,17 +1275,17 @@ String get_iqama_time(
       char buffer[20];
 
 
-    String format =
-        settings.timeFormat;
+    char format[5];
+    strlcpy(format, settings.timeFormat, sizeof(format));
 
 
 
-    format.toUpperCase();
+    for (char *p = format; *p; p++) *p = toupper(*p);
 
 
 
 
-    if(format == "12H")
+    if(strcmp(format, "12H") == 0)
     {
 
 

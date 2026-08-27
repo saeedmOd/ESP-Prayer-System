@@ -6,6 +6,7 @@
 
 #include "settings.h"
 #include "command_handler.h"
+#include "event_log.h"
 
 
 
@@ -41,6 +42,8 @@ unsigned int length
         String(topic),
         message
     );
+
+    log_event("MQTT", "mqtt_command", "user", "ok", message.substring(0, 31).c_str());
 
 }
 

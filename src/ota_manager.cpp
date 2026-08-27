@@ -7,6 +7,7 @@
 #include <ArduinoOTA.h>
 
 #include "settings.h"
+#include "event_log.h"
 
 
 // ======================================================
@@ -25,15 +26,15 @@ void OTAManager::begin()
 
     // Set OTA hostname
     ArduinoOTA.setHostname(
-        settings.otaHostname.c_str()
+        settings.otaHostname
     );
 
 
 
-    if (settings.otaPassword.length() > 0)
+    if (settings.otaPassword[0] != '\0')
     {
         ArduinoOTA.setPassword(
-            settings.otaPassword.c_str()
+            settings.otaPassword
         );
     }
 
@@ -93,6 +94,8 @@ void OTAManager::begin()
 
         updating = false;
 
+        log_event("OTA", "ota_success", "system", "ok");
+
     });
 
 
@@ -139,6 +142,8 @@ void OTAManager::begin()
             lastError = "End Failed";
             Serial.println("End Failed");
         }
+
+        log_event("OTA", "ota_fail", "system", "fail", lastError.c_str());
 
 
     });

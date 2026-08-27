@@ -33,10 +33,10 @@ void display_show_alarm(String time);
 // =================================================
 
 void set_event_status(
-    String title,
-    String subtitle = "",
-    String lcdTitle = "",
-    String lcdSubtitle = ""
+    const char *title,
+    const char *subtitle = "",
+    const char *lcdTitle = "",
+    const char *lcdSubtitle = ""
 );
 
 bool display_event_active();

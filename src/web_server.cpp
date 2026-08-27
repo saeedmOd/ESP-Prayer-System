@@ -19,6 +19,7 @@
 #include "hardware.h"
 #include "display.h"
 #include "api_client.h"
+#include "event_log.h"
 
 // ============================================================
 // Web Server
@@ -35,13 +36,7 @@ Ticker rebootTimer;
 // Request Bodies
 // ============================================================
 
-static String audioBody;
-static String prayerBody;
-static String networkBody;
-static String volumeBody;
-static String quranTestBody;
-static String folderTestBody;
-static String displayBody;
+static String requestBody;
 
 // ============================================================
 // Forward Declarations
@@ -65,8 +60,9 @@ static void send_json(
     JsonDocument &doc
 )
 {
-    String output;
+    static String output;
 
+    output.clear();
     serializeJson(doc, output);
 
     AsyncWebServerResponse *response =
@@ -139,8 +135,8 @@ static void send_file(
     const char *type
 )
 {
-    String path = String(file);
-    String gzipPath = path + ".gz";
+    char gzipPath[64];
+    snprintf(gzipPath, sizeof(gzipPath), "%s.gz", file);
 
     // --------------------------------------------------------
     // Prefer gzip when the client supports it
@@ -156,9 +152,6 @@ static void send_file(
         LittleFS.exists(gzipPath)
     )
     {
-        Serial.print(F("[FS] Sending gzip: "));
-        Serial.println(gzipPath);
-
         AsyncWebServerResponse *response =
             request->beginResponse(
                 LittleFS,
@@ -171,9 +164,16 @@ static void send_file(
             "gzip"
         );
 
+        // HTML is always revalidated (never cached), so
+        // updates to static assets via ?v= take effect.
+        const char *cacheCtrl =
+            (strstr(file, ".html") != nullptr)
+                ? "no-cache"
+                : "public, max-age=300";
+
         response->addHeader(
             "Cache-Control",
-            "no-store"
+            cacheCtrl
         );
 
         request->send(response);
@@ -184,11 +184,8 @@ static void send_file(
     // Normal file
     // --------------------------------------------------------
 
-    if (!LittleFS.exists(path))
+    if (!LittleFS.exists(file))
     {
-        Serial.print(F("[FS] Missing: "));
-        Serial.println(path);
-
         send_text(
             request,
             404,
@@ -198,19 +195,21 @@ static void send_file(
         return;
     }
 
-    Serial.print(F("[FS] Sending: "));
-    Serial.println(path);
-
     AsyncWebServerResponse *response =
         request->beginResponse(
             LittleFS,
-            path,
+            file,
             type
         );
 
+    const char *cacheCtrl =
+        (strstr(file, ".html") != nullptr)
+            ? "no-cache"
+            : "public, max-age=300";
+
     response->addHeader(
         "Cache-Control",
-        "no-store"
+        cacheCtrl
     );
 
     request->send(response);
@@ -326,41 +325,178 @@ static void register_not_found()
     server.onNotFound(
         [](AsyncWebServerRequest *request)
         {
+            String url = request->url();
+
+            // ====================================================
+            // Backward-compat: old /api/test/<type> POST routes
+            // ====================================================
+
+            if (url.startsWith("/api/test/") && request->method() == HTTP_POST)
+            {
+                const char *type = url.c_str() + 10;
+
+                if (strcmp(type, "azan") == 0)
+                {
+                    if (!dfplayer_ready()) { request->send(503); return; }
+                    command_process("test_azan");
+                    log_event("AUDIO", "test_azan", "user", "ok");
+                    request->send(200);
+                    return;
+                }
+                if (strcmp(type, "buzzer-alarm") == 0)
+                {
+                    buzzer_play_alarm(settings.alarmToneType);
+                    request->send(200);
+                    return;
+                }
+                if (strcmp(type, "custom-alert-file") == 0)
+                {
+                    if (!dfplayer_ready()) { request->send(503); return; }
+                    play_folder_file_with_volume(5, settings.customAlertFile, settings.customAlertVolume);
+                    request->send(200);
+                    return;
+                }
+                if (strcmp(type, "iqama") == 0)
+                {
+                    if (!dfplayer_ready()) { request->send(503); return; }
+                    play_folder_file(settings.iqamaFolder, settings.iqamaFile);
+                    request->send(200);
+                    return;
+                }
+                if (strcmp(type, "audio") == 0)
+                {
+                    if (!dfplayer_ready()) { request->send(503); return; }
+                    play_test();
+                    request->send(200);
+                    return;
+                }
+                if (strcmp(type, "morning-adhkar") == 0)
+                {
+                    if (!dfplayer_ready()) { request->send(503); return; }
+                    play_folder_file_with_volume(settings.morningAdhkarFolder, settings.morningAdhkarFile, settings.morningAdhkarVolume);
+                    request->send(200);
+                    return;
+                }
+                if (strcmp(type, "evening-adhkar") == 0)
+                {
+                    if (!dfplayer_ready()) { request->send(503); return; }
+                    play_folder_file_with_volume(settings.eveningAdhkarFolder, settings.eveningAdhkarFile, settings.eveningAdhkarVolume);
+                    request->send(200);
+                    return;
+                }
+                if (strcmp(type, "kahf") == 0)
+                {
+                    if (!dfplayer_ready()) { request->send(503); return; }
+                    play_folder_file_with_volume(settings.kahfFolder, settings.kahfFile, settings.kahfVolume);
+                    request->send(200);
+                    return;
+                }
+                if (strcmp(type, "eid-takbeerat") == 0)
+                {
+                    if (!dfplayer_ready()) { request->send(503); return; }
+                    play_folder_file_with_volume(4, 5, settings.eidTakbeeratVolume);
+                    request->send(200);
+                    return;
+                }
+            }
+
+            // ====================================================
+            // Backward-compat: old /api/test/<type> GET routes
+            // ====================================================
+
+            if (url.startsWith("/api/test/") && request->method() == HTTP_GET)
+            {
+                const char *type = url.c_str() + 10;
+
+                if (strcmp(type, "adhkar") == 0)
+                {
+                    if (!dfplayer_ready()) { request->send(503); return; }
+                    int file = 3, vol = 10;
+                    if (request->hasParam("file")) file = request->getParam("file")->value().toInt();
+                    if (request->hasParam("volume")) vol = request->getParam("volume")->value().toInt();
+                    play_folder_file_with_volume(4, file, vol);
+                    request->send(200);
+                    return;
+                }
+                if (strcmp(type, "ruqyah") == 0)
+                {
+                    if (!dfplayer_ready()) { request->send(503); return; }
+                    play_folder_file_with_volume(6, settings.ruqyahFile, settings.ruqyahVolume);
+                    log_event("AUDIO", "ruqyah_play", "user", "ok");
+                    request->send(200);
+                    return;
+                }
+                if (strcmp(type, "ruqyah-stop") == 0)
+                {
+                    stop_audio();
+                    buzzer_stop();
+                    log_event("AUDIO", "ruqyah_stop", "user", "ok");
+                    request->send(200);
+                    return;
+                }
+            }
+
+            // ====================================================
+            // Backward-compat: old /api/audio/<action> POST routes
+            // ====================================================
+
+            if (url.startsWith("/api/audio/") && request->method() == HTTP_POST)
+            {
+                const char *action = url.c_str() + 12;
+
+                if (!dfplayer_ready()) { request->send(503); return; }
+
+                if (strcmp(action, "play") == 0) { play_audio(); request->send(200); return; }
+                if (strcmp(action, "pause") == 0) { pause_audio(); request->send(200); return; }
+                if (strcmp(action, "stop") == 0) { stop_audio(); log_event("AUDIO", "audio_stop", "user", "ok"); request->send(200); return; }
+
+                if (strcmp(action, "volume-up") == 0)
+                {
+                    volume_up();
+                    char resp[48];
+                    snprintf(resp, sizeof(resp), "{\"volume\":%d}", settings.volume);
+                    request->send(200, "application/json", resp);
+                    return;
+                }
+                if (strcmp(action, "volume-down") == 0)
+                {
+                    volume_down();
+                    char resp[48];
+                    snprintf(resp, sizeof(resp), "{\"volume\":%d}", settings.volume);
+                    request->send(200, "application/json", resp);
+                    return;
+                }
+            }
+
+            // ====================================================
+            // Backward-compat: old /api/logs/clear POST route
+            // ====================================================
+
+            if (url == "/api/logs/clear" && request->method() == HTTP_POST)
+            {
+                log_clear();
+                request->send(200, "application/json", "{\"status\":\"cleared\"}");
+                return;
+            }
+
+            // ====================================================
+            // Backward-compat: old /api/settings/volume POST route
+            // ====================================================
+
+            if (url == "/api/settings/volume" && request->method() == HTTP_POST)
+            {
+                request->send(200, "application/json", "{\"status\":\"saved\"}");
+                return;
+            }
+
+            // ====================================================
+            // Default404
+            // ====================================================
+
             Serial.print(F("[404] "));
-            Serial.println(request->url());
+            Serial.println(url);
 
-            String html;
-
-            html.reserve(300);
-
-            html =
-                "<!DOCTYPE html>"
-                "<html dir='rtl'>"
-                "<head>"
-                "<meta charset='UTF-8'>"
-                "<meta name='viewport' "
-                "content='width=device-width,initial-scale=1'>"
-                "<title>ESP Prayer System</title>"
-                "</head>"
-                "<body>"
-                "<h2>ESP Prayer System</h2>"
-                "<p>الصفحة غير موجودة</p>"
-                "</body>"
-                "</html>";
-
-            AsyncWebServerResponse *response =
-                request->beginResponse(
-                    404,
-                    "text/html",
-                    html
-                );
-
-            response->addHeader(
-                "Cache-Control",
-                "no-store"
-            );
-
-            request->send(response);
+            request->send(404, "text/plain", "Not Found");
         }
     );
 }
@@ -587,80 +723,6 @@ static void registerStaticRoutes()
             );
         }
     );
-
-
-    server.on(
-        "/web/audio.js",
-        HTTP_GET,
-        [](AsyncWebServerRequest *request)
-        {
-            send_file(
-                request,
-                "/web/audio.js",
-                "application/javascript"
-            );
-        }
-    );
-
-
-    server.on(
-        "/web/settings.css",
-        HTTP_GET,
-        [](AsyncWebServerRequest *request)
-        {
-            send_file(
-                request,
-                "/web/settings.css",
-                "text/css"
-            );
-        }
-    );
-
-
-    server.on(
-        "/web/settings.js",
-        HTTP_GET,
-        [](AsyncWebServerRequest *request)
-        {
-            send_file(
-                request,
-                "/web/settings.js",
-                "application/javascript"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Compatibility
-    // ========================================================
-
-    server.on(
-        "/style.css",
-        HTTP_GET,
-        [](AsyncWebServerRequest *request)
-        {
-            send_file(
-                request,
-                "/web/style.css",
-                "text/css"
-            );
-        }
-    );
-
-
-    server.on(
-        "/script.js",
-        HTTP_GET,
-        [](AsyncWebServerRequest *request)
-        {
-            send_file(
-                request,
-                "/web/script.js",
-                "application/javascript"
-            );
-        }
-    );
 }
 
 
@@ -741,46 +803,6 @@ static void registerPageRoutes()
 static void registerApiRoutes()
 {
     // ========================================================
-    // DEBUG: API FETCH TEST
-    // ========================================================
-
-    server.on(
-        "/api/debug/api",
-        HTTP_GET,
-        [](AsyncWebServerRequest *request)
-        {
-            // Non-blocking: trigger test, return last result
-            bool trigger =
-                request->hasParam("run");
-
-            if (trigger)
-            {
-                String url = "";
-                if (request->hasParam("url"))
-                {
-                    url = request
-                        ->getParam("url")
-                        ->value();
-                }
-                api_request_test(url);
-            }
-
-            JsonDocument doc;
-            doc["triggered"] = trigger;
-            doc["result"] = api_get_test_result();
-            doc["freeHeap"] = ESP.getFreeHeap();
-
-            String out;
-            serializeJson(doc, out);
-            request->send(
-                200,
-                "application/json",
-                out
-            );
-        }
-    );
-
-    // ========================================================
     // STATUS
     // ========================================================
 
@@ -812,18 +834,17 @@ static void registerApiRoutes()
             doc["volume"] =
                 settings.volume;
 
-            String format =
-                settings.timeFormat;
+            char format[5];
+            strlcpy(format, settings.timeFormat, sizeof(format));
 
             if (
-                format != "12H" &&
-                format != "24H"
+                strcmp(format, "12H") != 0 &&
+                strcmp(format, "24H") != 0
             )
             {
-                format =
-                    storage_get_time_format(
+                strlcpy(format, storage_get_time_format(
                         "24H"
-                    );
+                    ).c_str(), sizeof(format));
             }
 
             doc["timeFormat"] =
@@ -961,97 +982,6 @@ static void registerApiRoutes()
             send_json(
                 request,
                 doc
-            );
-        }
-    );
-
-
-    // ========================================================
-    // VOLUME COMPATIBILITY API
-    // ========================================================
-
-    server.on(
-        "/api/settings/volume",
-        HTTP_POST,
-
-        [](AsyncWebServerRequest *request)
-        {
-            // Response is intentionally sent by body handler.
-        },
-
-        NULL,
-
-        [](AsyncWebServerRequest *request,
-           uint8_t *data,
-           size_t len,
-           size_t index,
-           size_t total)
-        {
-            if (
-                !collect_body(
-                    volumeBody,
-                    data,
-                    len,
-                    index,
-                    total
-                )
-            )
-            {
-                return;
-            }
-
-            JsonDocument doc;
-
-            if (!parse_json(volumeBody, doc))
-            {
-                send_json_message(
-                    request,
-                    400,
-                    "{\"status\":\"error\",\"message\":\"Invalid JSON\"}"
-                );
-
-                return;
-            }
-
-            if (!doc["volume"].is<int>())
-            {
-                send_json_message(
-                    request,
-                    400,
-                    "{\"status\":\"error\",\"message\":\"Invalid volume\"}"
-                );
-
-                return;
-            }
-
-            int volume =
-                constrain(
-                    doc["volume"].as<int>(),
-                    0,
-                    30
-                );
-
-            settings.volume =
-                volume;
-
-            storage_set_volume(
-                volume
-            );
-
-            settings_apply();
-
-            Serial.print(
-                F("[AUDIO] Volume: ")
-            );
-
-            Serial.println(
-                volume
-            );
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"saved\"}"
             );
         }
     );
@@ -1702,7 +1632,7 @@ static void registerApiRoutes()
         {
             if (
                 !collect_body(
-                    audioBody,
+                    requestBody,
                     data,
                     len,
                     index,
@@ -1718,12 +1648,12 @@ static void registerApiRoutes()
             );
 
             Serial.println(
-                audioBody.length()
+                requestBody.length()
             );
 
             JsonDocument doc;
 
-            if (!parse_json(audioBody, doc))
+            if (!parse_json(requestBody, doc))
             {
                 send_json_message(
                     request,
@@ -2354,13 +2284,16 @@ static void registerApiRoutes()
                         99
                     );
 
-                settings.morningAdhkarFolder =
-                    value;
+                if (value != 1 || settings.morningAdhkarFolder == 1)
+                {
+                    settings.morningAdhkarFolder =
+                        value;
 
-                storage_set_int(
-                    "audio.morning_adhkar_folder",
-                    value
-                );
+                    storage_set_int(
+                        "audio.morning_adhkar_folder",
+                        value
+                    );
+                }
             }
 
             if (doc["morningAdhkarFile"].is<int>())
@@ -2372,13 +2305,16 @@ static void registerApiRoutes()
                         255
                     );
 
-                settings.morningAdhkarFile =
-                    value;
+                if (value != 1 || settings.morningAdhkarFile == 1)
+                {
+                    settings.morningAdhkarFile =
+                        value;
 
-                storage_set_int(
-                    "audio.morning_adhkar_file",
-                    value
-                );
+                    storage_set_int(
+                        "audio.morning_adhkar_file",
+                        value
+                    );
+                }
             }
 
             if (doc["morningAdhkarHour"].is<int>())
@@ -2463,13 +2399,16 @@ static void registerApiRoutes()
                         99
                     );
 
-                settings.eveningAdhkarFolder =
-                    value;
+                if (value != 1 || settings.eveningAdhkarFolder == 1)
+                {
+                    settings.eveningAdhkarFolder =
+                        value;
 
-                storage_set_int(
-                    "audio.evening_adhkar_folder",
-                    value
-                );
+                    storage_set_int(
+                        "audio.evening_adhkar_folder",
+                        value
+                    );
+                }
             }
 
             if (doc["eveningAdhkarFile"].is<int>())
@@ -2481,13 +2420,16 @@ static void registerApiRoutes()
                         255
                     );
 
-                settings.eveningAdhkarFile =
-                    value;
+                if (value != 1 || settings.eveningAdhkarFile == 1)
+                {
+                    settings.eveningAdhkarFile =
+                        value;
 
-                storage_set_int(
-                    "audio.evening_adhkar_file",
-                    value
-                );
+                    storage_set_int(
+                        "audio.evening_adhkar_file",
+                        value
+                    );
+                }
             }
 
             if (doc["eveningAdhkarHour"].is<int>())
@@ -3125,6 +3067,8 @@ static void registerApiRoutes()
                 F("[AUDIO] Saving settings...")
             );
 
+            Serial.printf("[HEAP] Before batch save: %d\n", ESP.getFreeHeap());
+
             if (!storage_end_batch())
             {
                 buzzer_error_tone();
@@ -3142,23 +3086,22 @@ static void registerApiRoutes()
                 return;
             }
 
-            // Reload live settings from storage so scheduled
-            // events (e.g. Quran) use the new values immediately.
-            settings_load();
-
-            settings_apply();
-
             buzzer_settings_saved_tone();
 
             Serial.println(
                 F("[AUDIO] Settings saved successfully")
             );
 
+            settings_load();
+            prayer_reload();
+
             send_json_message(
                 request,
                 200,
                 "{\"status\":\"saved\"}"
             );
+
+            requestBody = String();
         }
     );
 
@@ -3256,7 +3199,7 @@ static void registerApiRoutes()
         {
             if (
                 !collect_body(
-                    prayerBody,
+                    requestBody,
                     data,
                     len,
                     index,
@@ -3269,7 +3212,7 @@ static void registerApiRoutes()
 
             JsonDocument doc;
 
-            if (!parse_json(prayerBody, doc))
+            if (!parse_json(requestBody, doc))
             {
                 send_json_message(
                     request,
@@ -3339,7 +3282,7 @@ static void registerApiRoutes()
                 if (source == "local" || source == "api")
                 {
                     config["prayer"]["source"] = source;
-                    settings.prayerSource = source;
+                    strlcpy(settings.prayerSource, source.c_str(), sizeof(settings.prayerSource));
                 }
             }
 
@@ -3361,22 +3304,21 @@ static void registerApiRoutes()
 
             if (doc["time_format"].is<const char*>())
             {
-                String format =
+                String formatStr =
                     doc["time_format"].as<const char*>();
 
-                format.trim();
-                format.toUpperCase();
+                formatStr.trim();
+                formatStr.toUpperCase();
 
                 if (
-                    format == "12H" ||
-                    format == "24H"
+                    formatStr == "12H" ||
+                    formatStr == "24H"
                 )
                 {
                     config["prayer"]["time_format"] =
-                        format;
+                        formatStr;
 
-                    settings.timeFormat =
-                        format;
+                    strlcpy(settings.timeFormat, formatStr.c_str(), sizeof(settings.timeFormat));
                 }
             }
 
@@ -3447,6 +3389,8 @@ static void registerApiRoutes()
                 200,
                 "{\"status\":\"saved\"}"
             );
+
+requestBody = String();
         }
     );
 
@@ -3525,7 +3469,7 @@ static void registerApiRoutes()
         {
             if (
                 !collect_body(
-                    networkBody,
+                    requestBody,
                     data,
                     len,
                     index,
@@ -3538,7 +3482,7 @@ static void registerApiRoutes()
 
             JsonDocument doc;
 
-            if (!parse_json(networkBody, doc))
+            if (!parse_json(requestBody, doc))
             {
                 send_json_message(
                     request,
@@ -3681,9 +3625,10 @@ static void registerApiRoutes()
                 send_json_message(
                     request,
                     500,
-                    "{\"status\":\"error\",\"message\":\"Failed to save WiFi settings\"}"
+                    "{\"status\":\"error\",\"message\":\"Failed to save settings\"}"
                 );
 
+                requestBody = String();
                 return;
             }
 
@@ -3696,6 +3641,8 @@ static void registerApiRoutes()
                 200,
                 "{\"status\":\"saved\",\"restart\":true}"
             );
+
+requestBody = String();
 
             // ------------------------------------------------
             // Restart later
@@ -3724,812 +3671,591 @@ static void registerApiRoutes()
 static void registerSystemRoutes()
 {
     // ========================================================
-    // Test Azan
+    // Event Log - GET
     // ========================================================
 
     server.on(
-        "/api/test/azan",
-        HTTP_POST,
-        [](AsyncWebServerRequest *request)
-        {
-            if (!dfplayer_ready())
-            {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
-
-                return;
-            }
-
-            command_process(
-                "test_azan"
-            );
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"playing\"}"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Test Buzzer Alarm
-    // ========================================================
-
-    server.on(
-        "/api/test/buzzer-alarm",
-        HTTP_POST,
-        [](AsyncWebServerRequest *request)
-        {
-            buzzer_play_alarm(
-                settings.alarmToneType
-            );
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"playing\"}"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Test Custom Alert File
-    // ========================================================
-
-    server.on(
-        "/api/test/custom-alert-file",
-        HTTP_POST,
-        [](AsyncWebServerRequest *request)
-        {
-            if (!dfplayer_ready())
-            {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
-
-                return;
-            }
-
-            play_folder_file_with_volume(
-                5,
-                settings.customAlertFile,
-                settings.customAlertVolume
-            );
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"playing\"}"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Test Iqama
-    // ========================================================
-
-    server.on(
-        "/api/test/iqama",
-        HTTP_POST,
-        [](AsyncWebServerRequest *request)
-        {
-            if (!dfplayer_ready())
-            {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
-
-                return;
-            }
-
-            play_folder_file(
-                settings.iqamaFolder,
-                settings.iqamaFile
-            );
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"playing\"}"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Test Audio
-    // ========================================================
-
-    server.on(
-        "/api/test/audio",
-        HTTP_POST,
-        [](AsyncWebServerRequest *request)
-        {
-            if (!dfplayer_ready())
-            {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
-
-                return;
-            }
-
-            play_test();
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"playing\"}"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Test Morning Adhkar
-    // ========================================================
-
-    server.on(
-        "/api/test/morning-adhkar",
-        HTTP_POST,
-        [](AsyncWebServerRequest *request)
-        {
-            if (!dfplayer_ready())
-            {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
-
-                return;
-            }
-
-            play_folder_file_with_volume(
-                settings.morningAdhkarFolder,
-                settings.morningAdhkarFile,
-                settings.morningAdhkarVolume
-            );
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"playing\"}"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Test Evening Adhkar
-    // ========================================================
-
-    server.on(
-        "/api/test/evening-adhkar",
-        HTTP_POST,
-        [](AsyncWebServerRequest *request)
-        {
-            if (!dfplayer_ready())
-            {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
-
-                return;
-            }
-
-            play_folder_file_with_volume(
-                settings.eveningAdhkarFolder,
-                settings.eveningAdhkarFile,
-                settings.eveningAdhkarVolume
-            );
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"playing\"}"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Test Adhkar Player
-    // ========================================================
-
-    server.on(
-        "/api/test/adhkar",
+        "/api/logs",
         HTTP_GET,
         [](AsyncWebServerRequest *request)
         {
-            if (!dfplayer_ready())
-            {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
+            int count = log_get_count();
 
-                return;
+            JsonDocument doc;
+            JsonArray arr = doc.to<JsonArray>();
+
+            for (int i = 0; i < count; i++)
+            {
+                LogEntry entry;
+
+                if (!log_get_entry(i, entry))
+                    continue;
+
+                JsonObject obj = arr.add<JsonObject>();
+
+                obj["ts"]     = entry.timestamp;
+                obj["cat"]    = entry.category;
+                obj["action"] = entry.action;
+                obj["src"]    = entry.source;
+                obj["status"] = entry.status;
+
+                if (entry.detail[0] != '\0')
+                    obj["detail"] = entry.detail;
             }
 
-            int file = 3;
-            int adhkarVolume = 10;
-
-            if (request->hasParam("file"))
-            {
-                file =
-                    request->getParam("file")->value().toInt();
-            }
-
-            if (request->hasParam("volume"))
-            {
-                adhkarVolume =
-                    request->getParam("volume")->value().toInt();
-            }
-
-            play_folder_file_with_volume(
-                4,
-                file,
-                adhkarVolume
-            );
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"playing\"}"
-            );
+            send_json(request, doc);
         }
     );
 
 
     // ========================================================
-    // Test Kahf
+    // Event Log - CLEAR
     // ========================================================
 
     server.on(
-        "/api/test/kahf",
+        "/api/logs",
         HTTP_POST,
         [](AsyncWebServerRequest *request)
         {
-            if (!dfplayer_ready())
-            {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
-
-                return;
-            }
-
-            play_folder_file_with_volume(
-                settings.kahfFolder,
-                settings.kahfFile,
-                settings.kahfVolume
-            );
+            log_clear();
 
             send_json_message(
                 request,
                 200,
-                "{\"status\":\"playing\"}"
+                "{\"status\":\"cleared\"}"
             );
         }
     );
 
 
     // ========================================================
-    // Test Eid Takbeerat
+    // Unified Test - POST (simple no-body tests)
     // ========================================================
 
     server.on(
-        "/api/test/eid-takbeerat",
+        "/api/test",
         HTTP_POST,
         [](AsyncWebServerRequest *request)
         {
-            if (!dfplayer_ready())
+            const char *type = nullptr;
+
+            if (request->hasParam("type"))
+            {
+                type = request->getParam("type")->value().c_str();
+            }
+
+            if (!type || type[0] == '\0')
+            {
+                String url = request->url();
+
+                if (url.length() > 10)
+                {
+                    type = url.c_str() + 10;
+                }
+            }
+
+            if (!type || type[0] == '\0')
             {
                 send_json_message(
                     request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
+                    400,
+                    "{\"status\":\"error\",\"message\":\"Missing type\"}"
                 );
 
                 return;
             }
 
-            play_folder_file_with_volume(
-                4,
-                5,
-                settings.eidTakbeeratVolume
-            );
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"playing\"}"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Test Ruqyah
-    // ========================================================
-
-    server.on(
-        "/api/test/ruqyah",
-        HTTP_GET,
-        [](AsyncWebServerRequest *request)
-        {
-            if (!dfplayer_ready())
-            {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
-
-                return;
-            }
-
-            play_folder_file_with_volume(
-                6,
-                settings.ruqyahFile,
-                settings.ruqyahVolume
-            );
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"playing\"}"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Stop Ruqyah
-    // ========================================================
-
-    server.on(
-        "/api/test/ruqyah-stop",
-        HTTP_GET,
-        [](AsyncWebServerRequest *request)
-        {
-            stop_audio();
-
-            buzzer_stop();
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"stopped\"}"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Test Quran
-    // ========================================================
-
-    server.on(
-        "/api/test/quran",
-        HTTP_POST,
-
-        [](AsyncWebServerRequest *request)
-        {
-            // Response after body.
-        },
-
-        NULL,
-
-        [](AsyncWebServerRequest *request,
-           uint8_t *data,
-           size_t len,
-           size_t index,
-           size_t total)
-        {
+            // Quran and folder require a JSON body; they are
+            // handled in the onBody handler once the body arrives.
             if (
-                !collect_body(
-                    quranTestBody,
-                    data,
-                    len,
-                    index,
-                    total
-                )
+                strcmp(type, "quran") == 0 ||
+                strcmp(type, "folder") == 0
             )
             {
                 return;
             }
 
-            JsonDocument doc;
-
-            if (!parse_json(quranTestBody, doc))
+            if (strcmp(type, "azan") == 0)
             {
-                send_json_message(
-                    request,
-                    400,
-                    "{\"status\":\"error\",\"message\":\"Invalid JSON\"}"
-                );
+                if (!dfplayer_ready())
+                {
+                    send_json_message(request, 503,
+                        "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}");
+                    log_event("AUDIO", "test_azan", "user", "fail", "DFPlayer not ready");
+                    return;
+                }
 
-                return;
+                command_process("test_azan");
+                log_event("AUDIO", "test_azan", "user", "ok");
             }
-
-            uint8_t folder =
-                constrain(
-                    doc["folder"] | 1,
-                    1,
-                    99
-                );
-
-            uint8_t file =
-                constrain(
-                    doc["file"] | 1,
-                    1,
-                    255
-                );
-
-            uint8_t volume =
-                constrain(
-                    doc["volume"] | 25,
-                    0,
-                    30
-                );
-
-            if (!dfplayer_ready())
+            else if (strcmp(type, "buzzer-alarm") == 0)
             {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
-
-                return;
+                buzzer_play_alarm(settings.alarmToneType);
             }
-
-            play_folder_file_with_volume(
-                folder,
-                file,
-                volume
-            );
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"playing\"}"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Test Folder
-    // ========================================================
-
-    server.on(
-        "/api/test/folder",
-        HTTP_POST,
-
-        [](AsyncWebServerRequest *request)
-        {
-            // Response after body.
-        },
-
-        NULL,
-
-        [](AsyncWebServerRequest *request,
-           uint8_t *data,
-           size_t len,
-           size_t index,
-           size_t total)
-        {
-            if (
-                !collect_body(
-                    folderTestBody,
-                    data,
-                    len,
-                    index,
-                    total
-                )
-            )
+            else if (strcmp(type, "custom-alert-file") == 0)
             {
-                return;
-            }
+                if (!dfplayer_ready())
+                {
+                    send_json_message(request, 503,
+                        "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}");
+                    return;
+                }
 
-            JsonDocument doc;
-
-            if (!parse_json(folderTestBody, doc))
-            {
-                send_json_message(
-                    request,
-                    400,
-                    "{\"status\":\"error\",\"message\":\"Invalid JSON\"}"
-                );
-
-                return;
-            }
-
-            uint8_t folder =
-                constrain(
-                    doc["folder"] | 1,
-                    1,
-                    99
-                );
-
-            uint8_t volume =
-                constrain(
-                    doc["volume"] | 20,
-                    0,
-                    30
-                );
-
-            uint8_t fileCount =
-                constrain(
-                    doc["fileCount"] | 5,
-                    1,
-                    99
-                );
-
-            String mode =
-                doc["mode"] | "loop";
-
-            if (!dfplayer_ready())
-            {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
-
-                return;
-            }
-
-            // Event status: show category name on LCD
-            String categoryName = "تشغيل مجلد " + String(folder);
-            String categoryLcd = "FOLDER " + String(folder);
-
-            if (folder == 1)
-            {
-                categoryName = "مجموعه مختارة من الايات";
-                categoryLcd = "MAJMOU'AT AYAT";
-            }
-            else if (folder == 2)
-            {
-                categoryName = "سور قصيره";
-                categoryLcd = "SURAR QASIRA";
-            }
-            else if (folder == 3)
-            {
-                categoryName = "قراءت مختارة";
-                categoryLcd = "QIRA'AT MUKHTARA";
-            }
-
-            set_event_status(
-                categoryName,
-                "",
-                categoryLcd
-            );
-
-            if (mode == "sequential")
-            {
-                play_folder_sequential(
-                    folder,
-                    fileCount,
-                    volume
+                play_folder_file_with_volume(
+                    5,
+                    settings.customAlertFile,
+                    settings.customAlertVolume
                 );
             }
-            else if (mode == "shuffle")
+            else if (strcmp(type, "iqama") == 0)
             {
-                play_folder_shuffle(
-                    folder,
-                    fileCount,
-                    volume
+                if (!dfplayer_ready())
+                {
+                    send_json_message(request, 503,
+                        "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}");
+                    return;
+                }
+
+                play_folder_file(settings.iqamaFolder, settings.iqamaFile);
+            }
+            else if (strcmp(type, "audio") == 0)
+            {
+                if (!dfplayer_ready())
+                {
+                    send_json_message(request, 503,
+                        "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}");
+                    return;
+                }
+
+                play_test();
+            }
+            else if (strcmp(type, "morning-adhkar") == 0)
+            {
+                if (!dfplayer_ready())
+                {
+                    send_json_message(request, 503,
+                        "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}");
+                    return;
+                }
+
+                play_folder_file_with_volume(
+                    settings.morningAdhkarFolder,
+                    settings.morningAdhkarFile,
+                    settings.morningAdhkarVolume
+                );
+            }
+            else if (strcmp(type, "evening-adhkar") == 0)
+            {
+                if (!dfplayer_ready())
+                {
+                    send_json_message(request, 503,
+                        "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}");
+                    return;
+                }
+
+                play_folder_file_with_volume(
+                    settings.eveningAdhkarFolder,
+                    settings.eveningAdhkarFile,
+                    settings.eveningAdhkarVolume
+                );
+            }
+            else if (strcmp(type, "kahf") == 0)
+            {
+                if (!dfplayer_ready())
+                {
+                    send_json_message(request, 503,
+                        "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}");
+                    return;
+                }
+
+                uint8_t kFolder = settings.kahfFolder;
+                uint8_t kFile = settings.kahfFile;
+
+                if (kFolder == 1 && kFile > 1)
+                {
+                    kFolder = kFile;
+                    kFile = 1;
+                }
+
+                play_folder_file_with_volume(
+                    kFolder,
+                    kFile,
+                    settings.kahfVolume
+                );
+            }
+            else if (strcmp(type, "eid-takbeerat") == 0)
+            {
+                if (!dfplayer_ready())
+                {
+                    send_json_message(request, 503,
+                        "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}");
+                    return;
+                }
+
+                play_folder_file_with_volume(
+                    4, 5, settings.eidTakbeeratVolume
                 );
             }
             else
             {
-                // Default: loop
-                play_folder_loop(
-                    folder,
-                    volume
-                );
+                send_json_message(request, 400,
+                    "{\"status\":\"error\",\"message\":\"Unknown type\"}");
+                return;
             }
 
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"playing\"}"
-            );
+            send_json_message(request, 200, "{\"status\":\"playing\"}");
+        },
+
+        NULL,
+
+        [](AsyncWebServerRequest *request,
+           uint8_t *data,
+           size_t len,
+           size_t index,
+           size_t total)
+        {
+            if (
+                !collect_body(
+                    requestBody,
+                    data,
+                    len,
+                    index,
+                    total
+                )
+            )
+            {
+                return;
+            }
+
+            String url = request->url();
+            const char *type = nullptr;
+
+            if (url.length() > 10)
+            {
+                type = url.c_str() + 10;
+            }
+
+            if (!type || type[0] == '\0')
+            {
+                send_json_message(
+                    request,
+                    400,
+                    "{\"status\":\"error\",\"message\":\"Missing type\"}"
+                );
+
+                requestBody = String();
+                return;
+            }
+
+            JsonDocument doc;
+
+            if (!parse_json(requestBody, doc))
+            {
+                send_json_message(
+                    request,
+                    400,
+                    "{\"status\":\"error\",\"message\":\"Invalid JSON\"}"
+                );
+
+                requestBody = String();
+                return;
+            }
+
+            if (strcmp(type, "quran") == 0)
+            {
+                uint8_t folder =
+                    constrain(
+                        doc["folder"] | 1,
+                        1,
+                        99
+                    );
+
+                uint8_t file =
+                    constrain(
+                        doc["file"] | 1,
+                        1,
+                        255
+                    );
+
+                uint8_t volume =
+                    constrain(
+                        doc["volume"] | 25,
+                        0,
+                        30
+                    );
+
+                if (!dfplayer_ready())
+                {
+                    send_json_message(request, 503,
+                        "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}");
+                    requestBody = String();
+                    return;
+                }
+
+                play_folder_file_with_volume(folder, file, volume);
+
+                send_json_message(request, 200, "{\"status\":\"playing\"}");
+            }
+            else if (strcmp(type, "folder") == 0)
+            {
+                uint8_t folder =
+                    constrain(
+                        doc["folder"] | 1,
+                        1,
+                        99
+                    );
+
+                uint8_t volume =
+                    constrain(
+                        doc["volume"] | 20,
+                        0,
+                        30
+                    );
+
+                uint8_t fileCount =
+                    constrain(
+                        doc["fileCount"] | 5,
+                        1,
+                        99
+                    );
+
+                String mode =
+                    doc["mode"] | "loop";
+
+                if (!dfplayer_ready())
+                {
+                    send_json_message(request, 503,
+                        "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}");
+                    requestBody = String();
+                    return;
+                }
+
+                static char categoryName[48];
+                static char categoryLcd[24];
+                snprintf(categoryName, sizeof(categoryName), "تشغيل مجلد %d", folder);
+                snprintf(categoryLcd, sizeof(categoryLcd), "FOLDER %d", folder);
+
+                if (folder == 1)
+                {
+                    strlcpy(categoryName, "مجموعه مختارة من الايات", sizeof(categoryName));
+                    strlcpy(categoryLcd, "MAJMOU'AT AYAT", sizeof(categoryLcd));
+                }
+                else if (folder == 2)
+                {
+                    strlcpy(categoryName, "سور قصيره", sizeof(categoryName));
+                    strlcpy(categoryLcd, "SURAR QASIRA", sizeof(categoryLcd));
+                }
+                else if (folder == 3)
+                {
+                    strlcpy(categoryName, "قراءت مختارة", sizeof(categoryName));
+                    strlcpy(categoryLcd, "QIRA'AT MUKHTARA", sizeof(categoryLcd));
+                }
+
+                set_event_status(categoryName, "", categoryLcd);
+
+                if (mode == "sequential")
+                {
+                    play_folder_sequential(folder, fileCount, volume);
+                }
+                else if (mode == "shuffle")
+                {
+                    play_folder_shuffle(folder, fileCount, volume);
+                }
+                else
+                {
+                    play_folder_loop(folder, volume);
+                }
+
+                send_json_message(request, 200, "{\"status\":\"playing\"}");
+            }
+            else
+            {
+                send_json_message(request, 400,
+                    "{\"status\":\"error\",\"message\":\"Unknown type\"}");
+            }
+
+            requestBody = String();
         }
     );
 
 
     // ========================================================
-    // Audio Play
+    // Unified Test - GET (adhkar, ruqyah, ruqyah-stop)
     // ========================================================
 
     server.on(
-        "/api/audio/play",
-        HTTP_POST,
+        "/api/test",
+        HTTP_GET,
         [](AsyncWebServerRequest *request)
         {
-            if (!dfplayer_ready())
+            const char *type = nullptr;
+
+            if (request->hasParam("type"))
+            {
+                type = request->getParam("type")->value().c_str();
+            }
+
+            if (!type || type[0] == '\0')
+            {
+                String url = request->url();
+
+                if (url.length() > 10)
+                {
+                    type = url.c_str() + 10;
+                }
+            }
+
+            if (!type || type[0] == '\0')
             {
                 send_json_message(
                     request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
+                    400,
+                    "{\"status\":\"error\",\"message\":\"Missing type\"}"
                 );
 
                 return;
             }
 
-            play_audio();
+            if (strcmp(type, "adhkar") == 0)
+            {
+                if (!dfplayer_ready())
+                {
+                    send_json_message(request, 503,
+                        "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}");
+                    return;
+                }
 
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"playing\"}"
-            );
+                int file = 3;
+                int vol = 10;
+
+                if (request->hasParam("file"))
+                    file = request->getParam("file")->value().toInt();
+
+                if (request->hasParam("volume"))
+                    vol = request->getParam("volume")->value().toInt();
+
+                play_folder_file_with_volume(4, file, vol);
+            }
+            else if (strcmp(type, "ruqyah") == 0)
+            {
+                if (!dfplayer_ready())
+                {
+                    send_json_message(request, 503,
+                        "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}");
+                    log_event("AUDIO", "ruqyah_play", "user", "fail", "DFPlayer not ready");
+                    return;
+                }
+
+                play_folder_file_with_volume(
+                    6, settings.ruqyahFile, settings.ruqyahVolume
+                );
+
+                log_event("AUDIO", "ruqyah_play", "user", "ok");
+            }
+            else if (strcmp(type, "ruqyah-stop") == 0)
+            {
+                stop_audio();
+                buzzer_stop();
+                log_event("AUDIO", "ruqyah_stop", "user", "ok");
+
+                send_json_message(request, 200, "{\"status\":\"stopped\"}");
+                return;
+            }
+            else
+            {
+                send_json_message(request, 400,
+                    "{\"status\":\"error\",\"message\":\"Unknown type\"}");
+                return;
+            }
+
+            send_json_message(request, 200, "{\"status\":\"playing\"}");
         }
     );
 
 
     // ========================================================
-    // Audio Pause
+    // Unified Audio Control
     // ========================================================
 
     server.on(
-        "/api/audio/pause",
+        "/api/audio",
         HTTP_POST,
         [](AsyncWebServerRequest *request)
         {
-            if (!dfplayer_ready())
-            {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
+            const char *action = nullptr;
 
+            if (request->hasParam("action"))
+            {
+                action = request->getParam("action")->value().c_str();
+            }
+
+            if (!action || action[0] == '\0')
+            {
+                String url = request->url();
+
+                if (url.length() > 11)
+                {
+                    action = url.c_str() + 11;
+                }
+            }
+
+            if (!action || action[0] == '\0')
+            {
+                send_json_message(request, 400,
+                    "{\"status\":\"error\",\"message\":\"Missing action\"}");
                 return;
             }
 
-            pause_audio();
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"paused\"}"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Audio Stop
-    // ========================================================
-
-    server.on(
-        "/api/audio/stop",
-        HTTP_POST,
-        [](AsyncWebServerRequest *request)
-        {
             if (!dfplayer_ready())
             {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
-
+                send_json_message(request, 503,
+                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}");
                 return;
             }
 
-            stop_audio();
-
-            send_json_message(
-                request,
-                200,
-                "{\"status\":\"stopped\"}"
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Volume Down
-    // ========================================================
-
-    server.on(
-        "/api/audio/volume-down",
-        HTTP_POST,
-        [](AsyncWebServerRequest *request)
-        {
-            if (!dfplayer_ready())
+            if (strcmp(action, "play") == 0)
             {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
-
-                return;
+                play_audio();
+                send_json_message(request, 200, "{\"status\":\"playing\"}");
             }
-
-            volume_down();
-
-            char response[64];
-
-            snprintf(
-                response,
-                sizeof(response),
-                "{\"status\":\"volume_down\",\"volume\":%d}",
-                settings.volume
-            );
-
-            request->send(
-                200,
-                "application/json",
-                response
-            );
-        }
-    );
-
-
-    // ========================================================
-    // Volume Up
-    // ========================================================
-
-    server.on(
-        "/api/audio/volume-up",
-        HTTP_POST,
-        [](AsyncWebServerRequest *request)
-        {
-            if (!dfplayer_ready())
+            else if (strcmp(action, "pause") == 0)
             {
-                send_json_message(
-                    request,
-                    503,
-                    "{\"status\":\"error\",\"message\":\"DFPlayer not ready\"}"
-                );
-
-                return;
+                pause_audio();
+                send_json_message(request, 200, "{\"status\":\"paused\"}");
             }
+            else if (strcmp(action, "stop") == 0)
+            {
+                stop_audio();
+                log_event("AUDIO", "audio_stop", "user", "ok");
+                send_json_message(request, 200, "{\"status\":\"stopped\"}");
+            }
+            else if (strcmp(action, "volume-up") == 0)
+            {
+                volume_up();
 
-            volume_up();
+                char resp[64];
+                snprintf(resp, sizeof(resp),
+                    "{\"status\":\"volume_up\",\"volume\":%d}",
+                    settings.volume);
 
-            char response[64];
+                request->send(200, "application/json", resp);
+            }
+            else if (strcmp(action, "volume-down") == 0)
+            {
+                volume_down();
 
-            snprintf(
-                response,
-                sizeof(response),
-                "{\"status\":\"volume_up\",\"volume\":%d}",
-                settings.volume
-            );
+                char resp[64];
+                snprintf(resp, sizeof(resp),
+                    "{\"status\":\"volume_down\",\"volume\":%d}",
+                    settings.volume);
 
-            request->send(
-                200,
-                "application/json",
-                response
-            );
+                request->send(200, "application/json", resp);
+            }
+            else
+            {
+                send_json_message(request, 400,
+                    "{\"status\":\"error\",\"message\":\"Unknown action\"}");
+            }
         }
     );
 
@@ -4546,6 +4272,8 @@ static void registerSystemRoutes()
             Serial.println(
                 F("[SYSTEM] Restart requested")
             );
+
+            log_event("SYS", "restart", "user", "ok");
 
             send_json_message(
                 request,
@@ -4586,6 +4314,8 @@ static void registerSystemRoutes()
             Serial.println(
                 F("[SYSTEM] Factory reset requested")
             );
+
+            log_event("SYS", "factory_reset", "user", "ok");
 
             send_json_message(
                 request,
@@ -4688,7 +4418,7 @@ static void registerSystemRoutes()
         {
             if (
                 !collect_body(
-                    displayBody,
+                    requestBody,
                     data,
                     len,
                     index,
@@ -4701,7 +4431,7 @@ static void registerSystemRoutes()
 
             JsonDocument doc;
 
-            if (!parse_json(displayBody, doc))
+            if (!parse_json(requestBody, doc))
             {
                 send_json_message(
                     request,
@@ -4731,6 +4461,8 @@ static void registerSystemRoutes()
                 200,
                 "{\"status\":\"success\",\"message\":\"تم الحفظ بنجاح\"}"
             );
+
+requestBody = String();
         }
     );
 
@@ -4807,8 +4539,6 @@ static void registerSystemRoutes()
     // Import Settings
     // ========================================================
 
-    static String importBody;
-
     server.on(
         "/api/settings/import",
         HTTP_POST,
@@ -4828,7 +4558,7 @@ static void registerSystemRoutes()
         {
             if (
                 !collect_body(
-                    importBody,
+                    requestBody,
                     data,
                     len,
                     index,
@@ -4843,7 +4573,7 @@ static void registerSystemRoutes()
 
             if (
                 !parse_json(
-                    importBody,
+                    requestBody,
                     doc
                 )
             )
@@ -4890,7 +4620,7 @@ static void registerSystemRoutes()
                 "{\"status\":\"imported\"}"
             );
 
-            importBody = "";
+requestBody = String();
 
             rebootTimer.once_ms(
                 1000,
