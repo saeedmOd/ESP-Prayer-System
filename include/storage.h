@@ -164,7 +164,7 @@
 #endif
 
 #ifndef DEFAULT_AZAN_ENABLE
-#define DEFAULT_AZAN_ENABLE true
+#define DEFAULT_AZAN_ENABLE false
 #endif
 
 #ifndef DEFAULT_VOLUME

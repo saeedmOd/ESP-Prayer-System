@@ -1831,6 +1831,8 @@ async function loadPrayerSettings() {
         setSelect("method", data.method ?? data.calculation_method ?? "UmmAlQura");
         setSelect("prayerSource", data.prayer_source ?? "local");
         setSelect("timeFormat", data.time_format ?? data.timeFormat ?? "24H");
+        timeFormat = data.time_format ?? data.timeFormat ?? "24H";
+        updateClock();
         setNumber("fajr_offset", data.fajr_offset ?? 0);
         setNumber("dhuhr_offset", data.dhuhr_offset ?? 0);
         setNumber("asr_offset", data.asr_offset ?? 0);

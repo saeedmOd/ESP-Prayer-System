@@ -1481,7 +1481,7 @@ void storage_create_defaults()
     // ========================================================
 
     doc["audio"]["iqama_enable"] =
-        true;
+        false;
 
     doc["audio"]["iqama_folder"] =
         1;
@@ -1496,19 +1496,19 @@ void storage_create_defaults()
         1;
 
     doc["audio"]["iqama_fajr_enable"] =
-        true;
+        false;
 
     doc["audio"]["iqama_dhuhr_enable"] =
-        true;
+        false;
 
     doc["audio"]["iqama_asr_enable"] =
-        true;
+        false;
 
     doc["audio"]["iqama_maghrib_enable"] =
-        true;
+        false;
 
     doc["audio"]["iqama_isha_enable"] =
-        true;
+        false;
 
     doc["audio"]["iqama_fajr_delay"] =
         20;

@@ -1004,7 +1004,7 @@ static void registerApiRoutes()
 
             doc["volume"] =
                 storage_get_volume(
-                    25
+                    1
                 );
 
 
@@ -1015,7 +1015,7 @@ static void registerApiRoutes()
             doc["azanEnable"] =
                 storage_get_bool(
                     "audio.azan_enable",
-                    true
+                    false
                 );
 
             doc["azanDevice"] =
@@ -1119,7 +1119,7 @@ static void registerApiRoutes()
             doc["iqamaEnable"] =
                 storage_get_bool(
                     "audio.iqama_enable",
-                    true
+                    false
                 );
 
             doc["iqamaDevice"] =
@@ -1196,31 +1196,31 @@ static void registerApiRoutes()
             doc["iqamaFajr"] =
                 storage_get_bool(
                     "audio.iqama_fajr_enable",
-                    true
+                    false
                 );
 
             doc["iqamaDhuhr"] =
                 storage_get_bool(
                     "audio.iqama_dhuhr_enable",
-                    true
+                    false
                 );
 
             doc["iqamaAsr"] =
                 storage_get_bool(
                     "audio.iqama_asr_enable",
-                    true
+                    false
                 );
 
             doc["iqamaMaghrib"] =
                 storage_get_bool(
                     "audio.iqama_maghrib_enable",
-                    true
+                    false
                 );
 
             doc["iqamaIsha"] =
                 storage_get_bool(
                     "audio.iqama_isha_enable",
-                    true
+                    false
                 );
 
 
@@ -1261,7 +1261,7 @@ static void registerApiRoutes()
             doc["morningAdhkarVolume"] =
                 storage_get_int(
                     "audio.morning_adhkar_volume",
-                    25
+                    1
                 );
 
 
@@ -1302,7 +1302,7 @@ static void registerApiRoutes()
             doc["eveningAdhkarVolume"] =
                 storage_get_int(
                     "audio.evening_adhkar_volume",
-                    25
+                    1
                 );
 
 
@@ -1343,7 +1343,7 @@ static void registerApiRoutes()
             doc["kahfVolume"] =
                 storage_get_int(
                     "audio.kahf_volume",
-                    25
+                    1
                 );
 
 
@@ -1421,7 +1421,7 @@ static void registerApiRoutes()
             baqarah["enable"] =
                 storage_get_bool(
                     "audio.quran.baqarah.enable",
-                    true
+                    false
                 );
 
             baqarah["hour"] =
@@ -1462,7 +1462,7 @@ static void registerApiRoutes()
             baqarahLast["enable"] =
                 storage_get_bool(
                     "audio.quran.baqarah_last.enable",
-                    true
+                    false
                 );
 
             baqarahLast["hour"] =
@@ -1503,7 +1503,7 @@ static void registerApiRoutes()
             ayatKursi["enable"] =
                 storage_get_bool(
                     "audio.quran.ayat_kursi.enable",
-                    true
+                    false
                 );
 
             ayatKursi["hour"] =
@@ -1544,7 +1544,7 @@ static void registerApiRoutes()
             maryam["enable"] =
                 storage_get_bool(
                     "audio.quran.maryam.enable",
-                    true
+                    false
                 );
 
             maryam["hour"] =
@@ -1591,7 +1591,7 @@ static void registerApiRoutes()
             folderPlay["volume"] =
                 storage_get_int(
                     "audio.folder_play.volume",
-                    15
+                    1
                 );
 
             folderPlay["mode"] =
@@ -4355,7 +4355,7 @@ static void registerSystemRoutes()
 
             doc["volume"] =
                 storage_get_volume(
-                    25
+                    1
                 );
 
             doc["timeFormat"] =
