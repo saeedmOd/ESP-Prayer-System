@@ -337,6 +337,13 @@ static void register_not_found()
 
                 if (strcmp(type, "azan") == 0)
                 {
+                    if (settings.azanDevice == 1)
+                    {
+                        buzzer_play_alarm(settings.azanBuzzerTone);
+                        log_event("AUDIO", "test_azan", "user", "ok");
+                        request->send(200);
+                        return;
+                    }
                     if (!dfplayer_ready()) { request->send(503); return; }
                     command_process("test_azan");
                     log_event("AUDIO", "test_azan", "user", "ok");
@@ -358,6 +365,12 @@ static void register_not_found()
                 }
                 if (strcmp(type, "iqama") == 0)
                 {
+                    if (settings.iqamaDevice == 1)
+                    {
+                        buzzer_play_alarm(settings.iqamaBuzzerTone);
+                        request->send(200);
+                        return;
+                    }
                     if (!dfplayer_ready()) { request->send(503); return; }
                     play_folder_file(settings.iqamaFolder, settings.iqamaFile);
                     request->send(200);
@@ -1284,7 +1297,7 @@ static void registerApiRoutes()
             doc["eveningAdhkarFile"] =
                 storage_get_int(
                     "audio.evening_adhkar_file",
-                    1
+                    2
                 );
 
             doc["eveningAdhkarHour"] =
@@ -3777,6 +3790,14 @@ static void registerSystemRoutes()
 
             if (strcmp(type, "azan") == 0)
             {
+                if (settings.azanDevice == 1)
+                {
+                    buzzer_play_alarm(settings.azanBuzzerTone);
+                    log_event("AUDIO", "test_azan", "user", "ok");
+                    send_json_message(request, 200,
+                        "{\"status\":\"ok\"}");
+                    return;
+                }
                 if (!dfplayer_ready())
                 {
                     send_json_message(request, 503,
@@ -3809,6 +3830,14 @@ static void registerSystemRoutes()
             }
             else if (strcmp(type, "iqama") == 0)
             {
+                if (settings.iqamaDevice == 1)
+                {
+                    buzzer_play_alarm(settings.iqamaBuzzerTone);
+                    log_event("AUDIO", "test_iqama", "user", "ok");
+                    send_json_message(request, 200,
+                        "{\"status\":\"ok\"}");
+                    return;
+                }
                 if (!dfplayer_ready())
                 {
                     send_json_message(request, 503,
